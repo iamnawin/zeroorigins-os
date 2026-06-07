@@ -5,9 +5,16 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export default async function ProjectsPage() {
+const CLOSED = ['archived', 'cancelled']
+
+export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const { view } = await searchParams
+  const showAll = view === 'all'
+
   const supabase = await createClient()
-  const { data: projects } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
+  let query = supabase.from('projects').select('*').order('created_at', { ascending: false })
+  if (!showAll) query = query.not('status', 'in', `(${CLOSED.join(',')})`)
+  const { data: projects } = await query
 
   return (
     <div className="space-y-6">
@@ -18,6 +25,14 @@ export default async function ProjectsPage() {
         </div>
         <Link href="/internal/projects/new">
           <Button size="sm"><Plus className="w-4 h-4 mr-1" />New Project</Button>
+        </Link>
+      </div>
+      <div className="flex gap-1">
+        <Link href="/internal/projects">
+          <span className={`text-xs px-2.5 py-1 rounded transition-colors cursor-pointer ${!showAll ? 'text-zo-amber border border-zo-amber/50' : 'text-muted-foreground hover:text-foreground'}`}>Active</span>
+        </Link>
+        <Link href="/internal/projects?view=all">
+          <span className={`text-xs px-2.5 py-1 rounded transition-colors cursor-pointer ${showAll ? 'text-zo-amber border border-zo-amber/50' : 'text-muted-foreground hover:text-foreground'}`}>All</span>
         </Link>
       </div>
       <div className="grid gap-3">
@@ -38,7 +53,10 @@ export default async function ProjectsPage() {
           </Link>
         ))}
         {(!projects || projects.length === 0) && (
-          <p className="text-sm text-muted-foreground text-center py-8">No projects yet.</p>
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {showAll ? 'No projects yet.' : 'No active projects. '}
+            {!showAll && <Link href="/internal/projects?view=all" className="text-zo-amber hover:underline">View all</Link>}
+          </p>
         )}
       </div>
     </div>

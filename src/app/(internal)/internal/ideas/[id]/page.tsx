@@ -14,9 +14,14 @@ export default async function IdeaDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="max-w-3xl space-y-4">
-      <Link href="/internal/ideas">
-        <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href="/internal/ideas">
+          <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
+        </Link>
+        <Link href={`/internal/ideas/${id}/edit`}>
+          <Button size="sm" variant="outline">Edit</Button>
+        </Link>
+      </div>
       <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between">

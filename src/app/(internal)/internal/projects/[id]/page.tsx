@@ -16,9 +16,14 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="max-w-3xl space-y-4">
-      <Link href="/internal/projects">
-        <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href="/internal/projects">
+          <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
+        </Link>
+        <Link href={`/internal/projects/${id}/edit`}>
+          <Button size="sm" variant="outline">Edit</Button>
+        </Link>
+      </div>
       <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -39,10 +44,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         <CardHeader><CardTitle className="text-sm text-zo-chrome">Tasks ({tasks?.length ?? 0})</CardTitle></CardHeader>
         <CardContent>
           {tasks?.map(task => (
-            <div key={task.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-              <span className="text-sm text-foreground">{task.title}</span>
-              <Badge variant="outline" className="text-[10px]">{task.status}</Badge>
-            </div>
+            <Link key={task.id} href={`/internal/tasks/${task.id}`}>
+              <div className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:text-zo-amber transition-colors">
+                <span className="text-sm text-foreground">{task.title}</span>
+                <Badge variant="outline" className="text-[10px]">{task.status}</Badge>
+              </div>
+            </Link>
           ))}
           {(!tasks || tasks.length === 0) && <p className="text-xs text-muted-foreground">No tasks yet.</p>}
         </CardContent>

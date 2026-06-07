@@ -1,1 +1,115 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 @AGENTS.md
+
+> ⚠️ The `@AGENTS.md` import above is critical: this repo pins **Next.js 16 / React 19**, which has breaking changes vs. older versions. Read `node_modules/next/dist/docs/` before writing Next.js code rather than relying on prior knowledge.
+
+## Commands
+
+Package manager is **pnpm** (not npm/yarn).
+
+- `pnpm dev` — start dev server (Next.js, Turbopack)
+- `pnpm build` — production build
+- `pnpm start` — serve production build
+- `pnpm lint` — ESLint (`eslint-config-next`)
+
+There is **no test runner configured** — do not assume `pnpm test` exists.
+
+## Architecture
+
+ZeroOrigins OS is an internal operating system / CRM for an AI services studio: an internal team manages ideas → projects → tasks, plus a sales pipeline (leads → proposals → customers) and a partner program. External customers and partners get scoped portals. Built on **Next.js App Router + Supabase (Postgres, Auth, RLS)**.
+
+### Three audiences, enforced at two layers
+
+Access control is enforced **both** in middleware (routing) **and** in Postgres RLS (data). Route groups under `src/app/` map to audiences:
+
+- `(internal)` → `/internal/*` — the team. Roles: `SUPER_ADMIN`, `FOUNDER`, `DIRECTOR`, `STAFF`, `CONTRACTOR` (`INTERNAL_ROLES` in `src/types/index.ts`).
+- `(portal)` → `/portal/customer/*` and `/portal/partner/*` — external `CUSTOMER`, `PARTNER`, `REFERRAL_PARTNER`.
+- `(public)` → `/request-build`, `/partner-with-us` — unauthenticated lead/partner intake forms.
+- `(auth)` → `/login`, `/signup`, `/forgot-password`.
+
+`src/middleware.ts` reads the user's `profiles.role` on every request and redirects based on audience. After login it routes internal roles to `/internal/control-room`, partners to the partner portal, everyone else to the customer portal. **When adding a new role or protected route, update both `middleware.ts` and the corresponding RLS policy** — they are independent and must stay in sync.
+
+### Supabase clients — pick the right one
+
+- `src/lib/supabase/server.ts` (`createClient`, async) — Server Components / server code, cookie-based session.
+- `src/lib/supabase/client.ts` (`createClient`, sync) — Client Components (`'use client'`).
+
+The codebase currently mutates data **directly from Client Components** via the browser Supabase client (see `src/app/(internal)/internal/ideas/new/page.tsx`, `src/app/(public)/request-build/page.tsx`) rather than Server Actions/route handlers. RLS is the security boundary, not the API layer. List/detail pages are typically async Server Components that query via the server client (see `control-room/page.tsx`).
+
+### Data model & RLS
+
+Single migration `supabase/migrations/001_initial_schema.sql` is the source of truth. Key conventions:
+
+- Status values are **Postgres enums** mirrored as `as const` string-literal unions in `src/types/index.ts`. Changing a status requires editing **both** the enum (a new migration) and the TS type.
+- Most domain tables follow `owner_id` / `created_by` (→ `profiles`) + `created_at` / `updated_at`, with a `set_updated_at` trigger.
+- `handle_new_user()` trigger auto-creates a `profiles` row (default role `CUSTOMER`) on `auth.users` signup.
+- RLS leans on `is_internal_user()` / `get_user_role()` SECURITY DEFINER helpers. Pattern: internal users get `for all`; public forms get narrow `for insert with check (true)` on `leads` and `partners`; customers/partners get scoped `select`.
+
+`supabase/seed.sql` holds seed data. There is no generated Supabase types file — `src/types/index.ts` is hand-maintained.
+
+### Form validation strategy
+
+- **Public forms** (`/request-build`, `/partner-with-us`) — minimal inline pre-submit validation via `src/lib/validation.ts` (`isValidEmail`, `isValidPhoneLike`, `isValidUrl`, `minLength`). Errors shown inline per field; Supabase insert blocked until valid. Also have server-error fallback for failed inserts.
+- **Internal forms** — intentionally lightweight in Phase 1: HTML `required` + Supabase error surfacing via `setError()`. These are used by known team members, not anonymous public traffic.
+- **Future:** Add Zod schema validation when portal workflows (customer/partner dashboards) mature and external user input increases.
+- **Fields not yet in schema:** phone/WhatsApp and website/LinkedIn were requested for public forms but do not exist in the DB. Adding them requires a migration + updating `src/types/index.ts`.
+
+### AI features are stubs
+
+`src/lib/ai/*.ts` (requirement summarizer, follow-up/proposal/brief generators, partner evaluator) are **placeholders** that return `{ success: false, message: 'AI generation is not configured yet...' }`. Implement these when wiring an LLM provider; don't assume they work.
+
+### UI conventions
+
+- shadcn/ui-style primitives in `src/components/ui/`, built on `@base-ui/react` (not Radix) and `class-variance-authority`. Use the `cn()` helper from `src/lib/utils.ts`.
+- Tailwind v4 (CSS-first config in `src/app/globals.css`, no `tailwind.config.js`). Dark theme is the default `:root`.
+- Brand tokens: `zo-amber` (`#f5a623`, primary accent), `zo-amber-2`, `zo-chrome` (headings), `zo-silver`. Use these for brand styling (e.g. `text-zo-chrome`, `text-zo-amber`) alongside standard semantic tokens (`bg-card`, `border-border`, `text-muted-foreground`).
+- Path alias `@/*` → `src/*`.
+
+### Environment
+
+Requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+
+---
+
+## Current Implementation Status
+
+| Entity | List | Detail | Create | Edit | Status change | Active filter |
+|--------|------|--------|--------|------|---------------|---------------|
+| Ideas | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
+| Projects | ✅ | ✅ (+ tasks) | ✅ | ✅ | ✅ (via edit) | ✅ |
+| Tasks | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
+| Leads | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
+| Partners | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
+
+- Hard delete: intentionally absent — see **Record lifecycle** below.
+- Control room: counts + active/open/new summaries. No edit actions from here.
+- Portal pages (`/portal/customer/dashboard`, `/portal/partner/dashboard`): stubs — exist but show nothing useful.
+- Public intake forms (`/request-build`, `/partner-with-us`): functional.
+- All AI helpers (`src/lib/ai/*.ts`): stubs returning `{ success: false }`.
+
+### Record lifecycle — no hard delete
+
+Phase 1 uses **status-based lifecycle management** instead of hard delete. Records are never physically removed.
+
+**Why:** Ideas, leads, partners, projects, and tasks are business history. Deleting a lead breaks the story of how a customer was acquired. Deleting a task breaks the story of what was built. Hard delete also risks broken foreign key references across tables.
+
+**How closure works per entity:**
+
+| Entity | Use these statuses to close |
+|--------|-----------------------------|
+| Ideas | `archived`, `rejected` |
+| Projects | `archived`, `cancelled` |
+| Tasks | `cancelled`, `done` |
+| Leads | `lost`, `archived` |
+| Partners | `rejected`, `archived` |
+
+List pages default to the **Active** view (excludes closed statuses) with an **All** toggle at `?view=all`.
+
+**Future (Phase 2+):** Hard delete may be added exclusively for `SUPER_ADMIN` role, with a two-step confirmation dialog and an audit log entry before execution. Do not implement without those guardrails.
+
+### Remaining gap
+
+- **Massive code duplication** — 5 nearly identical list pages, create forms, detail pages, and edit pages. A UI bug requires ~20 edits. A shared Resource Kit base layer would fix this: `createResource(table)` factory + `ResourceList`/`ResourceDetail`/`ResourceForm` shared components driven by per-entity config files. Until built, **do not add new entity pages** using the copy-paste pattern.

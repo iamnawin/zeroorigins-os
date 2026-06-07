@@ -14,9 +14,14 @@ export default async function PartnerDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="max-w-3xl space-y-4">
-      <Link href="/internal/partners">
-        <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href="/internal/partners">
+          <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
+        </Link>
+        <Link href={`/internal/partners/${id}/edit`}>
+          <Button size="sm" variant="outline">Edit</Button>
+        </Link>
+      </div>
       <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -31,6 +36,7 @@ export default async function PartnerDetailPage({ params }: { params: Promise<{ 
             <div><span className="text-muted-foreground">Type:</span> {partner.type || '—'}</div>
           </div>
           {partner.pitch && <p className="text-sm text-muted-foreground border-t border-border pt-3">{partner.pitch}</p>}
+          {partner.notes && <p className="text-sm text-muted-foreground border-t border-border pt-3">{partner.notes}</p>}
         </CardContent>
       </Card>
     </div>
