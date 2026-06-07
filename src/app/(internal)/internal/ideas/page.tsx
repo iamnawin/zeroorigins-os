@@ -26,7 +26,7 @@ export default async function IdeasPage({ searchParams }: { searchParams: Promis
       <div className="grid gap-3">
         {ideas?.map(idea => (
           <Link key={idea.id} href={`${BASE}/${idea.id}`}>
-            <Card className="bg-card border-border hover:border-zo-amber/30 transition-colors cursor-pointer">
+            <Card className="bg-card border-border hover:border-zo-purple/30 transition-colors cursor-pointer">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
                   <p className="font-medium text-foreground">{idea.title}</p>

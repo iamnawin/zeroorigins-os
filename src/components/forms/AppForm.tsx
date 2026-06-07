@@ -180,20 +180,20 @@ export function AppForm({ initialData }: AppFormProps) {
                 <Label className="text-xs uppercase tracking-widest text-muted-foreground">Attributes</Label>
                 <div className="grid grid-cols-2 gap-4">
                   <label className="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={isInternalTool} onChange={e => setIsInternalTool(e.target.checked)} className="accent-zo-amber" />
-                    <span className="text-sm group-hover:text-zo-amber transition-colors">Internal Tool</span>
+                    <input type="checkbox" checked={isInternalTool} onChange={e => setIsInternalTool(e.target.checked)} className="accent-zo-purple" />
+                    <span className="text-sm group-hover:text-zo-purple transition-colors">Internal Tool</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={isClientDemo} onChange={e => setIsClientDemo(e.target.checked)} className="accent-zo-amber" />
-                    <span className="text-sm group-hover:text-zo-amber transition-colors">Client Demo</span>
+                    <input type="checkbox" checked={isClientDemo} onChange={e => setIsClientDemo(e.target.checked)} className="accent-zo-purple" />
+                    <span className="text-sm group-hover:text-zo-purple transition-colors">Client Demo</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={isSellableProduct} onChange={e => setIsSellableProduct(e.target.checked)} className="accent-zo-amber" />
-                    <span className="text-sm group-hover:text-zo-amber transition-colors">Sellable Product</span>
+                    <input type="checkbox" checked={isSellableProduct} onChange={e => setIsSellableProduct(e.target.checked)} className="accent-zo-purple" />
+                    <span className="text-sm group-hover:text-zo-purple transition-colors">Sellable Product</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={isOpenSource} onChange={e => setIsOpenSource(e.target.checked)} className="accent-zo-amber" />
-                    <span className="text-sm group-hover:text-zo-amber transition-colors">Open Source</span>
+                    <input type="checkbox" checked={isOpenSource} onChange={e => setIsOpenSource(e.target.checked)} className="accent-zo-purple" />
+                    <span className="text-sm group-hover:text-zo-purple transition-colors">Open Source</span>
                   </label>
                 </div>
               </div>
@@ -256,7 +256,7 @@ export function AppForm({ initialData }: AppFormProps) {
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-            <Button type="submit" className="bg-zo-amber hover:bg-zo-amber/90 text-black font-bold px-8" disabled={loading}>
+            <Button type="submit" className="font-bold px-8" disabled={loading}>
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : initialData?.id ? 'Update App' : 'Create App'}
             </Button>
           </div>

@@ -45,7 +45,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         <CardContent>
           {tasks?.map(task => (
             <Link key={task.id} href={`/internal/tasks/${task.id}`}>
-              <div className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:text-zo-amber transition-colors">
+              <div className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:text-zo-purple transition-colors">
                 <span className="text-sm text-foreground">{task.title}</span>
                 <Badge variant="outline" className="text-[10px]">{task.status}</Badge>
               </div>

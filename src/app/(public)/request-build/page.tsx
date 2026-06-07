@@ -71,7 +71,7 @@ export default function RequestBuildPage() {
     return (
       <Card className="bg-card border-border text-center p-8">
         <CardContent>
-          <p className="text-zo-amber text-lg font-medium">Request Received</p>
+          <p className="text-zo-purple text-lg font-medium">Request Received</p>
           <p className="text-sm text-muted-foreground mt-2">We&apos;ll review your request and get back to you within 24 hours.</p>
         </CardContent>
       </Card>

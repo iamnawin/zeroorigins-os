@@ -10,7 +10,7 @@ export function ResourceEmptyState({ showAll, basePath }: ResourceEmptyStateProp
     <p className="text-sm text-muted-foreground text-center py-8">
       {showAll ? 'No records yet.' : 'No active records. '}
       {!showAll && (
-        <Link href={`${basePath}?view=all`} className="text-zo-amber hover:underline">
+        <Link href={`${basePath}?view=all`} className="text-zo-purple hover:underline">
           View all
         </Link>
       )}

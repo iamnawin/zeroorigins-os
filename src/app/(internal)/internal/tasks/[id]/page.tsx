@@ -33,7 +33,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
           {task.projects?.title && (
             <div className="text-sm">
               <span className="text-muted-foreground">Project: </span>
-              <Link href={`/internal/projects/${task.projects.id}`} className="text-zo-amber hover:underline">
+              <Link href={`/internal/projects/${task.projects.id}`} className="text-zo-purple hover:underline">
                 {task.projects.title}
               </Link>
             </div>

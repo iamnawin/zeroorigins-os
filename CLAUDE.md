@@ -65,7 +65,7 @@ Single migration `supabase/migrations/001_initial_schema.sql` is the source of t
 
 - shadcn/ui-style primitives in `src/components/ui/`, built on `@base-ui/react` (not Radix) and `class-variance-authority`. Use the `cn()` helper from `src/lib/utils.ts`.
 - Tailwind v4 (CSS-first config in `src/app/globals.css`, no `tailwind.config.js`). Dark theme is the default `:root`.
-- Brand tokens: `zo-amber` (`#f5a623`, primary accent), `zo-amber-2`, `zo-chrome` (headings), `zo-silver`. Use these for brand styling (e.g. `text-zo-chrome`, `text-zo-amber`) alongside standard semantic tokens (`bg-card`, `border-border`, `text-muted-foreground`).
+- Brand tokens: `zo-purple` (`#8b5cf6`, primary accent), `zo-purple-2`, `zo-chrome` (headings), `zo-silver`. Use these for brand styling (e.g. `text-zo-chrome`, `text-zo-purple`) alongside standard semantic tokens (`bg-card`, `border-border`, `text-muted-foreground`).
 - Path alias `@/*` → `src/*`.
 
 ### Environment

@@ -89,7 +89,7 @@ function LoginForm() {
     <div className="space-y-6">
       <div className="flex flex-col items-center gap-2 mb-2">
         <h1 className="text-2xl font-bold text-zo-chrome">{currentLabel}</h1>
-        <p className="text-sm text-muted-foreground">Sign in to your ZeroOrigins workspace</p>
+        <p className="text-sm text-zo-muted">Sign in to your ZeroOrigins workspace</p>
       </div>
 
       <Card className="border-border bg-card shadow-2xl">
@@ -101,28 +101,28 @@ function LoginForm() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Email</Label>
               <Input id="email" type="email" placeholder="name@company.com" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Password</Label>
               <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
           </CardContent>
           <CardFooter className="flex-col gap-3">
-            <Button type="submit" className="w-full bg-zo-amber hover:bg-zo-amber/90 text-black font-bold h-11" disabled={loading}>
+            <Button type="submit" className="w-full font-bold h-11" disabled={loading}>
               {loading ? 'Authenticating...' : 'Sign In'}
             </Button>
-            <div className="flex gap-6 text-xs text-muted-foreground mt-2">
-              <Link href="/signup" className="hover:text-zo-amber transition-colors">Create account</Link>
-              <Link href="/forgot-password" title="Forgot password?" className="hover:text-zo-amber transition-colors">Forgot password?</Link>
+            <div className="flex gap-6 text-xs text-zo-muted mt-2">
+              <Link href="/signup" className="hover:text-zo-purple transition-colors">Create account</Link>
+              <Link href="/forgot-password" title="Forgot password?" className="hover:text-zo-purple transition-colors">Forgot password?</Link>
             </div>
           </CardFooter>
         </form>
       </Card>
       
       <div className="text-center">
-        <Link href="/" className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-zo-amber transition-colors">
+        <Link href="/" className="text-[10px] uppercase tracking-widest text-zo-muted hover:text-zo-purple transition-colors">
           ← Back to Gateway
         </Link>
       </div>
@@ -134,7 +134,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center p-12">
-        <div className="w-6 h-6 border-2 border-zo-amber border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-6 h-6 border-2 border-zo-purple border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>
       <LoginForm />

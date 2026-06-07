@@ -38,7 +38,7 @@ src/components/resource-kit/
 <ResourceViewTabs basePath="/internal/leads" showAll={showAll} />
 ```
 
-Renders "Active" and "All" tabs. Active is highlighted with `zo-amber` when `!showAll`.
+Renders "Active" and "All" tabs. Active is highlighted with `zo-purple` when `!showAll`.
 
 ### ResourceEmptyState
 

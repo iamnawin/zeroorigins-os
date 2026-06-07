@@ -25,7 +25,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
       <div className="grid gap-2">
         {tasks?.map(task => (
           <Link key={task.id} href={`${BASE}/${task.id}`}>
-            <Card className="bg-card border-border hover:border-zo-amber/30 transition-colors cursor-pointer">
+            <Card className="bg-card border-border hover:border-zo-purple/30 transition-colors cursor-pointer">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
                   <p className="font-medium text-foreground text-sm">{task.title}</p>

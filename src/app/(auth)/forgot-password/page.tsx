@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
     return (
       <Card className="border-border bg-card p-6 text-center">
         <p className="text-sm text-muted-foreground">Check your email for a reset link.</p>
-        <Link href="/login" className="text-sm text-zo-amber mt-4 inline-block">Back to login</Link>
+        <Link href="/login" className="text-sm text-zo-purple mt-4 inline-block">Back to login</Link>
       </Card>
     )
   }

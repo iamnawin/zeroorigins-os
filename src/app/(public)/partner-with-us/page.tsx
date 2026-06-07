@@ -73,7 +73,7 @@ export default function PartnerWithUsPage() {
     return (
       <Card className="bg-card border-border text-center p-8">
         <CardContent>
-          <p className="text-zo-amber text-lg font-medium">Application Received</p>
+          <p className="text-zo-purple text-lg font-medium">Application Received</p>
           <p className="text-sm text-muted-foreground mt-2">We&apos;ll review your partnership interest and respond within 48 hours.</p>
         </CardContent>
       </Card>

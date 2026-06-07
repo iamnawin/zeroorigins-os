@@ -3,7 +3,7 @@ import { ResourcePageHeader } from '@/components/resource-kit/resource-page-head
 
 export default function NewAppPage() {
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto selection:bg-zo-purple/20">
       <ResourcePageHeader
         title="Add New App"
         description="Register a new repository or experiment in the AI Workspace."

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import Link from 'next/link'
+import { INTERNAL_ROLES } from '@/types'
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
@@ -53,7 +54,7 @@ export default function SignupPage() {
       const role = profile?.role || 'CUSTOMER'
       let redirectPath = '/portal/customer/dashboard'
 
-      if (['SUPER_ADMIN', 'FOUNDER', 'DIRECTOR', 'STAFF', 'CONTRACTOR'].includes(role)) {
+      if (INTERNAL_ROLES.includes(role)) {
         redirectPath = '/internal/control-room'
       } else if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
         redirectPath = '/portal/partner/dashboard'
@@ -69,32 +70,49 @@ export default function SignupPage() {
   }
 
   return (
-    <Card className="border-border bg-card">
-      <form onSubmit={handleSignup}>
-        <CardContent className="space-y-4 pt-6">
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input id="name" value={fullName} onChange={e => setFullName(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
-          </div>
-        </CardContent>
-        <CardFooter className="flex-col gap-3">
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating account...' : 'Create Account'}
-          </Button>
-          <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
-            Already have an account? Sign in
-          </Link>
-        </CardFooter>
-      </form>
-    </Card>
+    <div className="space-y-6">
+      <div className="flex flex-col items-center gap-2 mb-2 text-center">
+        <h1 className="text-2xl font-bold text-zo-chrome">Create Account</h1>
+        <p className="text-sm text-zo-muted">Join the ZeroOrigins ecosystem</p>
+      </div>
+
+      <Card className="border-border bg-card shadow-2xl">
+        <form onSubmit={handleSignup}>
+          <CardContent className="space-y-4 pt-6">
+            {error && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-medium">
+                {error}
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Full Name</Label>
+              <Input id="name" placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Email</Label>
+              <Input id="email" type="email" placeholder="name@company.com" value={email} onChange={e => setEmail(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Password</Label>
+              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+            </div>
+          </CardContent>
+          <CardFooter className="flex-col gap-3">
+            <Button type="submit" className="w-full font-bold h-11" disabled={loading}>
+              {loading ? 'Creating account...' : 'Create Account'}
+            </Button>
+            <Link href="/login" className="text-sm text-zo-muted hover:text-zo-purple transition-colors">
+              Already have an account? Sign in
+            </Link>
+          </CardFooter>
+        </form>
+      </Card>
+      
+      <div className="text-center">
+        <Link href="/" className="text-[10px] uppercase tracking-widest text-zo-muted hover:text-zo-purple transition-colors">
+          ← Back to Gateway
+        </Link>
+      </div>
+    </div>
   )
 }

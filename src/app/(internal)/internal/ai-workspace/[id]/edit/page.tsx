@@ -20,7 +20,7 @@ export default async function EditAppPage({ params }: PageProps) {
   if (!app) notFound()
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto selection:bg-zo-purple/20">
       <ResourcePageHeader
         title={`Edit ${app.name}`}
         description="Update app details and status."
