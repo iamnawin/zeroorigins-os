@@ -12,6 +12,7 @@ import {
 
 const navItems = [
   { label: 'Control Room', href: '/internal/control-room', icon: LayoutDashboard, active: true },
+  { label: 'AI Workspace', href: '/internal/ai-workspace', icon: Bot, active: true },
   { label: 'Ideas', href: '/internal/ideas', icon: Lightbulb, active: true },
   { label: 'Decisions', href: '/internal/decisions', icon: GitBranch, active: false },
   { label: 'Projects', href: '/internal/projects', icon: FolderKanban, active: true },

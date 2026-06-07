@@ -95,6 +95,6 @@
     @apply bg-background text-foreground antialiased;
   }
   html {
-    @apply font-sans;
+    @apply font-sans selection:bg-zo-amber/20 selection:text-zo-amber;
   }
 }
