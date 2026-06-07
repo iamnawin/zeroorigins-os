@@ -5,6 +5,7 @@ import { SignOutButton } from '@/components/auth/sign-out-button'
 import Link from 'next/link'
 import { INTERNAL_ROLES } from '@/types'
 import Image from 'next/image'
+import { ShieldCheck, Building2 } from 'lucide-react'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -44,18 +45,18 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <Card className="border-border bg-card">
-          <CardHeader>
+        <Card className="border-border bg-card overflow-hidden">
+          <CardHeader className="text-center">
             <CardTitle className="text-xl">
-              {user ? 'Welcome Back' : 'Get Started'}
+              {user ? 'Welcome Back' : 'Select Portal'}
             </CardTitle>
             <CardDescription>
-              {user ? `Signed in as ${user.email}` : 'Sign in to access your workspace'}
+              {user ? `Signed in as ${user.email}` : 'Access your ZeroOrigins workspace'}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-0">
             {user ? (
-              <>
+              <div className="p-6 space-y-4">
                 <div className="p-3 bg-secondary/50 rounded-lg space-y-1">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Account Status</p>
                   <p className="text-sm">Role: <span className="text-zo-amber font-medium">{profile?.role || 'CUSTOMER'}</span></p>
@@ -63,46 +64,90 @@ export default async function HomePage() {
 
                 <div className="grid gap-3 pt-2">
                   {INTERNAL_ROLES.includes(profile?.role) ? (
-                    <Button className="w-full bg-zo-amber hover:bg-zo-amber/90 text-black">
-                      <Link href="/internal/control-room">Enter Control Room</Link>
+                    <Button className="w-full h-12 bg-zo-amber hover:bg-zo-amber/90 text-black font-bold">
+                      <Link href="/internal/control-room" className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5" />
+                        Enter Control Room
+                      </Link>
                     </Button>
                   ) : noFounderExists ? (
-                    <Button className="w-full bg-zo-amber hover:bg-zo-amber/90 text-black">
-                      <Link href="/setup-founder">Complete Founder Setup</Link>
+                    <Button className="w-full h-12 bg-zo-amber hover:bg-zo-amber/90 text-black font-bold">
+                      <Link href="/setup-founder" className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5" />
+                        Complete Founder Setup
+                      </Link>
                     </Button>
                   ) : profile?.role === 'PARTNER' || profile?.role === 'REFERRAL_PARTNER' ? (
-                    <Button className="w-full bg-zo-amber hover:bg-zo-amber/90 text-black">
-                      <Link href="/portal/partner/dashboard">Open Partner Portal</Link>
+                    <Button className="w-full h-12 bg-zo-amber hover:bg-zo-amber/90 text-black font-bold">
+                      <Link href="/portal/partner/dashboard" className="flex items-center gap-2">
+                        <Building2 className="w-5 h-5" />
+                        Open Partner Portal
+                      </Link>
                     </Button>
                   ) : (
-                    <Button className="w-full bg-zo-amber hover:bg-zo-amber/90 text-black">
-                      <Link href="/portal/customer/dashboard">Open Customer Portal</Link>
+                    <Button className="w-full h-12 bg-zo-amber hover:bg-zo-amber/90 text-black font-bold">
+                      <Link href="/portal/customer/dashboard" className="flex items-center gap-2">
+                        <Building2 className="w-5 h-5" />
+                        Open Customer Portal
+                      </Link>
                     </Button>
                   )}
-                  <SignOutButton className="w-full" variant="outline" />
+                  <SignOutButton className="w-full" variant="ghost" />
                 </div>
-              </>
+              </div>
             ) : (
-              <div className="grid gap-3 pt-2">
-                <Button className="w-full">
-                  <Link href="/login">Sign In</Link>
-                </Button>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="text-xs">
-                    <Link href="/request-build">Request a Build</Link>
-                  </Button>
-                  <Button variant="outline" className="text-xs">
-                    <Link href="/partner-with-us">Partner With Us</Link>
-                  </Button>
-                </div>
+              <div className="flex flex-col border-t border-border">
+                <Link 
+                  href="/login" 
+                  className="flex items-center justify-between p-6 hover:bg-secondary/50 transition-colors group border-b border-border"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-zo-amber/10 rounded-full group-hover:bg-zo-amber/20 transition-colors">
+                      <ShieldCheck className="w-6 h-6 text-zo-amber" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold text-foreground">Internal Access</p>
+                      <p className="text-xs text-muted-foreground">Founders, Admins & Staff</p>
+                    </div>
+                  </div>
+                  <div className="text-zo-amber opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                    →
+                  </div>
+                </Link>
+                
+                <Link 
+                  href="/login" 
+                  className="flex items-center justify-between p-6 hover:bg-secondary/50 transition-colors group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-zo-silver/10 rounded-full group-hover:bg-zo-silver/20 transition-colors">
+                      <Building2 className="w-6 h-6 text-zo-silver" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold text-foreground">Business Portal</p>
+                      <p className="text-xs text-muted-foreground">Customers & Partners</p>
+                    </div>
+                  </div>
+                  <div className="text-zo-silver opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                    →
+                  </div>
+                </Link>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {user && !INTERNAL_ROLES.includes(profile?.role) && (
-          <p className="text-center text-xs text-muted-foreground px-4">
-            Internal workspace access requires a Founder or Staff account.
+        {!user && (
+          <div className="flex justify-center gap-6 text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium">
+            <Link href="/request-build" className="hover:text-zo-amber transition-colors">Request a Build</Link>
+            <span className="opacity-30">|</span>
+            <Link href="/partner-with-us" className="hover:text-zo-amber transition-colors">Partner with Us</Link>
+          </div>
+        )}
+
+        {user && !INTERNAL_ROLES.includes(profile?.role) && !noFounderExists && (
+          <p className="text-center text-xs text-muted-foreground px-4 italic">
+            Note: This account is currently in the business portal.
           </p>
         )}
       </div>
