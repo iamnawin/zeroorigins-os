@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle } from 'lucide-react'
 import Image from 'next/image'
+import { promoteToFounder } from '@/lib/actions/auth'
 
 import { type User } from '@supabase/supabase-js'
 import { type Profile } from '@/types'
@@ -25,12 +26,12 @@ export default function SetupFounderPage() {
   useEffect(() => {
     async function checkBootstrapStatus() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        if (!authUser) {
           router.push('/login')
           return
         }
-        setUser(user)
+        setUser(authUser)
 
         // Check if any Founder or Super Admin exists
         const { count, error: countError } = await supabase
@@ -47,13 +48,13 @@ export default function SetupFounderPage() {
         }
 
         // Get current profile
-        const { data: profile } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', authUser.id)
           .single()
         
-        setProfile(profile)
+        setProfile(profileData)
       } catch (err: unknown) {
         console.error('Setup check error:', err)
         setError(err instanceof Error ? err.message : 'An unknown error occurred')
@@ -72,18 +73,11 @@ export default function SetupFounderPage() {
     setError('')
 
     try {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          role: 'FOUNDER',
-          full_name: profile?.full_name || 'Naveen'
-        })
-        .eq('id', user.id)
-
-      if (updateError) throw updateError
-
-      router.push('/internal/control-room')
-      router.refresh()
+      const result = await promoteToFounder()
+      if (result.success) {
+        router.push('/internal/control-room')
+        router.refresh()
+      }
     } catch (err: unknown) {
       console.error('Promotion error:', err)
       setError(err instanceof Error ? err.message : 'An unknown error occurred')

@@ -1,11 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { SignOutButton } from '@/components/auth/sign-out-button'
 import Link from 'next/link'
 import { INTERNAL_ROLES } from '@/types'
 import Image from 'next/image'
 import { ShieldCheck, Building2 } from 'lucide-react'
+import { signOut } from '@/lib/actions/auth'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -45,7 +45,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <Card className="border-border bg-card overflow-hidden">
+        <Card className="border-border bg-card overflow-hidden shadow-2xl shadow-zo-amber/5">
           <CardHeader className="text-center">
             <CardTitle className="text-xl">
               {user ? 'Welcome Back' : 'Select Portal'}
@@ -57,21 +57,22 @@ export default async function HomePage() {
           <CardContent className="p-0">
             {user ? (
               <div className="p-6 space-y-4">
-                <div className="p-3 bg-secondary/50 rounded-lg space-y-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Account Status</p>
+                <div className="p-3 bg-secondary/50 rounded-lg space-y-1 border border-border/50">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Account Identity</p>
+                  <p className="text-sm">User: <span className="text-foreground font-medium">{profile?.full_name || user.email}</span></p>
                   <p className="text-sm">Role: <span className="text-zo-amber font-medium">{profile?.role || 'CUSTOMER'}</span></p>
                 </div>
 
                 <div className="grid gap-3 pt-2">
                   {INTERNAL_ROLES.includes(profile?.role) ? (
-                    <Button className="w-full h-12 bg-zo-amber hover:bg-zo-amber/90 text-black font-bold">
+                    <Button className="w-full h-12 bg-zo-amber hover:bg-zo-amber/90 text-black font-bold shadow-lg shadow-zo-amber/20">
                       <Link href="/internal/control-room" className="flex items-center gap-2">
                         <ShieldCheck className="w-5 h-5" />
                         Enter Control Room
                       </Link>
                     </Button>
                   ) : noFounderExists ? (
-                    <Button className="w-full h-12 bg-zo-amber hover:bg-zo-amber/90 text-black font-bold">
+                    <Button className="w-full h-12 bg-zo-amber hover:bg-zo-amber/90 text-black font-bold shadow-lg shadow-zo-amber/20 animate-pulse">
                       <Link href="/setup-founder" className="flex items-center gap-2">
                         <ShieldCheck className="w-5 h-5" />
                         Complete Founder Setup
@@ -92,7 +93,12 @@ export default async function HomePage() {
                       </Link>
                     </Button>
                   )}
-                  <SignOutButton className="w-full" variant="ghost" />
+                  
+                  <form action={signOut} className="w-full">
+                    <Button type="submit" variant="ghost" className="w-full h-10 text-muted-foreground hover:text-foreground">
+                      Sign Out
+                    </Button>
+                  </form>
                 </div>
               </div>
             ) : (
