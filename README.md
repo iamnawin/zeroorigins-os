@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ZeroOrigins OS
 
-## Getting Started
+Internal + External Company Operating System.
 
-First, run the development server:
+## Tech Stack
+
+- Next.js 16 (App Router) + TypeScript
+- Tailwind CSS v4 + shadcn/ui
+- Supabase (Auth, PostgreSQL, RLS)
+- Dark / Chrome / Amber theme
+
+## Setup
 
 ```bash
+npm install
+copy .env.local.example .env.local
+# Fill in Supabase URL and anon key
+
+# Run supabase/migrations/001_initial_schema.sql in Supabase SQL Editor
+# Sign up, then promote yourself:
+# UPDATE profiles SET role = 'FOUNDER', full_name = 'Naveen' WHERE email = 'your@email.com';
+# Optionally run supabase/seed.sql
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Routes
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Route | Type |
+|-------|------|
+| `/login`, `/signup`, `/forgot-password` | Auth |
+| `/request-build` | Public → creates lead |
+| `/partner-with-us` | Public → creates partner |
+| `/internal/control-room` | Dashboard |
+| `/internal/ideas` | CRUD |
+| `/internal/projects` | CRUD |
+| `/internal/tasks` | CRUD |
+| `/internal/leads` | CRUD |
+| `/internal/partners` | CRUD |
+| `/portal/customer/dashboard` | Placeholder |
+| `/portal/partner/dashboard` | Placeholder |
