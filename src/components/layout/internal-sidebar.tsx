@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
 import {
   LayoutDashboard, Lightbulb, GitBranch, FolderKanban, CheckSquare,
   Users, Building2, Handshake, FileText, HardDrive, Palette,
@@ -33,9 +34,14 @@ export function InternalSidebar() {
 
   return (
     <aside className="w-60 h-screen fixed left-0 top-0 border-r border-border bg-[#090909] flex flex-col">
-      <div className="p-4 border-b border-border">
-        <h1 className="text-sm font-bold tracking-wider text-zo-chrome">ZEROORIGINS</h1>
-        <p className="text-[10px] text-muted-foreground tracking-widest uppercase mt-0.5">Control Room</p>
+      <div className="p-4 border-b border-border flex items-center gap-3">
+        <div className="relative w-8 h-8 shrink-0">
+          <Image src="/logo.png" alt="Logo" fill className="object-contain" />
+        </div>
+        <div>
+          <h1 className="text-sm font-bold tracking-wider text-zo-chrome">ZEROORIGINS</h1>
+          <p className="text-[10px] text-muted-foreground tracking-widest uppercase mt-0.5">Control Room</p>
+        </div>
       </div>
       <nav className="flex-1 overflow-y-auto py-2">
         {navItems.map(item => {

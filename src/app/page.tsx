@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import Link from 'next/link'
 import { INTERNAL_ROLES } from '@/types'
+import Image from 'next/image'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -25,9 +26,22 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
       <div className="max-w-md w-full space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight text-zo-chrome">ZeroOrigins OS</h1>
-          <p className="text-muted-foreground italic">Company Operating System</p>
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="relative w-24 h-24">
+              <Image 
+                src="/logo.png" 
+                alt="ZeroOrigins Logo" 
+                fill 
+                className="object-contain"
+                priority
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-4xl font-bold tracking-tight text-zo-chrome">ZeroOrigins OS</h1>
+            <p className="text-muted-foreground italic">Company Operating System</p>
+          </div>
         </div>
 
         <Card className="border-border bg-card">

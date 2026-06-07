@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ShieldCheck, Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
+import Image from 'next/image'
 
 import { type User } from '@supabase/supabase-js'
 import { type Profile } from '@/types'
@@ -103,8 +104,10 @@ export default function SetupFounderPage() {
       <div className="max-w-md w-full">
         <Card className="border-border bg-card">
           <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-zo-amber/10 rounded-full flex items-center justify-center mb-4">
-              <ShieldCheck className="w-6 h-6 text-zo-amber" />
+            <div className="flex justify-center mb-4">
+              <div className="relative w-16 h-16">
+                <Image src="/logo.png" alt="Logo" fill className="object-contain" />
+              </div>
             </div>
             <CardTitle className="text-2xl font-bold text-zo-chrome">Founder Setup</CardTitle>
             <CardDescription>ZeroOrigins OS First Admin Bootstrap</CardDescription>
