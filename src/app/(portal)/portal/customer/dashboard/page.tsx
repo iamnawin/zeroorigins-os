@@ -17,7 +17,13 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user?.id ?? '').single()
 
+  const { count: founderCount } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .in('role', ['FOUNDER', 'SUPER_ADMIN'])
+
   const isInternal = INTERNAL_ROLES.includes(profile?.role)
+  const noFounderExists = user && (founderCount || 0) === 0
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-4">
@@ -72,6 +78,10 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
             {isInternal ? (
               <Button className="bg-zo-amber hover:bg-zo-amber/90 text-black px-8">
                 <Link href="/internal/control-room">Go to Control Room</Link>
+              </Button>
+            ) : noFounderExists ? (
+              <Button className="bg-zo-amber hover:bg-zo-amber/90 text-black px-8">
+                <Link href="/setup-founder">Set up Founder Account</Link>
               </Button>
             ) : (
               <div className="group relative">

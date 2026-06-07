@@ -31,6 +31,39 @@ zeroorigins-os
 facts
 
 narrative
+# ZeroOrigins OS - Founder Bootstrap Fix (2026-06-08)
+
+## Issue
+- New deployments have no way to promote the first user to `FOUNDER` role within the app, requiring manual SQL execution which is a high friction for initial setup.
+
+## Fix: In-App Founder Bootstrap
+1. **Protected Setup Route**: Created `/setup-founder` which allows the first user to promote themselves to `FOUNDER`.
+2. **Bootstrap Security**: This route is only functional if zero users with `FOUNDER` or `SUPER_ADMIN` roles exist in the `profiles` table.
+3. **Smart Navigation**: 
+   - Root (`/`) shows a "Complete Founder Setup" button if no admin exists.
+   - Customer Portal dashboard shows a "Set up Founder Account" button if no admin exists.
+4. **Automated promotion**: Clicking the button updates the current user's profile to `FOUNDER` role and sets the name to `Naveen`.
+
+## How to Setup First Founder
+1. Create an account via `/signup`.
+2. Land on the Customer Portal (or Root).
+3. Click "Complete Founder Setup" or "Set up Founder Account".
+4. On the setup page, click "Promote Me to Founder".
+5. You will be redirected to the internal Control Room.
+
+## Supabase Fallback SQL (if needed)
+```sql
+-- Check profile roles
+select id, email, role, full_name, created_at
+from profiles
+order by created_at desc;
+
+-- Manual Promotion
+update profiles
+set role = 'FOUNDER', full_name = 'Naveen'
+where email = 'your-actual-email@example.com';
+```
+
 # ZeroOrigins OS - Auth & Role Redirect Fix (2026-06-08)
 
 ## Issue

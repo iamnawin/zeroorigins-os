@@ -10,10 +10,17 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser()
   
   let profile = null
+  let founderCount = 0
   if (user) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-    profile = data
+    const [{ data: profileData }, { count }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['FOUNDER', 'SUPER_ADMIN'])
+    ])
+    profile = profileData
+    founderCount = count || 0
   }
+
+  const noFounderExists = user && founderCount === 0
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
@@ -44,6 +51,10 @@ export default async function HomePage() {
                   {INTERNAL_ROLES.includes(profile?.role) ? (
                     <Button className="w-full bg-zo-amber hover:bg-zo-amber/90 text-black">
                       <Link href="/internal/control-room">Enter Control Room</Link>
+                    </Button>
+                  ) : noFounderExists ? (
+                    <Button className="w-full bg-zo-amber hover:bg-zo-amber/90 text-black">
+                      <Link href="/setup-founder">Complete Founder Setup</Link>
                     </Button>
                   ) : profile?.role === 'PARTNER' || profile?.role === 'REFERRAL_PARTNER' ? (
                     <Button className="w-full bg-zo-amber hover:bg-zo-amber/90 text-black">
