@@ -23,24 +23,48 @@ export async function GET(request: Request) {
               cookiesToSet.forEach(({ name, value, options }) =>
                 cookieStore.set(name, value, options)
               )
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
+            } catch {}
           },
         },
       }
     )
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      const isLocalEnv = process.env.NODE_ENV === 'development'
-      if (isLocalEnv) {
-        // we can be sure that origin is http://localhost:3000
-        return NextResponse.redirect(`${origin}${next}`)
-      } else {
-        return NextResponse.redirect(`${origin}${next}`)
+
+    const { data: { user }, error: authError } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (!authError && user) {
+      // 1. Profile Self-Healing: Ensure profile exists
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single()
+        
+        if (!profile) {
+          console.log('Self-healing profile for callback user:', user.email)
+          const serviceRoleClient = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            {
+              cookies: {
+                getAll() { return cookieStore.getAll() },
+                setAll() {}
+              },
+            }
+          )
+          await serviceRoleClient.from('profiles').insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || '',
+            role: 'CUSTOMER'
+          })
+        }
+      } catch (err) {
+        console.error('Profile check/healing error in callback:', err)
+        // We continue anyway, as the user is at least authenticated
       }
+
+      return NextResponse.redirect(`${origin}${next}`)
     }
   }
 

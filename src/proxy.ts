@@ -49,7 +49,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Auth routes handling
-  if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/forgot-password')) {
+  if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/forgot-password') || pathname.startsWith('/auth/callback')) {
     return response
   }
 
@@ -60,19 +60,28 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // 1. Internal Route Protection (/internal/*)
-  if (pathname.startsWith('/internal')) {
+  // Fetch role with safe default
+  let role: Role = 'CUSTOMER'
+  try {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .maybeSingle() // Use maybeSingle to avoid error if missing
+    
+    if (profile?.role) {
+      role = profile.role as Role
+    }
+  } catch (err) {
+    console.error('Proxy profile fetch error:', err)
+  }
 
-    const role = (profile?.role ?? 'CUSTOMER') as Role
-    const email = user.email?.toLowerCase() || ""
-    const hasInternalDomain = email.endsWith(INTERNAL_EMAIL_DOMAIN)
-    const hasInternalRole = INTERNAL_ROLES.includes(role)
+  const email = user.email?.toLowerCase() || ""
+  const hasInternalDomain = email.endsWith(INTERNAL_EMAIL_DOMAIN)
+  const hasInternalRole = INTERNAL_ROLES.includes(role)
 
+  // 1. Internal Route Protection (/internal/*)
+  if (pathname.startsWith('/internal')) {
     // A. Invalid Domain
     if (!hasInternalDomain) {
       if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
@@ -89,12 +98,6 @@ export async function proxy(request: NextRequest) {
 
   // 2. Customer Portal Protection
   if (pathname.startsWith('/portal/customer')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    const role = (profile?.role ?? 'CUSTOMER') as Role
     const allowed = INTERNAL_ROLES.includes(role) || role === 'CUSTOMER'
     if (!allowed) {
       return NextResponse.redirect(new URL('/portal/partner/dashboard', request.url))
@@ -103,12 +106,6 @@ export async function proxy(request: NextRequest) {
 
   // 3. Partner Portal Protection
   if (pathname.startsWith('/portal/partner')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    const role = (profile?.role ?? 'CUSTOMER') as Role
     const allowed = INTERNAL_ROLES.includes(role) || role === 'PARTNER' || role === 'REFERRAL_PARTNER'
     if (!allowed) {
       return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))

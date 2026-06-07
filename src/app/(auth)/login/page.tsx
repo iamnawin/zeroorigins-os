@@ -10,6 +10,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import Link from 'next/link'
 import { INTERNAL_ROLES } from '@/types'
 import { isZeroOriginsEmail } from '@/lib/supabase/auth-helpers'
+import { ensureProfile } from '@/lib/actions/auth'
 
 function LoginForm() {
   const searchParams = useSearchParams()
@@ -63,31 +64,26 @@ function LoginForm() {
         return
       }
 
-      // Fetch user profile to determine role
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
+      // 2. Profile Self-Healing: Ensure profile exists
+      const { success: profileOk, role, error: profileError } = await ensureProfile()
 
-      if (profileError) {
-        console.error('Profile fetch error:', profileError)
+      if (!profileOk) {
+        console.error('Profile fetch/creation error:', profileError)
         setError('User profile not found. Please contact support.')
         setLoading(false)
         return
       }
 
-      const role = profile.role
       let redirectPath = '/portal/customer/dashboard'
 
-      if (INTERNAL_ROLES.includes(role)) {
+      if (INTERNAL_ROLES.includes(role as any)) {
         redirectPath = '/internal/control-room'
       } else if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
         redirectPath = '/portal/partner/dashboard'
       }
 
       // If user intended internal but domain is right BUT role is not internal
-      if (intent === 'internal' && !INTERNAL_ROLES.includes(role)) {
+      if (intent === 'internal' && !INTERNAL_ROLES.includes(role as any)) {
         redirectPath = '/portal/customer/dashboard?message=unauthorized_internal'
       }
 

@@ -5,6 +5,60 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
+export async function ensureProfile() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll() {}
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  // Check if profile exists
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile) return { success: true, role: profile.role }
+
+  // Create missing profile using service role
+  const serviceRoleClient = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll() {}
+      },
+    }
+  )
+
+  const { error } = await serviceRoleClient
+    .from('profiles')
+    .insert({
+      id: user.id,
+      email: user.email,
+      full_name: user.user_metadata?.full_name || '',
+      role: 'CUSTOMER'
+    })
+
+  if (error) {
+    console.error('Self-healing profile creation failed:', error)
+    return { success: false, error }
+  }
+
+  return { success: true, role: 'CUSTOMER' }
+}
+
 export async function promoteToFounder() {
   const cookieStore = await cookies()
   
