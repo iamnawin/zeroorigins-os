@@ -3,6 +3,13 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { INTERNAL_ROLES, type Role } from '@/types'
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Public routes — skip Supabase entirely
+  if (pathname.startsWith('/request-build') || pathname.startsWith('/partner-with-us')) {
+    return NextResponse.next()
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -14,9 +21,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -26,71 +31,81 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const pathname = request.nextUrl.pathname
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
 
-  // Public routes
-  if (pathname.startsWith('/request-build') || pathname.startsWith('/partner-with-us')) {
-    return supabaseResponse
-  }
-
-  // Auth routes
-  if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/forgot-password')) {
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-      const role = profile?.role as Role
-      if (INTERNAL_ROLES.includes(role)) {
-        return NextResponse.redirect(new URL('/internal/control-room', request.url))
+    // Auth routes
+    if (
+      pathname.startsWith('/login') ||
+      pathname.startsWith('/signup') ||
+      pathname.startsWith('/forgot-password')
+    ) {
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+        const role = profile?.role as Role
+        if (INTERNAL_ROLES.includes(role)) {
+          return NextResponse.redirect(new URL('/internal/control-room', request.url))
+        }
+        if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
+          return NextResponse.redirect(new URL('/portal/partner/dashboard', request.url))
+        }
+        return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))
       }
-      if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
+      return supabaseResponse
+    }
+
+    // Protected routes — redirect to login if no session
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const role = (profile?.role ?? 'CUSTOMER') as Role
+
+    if (pathname.startsWith('/internal')) {
+      if (!INTERNAL_ROLES.includes(role)) {
+        if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
+          return NextResponse.redirect(new URL('/portal/partner/dashboard', request.url))
+        }
+        return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))
+      }
+    }
+
+    if (pathname.startsWith('/portal/customer')) {
+      const allowed = INTERNAL_ROLES.includes(role) || role === 'CUSTOMER'
+      if (!allowed) {
         return NextResponse.redirect(new URL('/portal/partner/dashboard', request.url))
       }
-      return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))
     }
-    return supabaseResponse
-  }
 
-  // Protected routes
-  if (!user) {
+    if (pathname.startsWith('/portal/partner')) {
+      const allowed = INTERNAL_ROLES.includes(role) || role === 'PARTNER' || role === 'REFERRAL_PARTNER'
+      if (!allowed) {
+        return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))
+      }
+    }
+
+    return supabaseResponse
+  } catch {
+    // Middleware must not crash — redirect protected routes to login on any error
+    if (
+      pathname.startsWith('/login') ||
+      pathname.startsWith('/signup') ||
+      pathname.startsWith('/forgot-password')
+    ) {
+      return NextResponse.next()
+    }
     return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  const role = (profile?.role ?? 'CUSTOMER') as Role
-
-  if (pathname.startsWith('/internal')) {
-    if (!INTERNAL_ROLES.includes(role)) {
-      if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
-        return NextResponse.redirect(new URL('/portal/partner/dashboard', request.url))
-      }
-      return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))
-    }
-  }
-
-  if (pathname.startsWith('/portal/customer')) {
-    const allowed = INTERNAL_ROLES.includes(role) || role === 'CUSTOMER'
-    if (!allowed) {
-      return NextResponse.redirect(new URL('/portal/partner/dashboard', request.url))
-    }
-  }
-
-  if (pathname.startsWith('/portal/partner')) {
-    const allowed = INTERNAL_ROLES.includes(role) || role === 'PARTNER' || role === 'REFERRAL_PARTNER'
-    if (!allowed) {
-      return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))
-    }
-  }
-
-  return supabaseResponse
 }
 
 export const config = {

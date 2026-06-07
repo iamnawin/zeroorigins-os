@@ -109,6 +109,20 @@ export interface Lead {
   notes?: string
   service_interest?: string
   budget_range?: string
+  phone?: string
+  whatsapp?: string
+  website?: string
+  source_detail?: string
+  preferred_contact_method?: string
+  preferred_call_time?: string
+  last_contacted_at?: string
+  automation_status?: string
+  automation_source?: string
+  n8n_workflow_id?: string
+  external_reference_id?: string
+  ai_summary?: string
+  ai_score?: number
+  qualification_notes?: string
   owner_id?: string
   created_by?: string
   created_at: string
@@ -124,6 +138,18 @@ export interface Partner {
   status: PartnerStatus
   pitch?: string
   notes?: string
+  phone?: string
+  whatsapp?: string
+  website?: string
+  linkedin?: string
+  source_detail?: string
+  automation_status?: string
+  automation_source?: string
+  n8n_workflow_id?: string
+  external_reference_id?: string
+  ai_summary?: string
+  ai_score?: number
+  qualification_notes?: string
   owner_id?: string
   created_by?: string
   organization_id?: string

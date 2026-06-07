@@ -55,7 +55,7 @@ Single migration `supabase/migrations/001_initial_schema.sql` is the source of t
 - **Public forms** (`/request-build`, `/partner-with-us`) — minimal inline pre-submit validation via `src/lib/validation.ts` (`isValidEmail`, `isValidPhoneLike`, `isValidUrl`, `minLength`). Errors shown inline per field; Supabase insert blocked until valid. Also have server-error fallback for failed inserts.
 - **Internal forms** — intentionally lightweight in Phase 1: HTML `required` + Supabase error surfacing via `setError()`. These are used by known team members, not anonymous public traffic.
 - **Future:** Add Zod schema validation when portal workflows (customer/partner dashboards) mature and external user input increases.
-- **Fields not yet in schema:** phone/WhatsApp and website/LinkedIn were requested for public forms but do not exist in the DB. Adding them requires a migration + updating `src/types/index.ts`.
+- **Rule:** A public form field must exist in the DB schema before it can be wired. Never add a form field without the corresponding migration + `src/types/index.ts` update — otherwise the insert silently drops the data.
 
 ### AI features are stubs
 
@@ -110,6 +110,21 @@ List pages default to the **Active** view (excludes closed statuses) with an **A
 
 **Future (Phase 2+):** Hard delete may be added exclusively for `SUPER_ADMIN` role, with a two-step confirmation dialog and an audit log entry before execution. Do not implement without those guardrails.
 
-### Remaining gap
+### Resource Kit
 
-- **Massive code duplication** — 5 nearly identical list pages, create forms, detail pages, and edit pages. A UI bug requires ~20 edits. A shared Resource Kit base layer would fix this: `createResource(table)` factory + `ResourceList`/`ResourceDetail`/`ResourceForm` shared components driven by per-entity config files. Until built, **do not add new entity pages** using the copy-paste pattern.
+Shared primitives for internal list pages live in `src/lib/resource-kit/` and `src/components/resource-kit/`. They handle: page headers, Active/All filter tabs, empty states, and status badges. All 5 entity list pages use them. See `docs/RESOURCE_KIT.md` for usage.
+
+**When adding a new entity:** use the Resource Kit components. Do not copy-paste from an existing list page.
+**What is NOT in the Resource Kit:** detail page layout, form components, Supabase query logic — those stay entity-specific.
+
+### Automation fields on leads and partners
+
+Migration `002_contact_and_automation_fields.sql` adds contact fields (`phone`, `whatsapp`, `website`, `linkedin`) and automation metadata (`automation_status`, `automation_source`, `n8n_workflow_id`, `external_reference_id`, `ai_summary`, `ai_score`) to both tables.
+
+Public forms set `automation_status = 'not_started'` and `automation_source = 'zeroorigins_os_public_form'` on every insert. This is the hook for future n8n workflows — filter `leads` or `partners` where `automation_status = 'not_started'` to find unprocessed submissions.
+
+### Remaining gaps
+
+- Detail pages do not yet show the new contact/automation fields for leads and partners — add them in a Phase 2 edit.
+- Portal pages (`/portal/customer/dashboard`, `/portal/partner/dashboard`) are stubs.
+- All AI helpers (`src/lib/ai/*.ts`): stubs returning `{ success: false }`.

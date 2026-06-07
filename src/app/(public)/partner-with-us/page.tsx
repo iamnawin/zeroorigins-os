@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { isValidEmail, minLength } from '@/lib/validation'
+import { isValidEmail, isValidPhoneLike, isValidUrl, minLength } from '@/lib/validation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,14 +12,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 type FormErrors = Record<string, string>
 
 export default function PartnerWithUsPage() {
-  const [form, setForm] = useState({ name: '', email: '', company: '', type: '', pitch: '' })
+  const [form, setForm] = useState({
+    name: '', email: '', company: '', type: '', pitch: '',
+    phone: '', whatsapp: '', website: '', linkedin: '',
+  })
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [serverError, setServerError] = useState('')
   const supabase = createClient()
 
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(f => ({ ...f, [k]: e.target.value }))
     if (errors[k]) setErrors(prev => { const next = { ...prev }; delete next[k]; return next })
   }
@@ -38,20 +41,26 @@ export default function PartnerWithUsPage() {
     } else if (!minLength(form.pitch, 20)) {
       errs.pitch = 'Please describe the partnership in at least 20 characters'
     }
+    if (form.phone.trim() && !isValidPhoneLike(form.phone)) errs.phone = 'Enter a valid phone number'
+    if (form.whatsapp.trim() && !isValidPhoneLike(form.whatsapp)) errs.whatsapp = 'Enter a valid WhatsApp number'
+    if (form.website.trim() && !isValidUrl(form.website)) errs.website = 'Enter a valid URL (include https://)'
+    if (form.linkedin.trim() && !isValidUrl(form.linkedin)) errs.linkedin = 'Enter a valid LinkedIn URL'
     return errs
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const errs = validate()
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs)
-      return
-    }
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
     setLoading(true)
     setServerError('')
     try {
-      const { error } = await supabase.from('partners').insert({ ...form, status: 'new_application' })
+      const { error } = await supabase.from('partners').insert({
+        ...form,
+        status: 'new_application',
+        automation_status: 'not_started',
+        automation_source: 'zeroorigins_os_public_form',
+      })
       if (error) throw error
       setSubmitted(true)
     } catch {
@@ -98,7 +107,7 @@ export default function PartnerWithUsPage() {
               <Label>Partnership Type *</Label>
               <select
                 value={form.type}
-                onChange={e => { setForm(f => ({ ...f, type: e.target.value })); if (errors.type) setErrors(prev => { const next = { ...prev }; delete next.type; return next }) }}
+                onChange={set('type')}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
               >
                 <option value="">Select type...</option>
@@ -110,6 +119,26 @@ export default function PartnerWithUsPage() {
                 <option value="other">Other</option>
               </select>
               {errors.type && <p className="text-xs text-red-500">{errors.type}</p>}
+            </div>
+            <div className="space-y-1">
+              <Label>Phone</Label>
+              <Input value={form.phone} onChange={set('phone')} placeholder="+91 98765 43210" />
+              {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
+            </div>
+            <div className="space-y-1">
+              <Label>WhatsApp</Label>
+              <Input value={form.whatsapp} onChange={set('whatsapp')} placeholder="+91 98765 43210" />
+              {errors.whatsapp && <p className="text-xs text-red-500">{errors.whatsapp}</p>}
+            </div>
+            <div className="space-y-1">
+              <Label>Website</Label>
+              <Input value={form.website} onChange={set('website')} placeholder="https://yoursite.com" />
+              {errors.website && <p className="text-xs text-red-500">{errors.website}</p>}
+            </div>
+            <div className="space-y-1">
+              <Label>LinkedIn</Label>
+              <Input value={form.linkedin} onChange={set('linkedin')} placeholder="https://linkedin.com/in/yourname" />
+              {errors.linkedin && <p className="text-xs text-red-500">{errors.linkedin}</p>}
             </div>
           </div>
           <div className="space-y-1">
