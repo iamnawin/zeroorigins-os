@@ -52,9 +52,20 @@ narrative
 
 ## Supabase Promotion SQL
 ```sql
-UPDATE profiles 
-SET role = 'FOUNDER', full_name = 'Naveen'
-WHERE email = 'your-email@example.com';
+-- Check profile role
+select id, email, role, full_name, created_at
+from profiles
+order by created_at desc;
+
+-- Promote founder
+update profiles
+set role = 'FOUNDER', full_name = 'Naveen'
+where email = 'your-email@example.com';
+
+-- Set customer for testing
+update profiles
+set role = 'CUSTOMER'
+where email = 'your-email@example.com';
 ```
 
 # Resource Kit and Contact Fields Pushed to Main
