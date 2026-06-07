@@ -156,3 +156,44 @@ export interface Partner {
   created_at: string
   updated_at: string
 }
+
+export interface Customer {
+  id: string
+  name: string
+  email: string
+  company?: string
+  organization_id?: string
+  lead_id?: string
+  profile_id?: string
+  status: 'active' | 'inactive' | 'churned'
+  notes?: string
+  phone?: string
+  website?: string
+  owner_id?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Proposal {
+  id: string
+  title: string
+  content?: string
+  status: ProposalStatus
+  lead_id?: string
+  customer_id?: string
+  project_id?: string
+  amount?: number
+  service_type?: string
+  scope?: string
+  timeline?: string
+  proposal_url?: string
+  internal_notes?: string
+  customer_visible_notes?: string
+  sent_at?: string
+  expires_at?: string
+  owner_id?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}

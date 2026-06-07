@@ -4,6 +4,7 @@ export const TERMINAL_STATUSES = {
   tasks: ['done', 'cancelled'],
   leads: ['archived', 'lost'],
   partners: ['archived', 'rejected'],
+  proposals: ['accepted', 'rejected', 'expired'],
 } as const
 
 export type ResourceType = keyof typeof TERMINAL_STATUSES

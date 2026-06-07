@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { INTERNAL_ROLES, type Role } from '@/types'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Public routes — skip Supabase entirely
@@ -73,9 +73,9 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/internal')) {
       if (!INTERNAL_ROLES.includes(role)) {
         if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
-          return NextResponse.redirect(new URL('/portal/partner/dashboard', request.url))
+          return NextResponse.redirect(new URL('/portal/partner/dashboard?message=unauthorized_internal', request.url))
         }
-        return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))
+        return NextResponse.redirect(new URL('/portal/customer/dashboard?message=unauthorized_internal', request.url))
       }
     }
 

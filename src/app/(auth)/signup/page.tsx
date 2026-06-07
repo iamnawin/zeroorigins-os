@@ -22,18 +22,50 @@ export default function SignupPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    })
-    if (error) {
-      setError(error.message)
+
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } },
+      })
+
+      if (authError) {
+        setError(authError.message)
+        setLoading(false)
+        return
+      }
+
+      if (!user) {
+        setError('Signup failed. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      // After signup, profile is created via trigger. 
+      // We check for profile to be safe, but usually it's CUSTOMER.
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      const role = profile?.role || 'CUSTOMER'
+      let redirectPath = '/portal/customer/dashboard'
+
+      if (['SUPER_ADMIN', 'FOUNDER', 'DIRECTOR', 'STAFF', 'CONTRACTOR'].includes(role)) {
+        redirectPath = '/internal/control-room'
+      } else if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
+        redirectPath = '/portal/partner/dashboard'
+      }
+
+      router.push(redirectPath)
+      router.refresh()
+    } catch (err) {
+      console.error('Signup error:', err)
+      setError('An unexpected error occurred. Please try again.')
       setLoading(false)
-      return
     }
-    router.push('/internal/control-room')
-    router.refresh()
   }
 
   return (

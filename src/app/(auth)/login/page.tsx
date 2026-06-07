@@ -21,14 +21,54 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError(error.message)
+    
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      
+      if (authError) {
+        setError(authError.message)
+        setLoading(false)
+        return
+      }
+
+      if (!user) {
+        setError('Login failed. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      // Fetch user profile to determine role
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Profile fetch error:', profileError)
+        // If profile is missing but user exists, they are likely a CUSTOMER (default)
+        // but we should ideally show a message if we can't find the profile.
+        setError('User profile not found. Please contact support.')
+        setLoading(false)
+        return
+      }
+
+      const role = profile.role
+      let redirectPath = '/portal/customer/dashboard'
+
+      if (['SUPER_ADMIN', 'FOUNDER', 'DIRECTOR', 'STAFF', 'CONTRACTOR'].includes(role)) {
+        redirectPath = '/internal/control-room'
+      } else if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
+        redirectPath = '/portal/partner/dashboard'
+      }
+
+      router.push(redirectPath)
+      router.refresh()
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('An unexpected error occurred. Please try again.')
       setLoading(false)
-      return
     }
-    router.push('/internal/control-room')
-    router.refresh()
   }
 
   return (
