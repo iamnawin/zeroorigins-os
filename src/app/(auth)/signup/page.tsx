@@ -20,6 +20,8 @@ function SignupForm() {
   const [fullName, setFullName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  
   const router = useRouter()
   const supabase = createClient()
 
@@ -39,7 +41,10 @@ function SignupForm() {
       const { data: { user }, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName } },
+        options: { 
+          data: { full_name: fullName },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       })
 
       if (authError) {
@@ -54,7 +59,17 @@ function SignupForm() {
         return
       }
 
-      // Fetch profile to see if it's already promoted or needs bootstrap
+      // Check if email confirmation is required (Supabase returns a user but potentially no session)
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        // Most cases where confirmation is enabled
+        setSuccess(true)
+        setLoading(false)
+        return
+      }
+
+      // If we reach here, user is auto-confirmed or already logged in
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -63,7 +78,6 @@ function SignupForm() {
 
       const role = profile?.role || 'CUSTOMER'
       
-      // Special logic for first admin setup
       const { count: founderCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
@@ -88,6 +102,30 @@ function SignupForm() {
       setError('An unexpected error occurred. Please try again.')
       setLoading(false)
     }
+  }
+
+  if (success) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col items-center gap-2 mb-2 text-center">
+          <h1 className="text-2xl font-bold text-zo-chrome">Check your email</h1>
+          <p className="text-sm text-zo-muted italic font-medium">Verification link sent to {email}</p>
+        </div>
+
+        <Card className="border-border bg-card shadow-2xl">
+          <CardContent className="pt-8 text-center space-y-6">
+            <div className="p-3 bg-zo-purple/5 border border-zo-purple/20 rounded-lg">
+              <p className="text-sm text-zo-muted leading-relaxed">
+                Please click the link in your inbox to verify your ZeroOrigins account.
+              </p>
+            </div>
+            <Button className="w-full font-bold h-11">
+              <Link href="/login">Back to Login</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

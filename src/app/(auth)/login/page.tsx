@@ -16,9 +16,14 @@ function LoginForm() {
   const intent = searchParams.get('intent')
   const initialError = searchParams.get('error')
   
+  const errorMessages: Record<string, string> = {
+    invalid_domain: 'Internal workspace requires a @zeroorigins.in email address.',
+    auth_callback_failed: 'Authentication handshake failed. Please try signing in again or contact support.',
+  }
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(initialError === 'invalid_domain' ? 'Internal workspace requires a @zeroorigins.in email address.' : '')
+  const [error, setError] = useState(initialError ? errorMessages[initialError] || '' : '')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()

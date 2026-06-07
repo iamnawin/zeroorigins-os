@@ -31,6 +31,11 @@ zeroorigins-os
 facts
 
 narrative
+## Auth Callback & Email Confirmation
+- **Callback Route**: Added `src/app/auth/callback/route.ts` to handle Supabase auth handshakes.
+- ** handshaking**: Clicking the "Confirm email address" link now redirects to this route, which exchanges the code for a session and sets cookies before redirecting to the dashboard.
+- **Signup Flow**: Updated signup to show a "Check your email" success screen instead of trying to redirect immediately to protected routes.
+
 # ZeroOrigins OS - Internal Domain & Gateway Refinement (2026-06-08)
 
 ## Internal Email Enforcement
