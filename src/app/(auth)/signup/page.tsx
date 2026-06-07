@@ -1,16 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import Link from 'next/link'
 import { INTERNAL_ROLES } from '@/types'
+import { isZeroOriginsEmail } from '@/lib/supabase/auth-helpers'
 
-export default function SignupPage() {
+function SignupForm() {
+  const searchParams = useSearchParams()
+  const intent = searchParams.get('intent')
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -23,6 +27,13 @@ export default function SignupPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    // 1. Domain Validation for Internal Intent
+    if (intent === 'internal' && !isZeroOriginsEmail(email)) {
+      setError('Internal accounts require a @zeroorigins.in email address.')
+      setLoading(false)
+      return
+    }
 
     try {
       const { data: { user }, error: authError } = await supabase.auth.signUp({
@@ -43,8 +54,7 @@ export default function SignupPage() {
         return
       }
 
-      // After signup, profile is created via trigger. 
-      // We check for profile to be safe, but usually it's CUSTOMER.
+      // Fetch profile to see if it's already promoted or needs bootstrap
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -52,8 +62,19 @@ export default function SignupPage() {
         .single()
 
       const role = profile?.role || 'CUSTOMER'
-      let redirectPath = '/portal/customer/dashboard'
+      
+      // Special logic for first admin setup
+      const { count: founderCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .in('role', ['FOUNDER', 'SUPER_ADMIN'])
 
+      if (intent === 'internal' && (founderCount === 0 || founderCount === null)) {
+        router.push('/setup-founder')
+        return
+      }
+
+      let redirectPath = '/portal/customer/dashboard'
       if (INTERNAL_ROLES.includes(role)) {
         redirectPath = '/internal/control-room'
       } else if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
@@ -72,7 +93,9 @@ export default function SignupPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col items-center gap-2 mb-2 text-center">
-        <h1 className="text-2xl font-bold text-zo-chrome">Create Account</h1>
+        <h1 className="text-2xl font-bold text-zo-chrome">
+          {intent === 'internal' ? 'Internal Signup' : 'Create Account'}
+        </h1>
         <p className="text-sm text-zo-muted">Join the ZeroOrigins ecosystem</p>
       </div>
 
@@ -80,7 +103,7 @@ export default function SignupPage() {
         <form onSubmit={handleSignup}>
           <CardContent className="space-y-4 pt-6">
             {error && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-medium">
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-medium leading-relaxed">
                 {error}
               </div>
             )}
@@ -90,7 +113,7 @@ export default function SignupPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Email</Label>
-              <Input id="email" type="email" placeholder="name@company.com" value={email} onChange={e => setEmail(e.target.value)} required />
+              <Input id="email" type="email" placeholder={intent === 'internal' ? "name@zeroorigins.in" : "name@company.com"} value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Password</Label>
@@ -101,7 +124,7 @@ export default function SignupPage() {
             <Button type="submit" className="w-full font-bold h-11" disabled={loading}>
               {loading ? 'Creating account...' : 'Create Account'}
             </Button>
-            <Link href="/login" className="text-sm text-zo-muted hover:text-zo-purple transition-colors">
+            <Link href={`/login${intent ? `?intent=${intent}` : ''}`} className="text-sm text-zo-muted hover:text-zo-purple transition-colors">
               Already have an account? Sign in
             </Link>
           </CardFooter>
@@ -114,5 +137,17 @@ export default function SignupPage() {
         </Link>
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center p-12">
+        <div className="w-6 h-6 border-2 border-zo-purple border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <SignupForm />
+    </Suspense>
   )
 }

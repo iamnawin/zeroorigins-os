@@ -6,7 +6,7 @@ import { INTERNAL_ROLES } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { 
   FileText, FolderKanban, LifeBuoy, 
-  MessageSquare, Plus, ShieldAlert, LogOut, UserCircle 
+  MessageSquare, Plus, ShieldAlert, LogOut, UserCircle, Sparkles
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 
@@ -17,6 +17,7 @@ interface PageProps {
 export default async function CustomerDashboardPage({ searchParams }: PageProps) {
   const params = await searchParams
   const isUnauthorized = params.message === 'unauthorized_internal'
+  const isPendingApproval = params.message === 'pending_approval'
   
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -58,14 +59,29 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
         </CardContent>
       </Card>
 
+      {/* Access Messages */}
       {isUnauthorized && (
         <Card className="bg-destructive/10 border-destructive/20 border shadow-lg">
           <CardContent className="p-4 flex items-start gap-4">
             <ShieldAlert className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
             <div className="space-y-1">
-              <p className="text-sm text-destructive font-bold">Access Restricted</p>
+              <p className="text-sm text-destructive font-bold uppercase tracking-tight">Access Restricted</p>
               <p className="text-xs text-zo-muted leading-relaxed">
-                You are signed in as <span className="font-bold text-foreground">CUSTOMER</span>. The internal Control Room requires Founder, Director, or Staff level access.
+                Internal workspace requires a <span className="text-zo-chrome font-bold">@zeroorigins.in</span> email address and an authorized role.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isPendingApproval && (
+        <Card className="bg-zo-purple/5 border-zo-purple/20 border shadow-lg">
+          <CardContent className="p-4 flex items-start gap-4">
+            <Sparkles className="w-5 h-5 text-zo-purple mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm text-zo-purple-2 font-bold uppercase tracking-tight">Email Recognized</p>
+              <p className="text-xs text-zo-muted leading-relaxed">
+                Your <span className="text-zo-chrome font-bold">@zeroorigins.in</span> email is recognized, but this account has not been approved for internal workspace access yet.
               </p>
             </div>
           </CardContent>
@@ -86,7 +102,7 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
                   <Plus className="w-4 h-4 mr-2" /> Request a Build
                 </Link>
               </Button>
-              <Button variant="secondary" className="w-full text-xs h-10">
+              <Button variant="secondary" className="w-full text-xs h-10 border-zo-border-soft">
                 <Link href="/partner-with-us">Partner with Us</Link>
               </Button>
             </CardContent>
@@ -98,7 +114,7 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
                 <CardTitle className="text-xs text-zo-purple-2 uppercase tracking-widest">First Setup</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-center">
-                <p className="text-[10px] text-zo-muted">No Founder found. If you are the owner, initialize the system.</p>
+                <p className="text-[10px] text-zo-muted leading-relaxed">No Founder found. If you are the owner, initialize the system.</p>
                 <Button variant="secondary" className="w-full text-xs h-9 border-zo-purple/30 text-zo-purple-2 hover:bg-zo-purple/10 font-bold">
                   <Link href="/setup-founder">Set up Founder Account</Link>
                 </Button>
@@ -113,7 +129,7 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between mb-2">
                 <FolderKanban className="w-4 h-4 text-zo-purple-2" />
-                <Badge variant="outline" className="text-[8px] h-4 border-zo-purple/30 text-zo-purple-2">Soon</Badge>
+                <Badge variant="outline" className="text-[8px] h-4 border-zo-purple/30 text-zo-purple-2 uppercase font-bold tracking-tighter">Soon</Badge>
               </div>
               <CardTitle className="text-sm font-bold text-zo-chrome">Active Projects</CardTitle>
               <CardDescription className="text-[10px] text-zo-muted">Track your builds and milestones.</CardDescription>
@@ -127,7 +143,7 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between mb-2">
                 <FileText className="w-4 h-4 text-zo-purple-2" />
-                <Badge variant="outline" className="text-[8px] h-4 border-zo-purple/30 text-zo-purple-2">Soon</Badge>
+                <Badge variant="outline" className="text-[8px] h-4 border-zo-purple/30 text-zo-purple-2 uppercase font-bold tracking-tighter">Soon</Badge>
               </div>
               <CardTitle className="text-sm font-bold text-zo-chrome">Proposals</CardTitle>
               <CardDescription className="text-[10px] text-zo-muted">Review and approve project scopes.</CardDescription>
@@ -141,7 +157,7 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between mb-2">
                 <MessageSquare className="w-4 h-4 text-zo-purple-2" />
-                <Badge variant="outline" className="text-[8px] h-4 border-zo-purple/30 text-zo-purple-2">Soon</Badge>
+                <Badge variant="outline" className="text-[8px] h-4 border-zo-purple/30 text-zo-purple-2 uppercase font-bold tracking-tighter">Soon</Badge>
               </div>
               <CardTitle className="text-sm font-bold text-zo-chrome">Support Hub</CardTitle>
               <CardDescription className="text-[10px] text-zo-muted">Direct channel for issues and feedback.</CardDescription>
@@ -155,7 +171,7 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between mb-2">
                 <LifeBuoy className="w-4 h-4 text-zo-purple-2" />
-                <Badge variant="outline" className="text-[8px] h-4 border-zo-purple/30 text-zo-purple-2">Soon</Badge>
+                <Badge variant="outline" className="text-[8px] h-4 border-zo-purple/30 text-zo-purple-2 uppercase font-bold tracking-tighter">Soon</Badge>
               </div>
               <CardTitle className="text-sm font-bold text-zo-chrome">Resources</CardTitle>
               <CardDescription className="text-[10px] text-zo-muted">Knowledge base for your OS.</CardDescription>

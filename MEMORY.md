@@ -31,6 +31,24 @@ zeroorigins-os
 facts
 
 narrative
+# ZeroOrigins OS - Internal Domain & Gateway Refinement (2026-06-08)
+
+## Internal Email Enforcement
+- **Domain Lock**: Access to the Internal Workspace and Founder Setup now strictly requires a `@zeroorigins.in` email address.
+- **Double Validation**: Access requires both a valid domain AND an approved internal role. 
+- **Security Logic**: 
+  - `isZeroOriginsEmail(email)` helper implemented in `src/lib/supabase/auth-helpers.ts`.
+  - Enforced in Login, Signup, Setup, and Proxy (Middleware).
+
+## Gateway Behavior
+- **Permanent Gateway**: Root (`/`) now always serves as the gateway. No more auto-redirects for logged-in users.
+- **Account Identity Card**: Logged-in users see their status and a direct link to their dashboard on the home page.
+- **Intent-Based Routing**: Login and Signup buttons now carry an `intent` (internal, customer, partner) to tailor the experience.
+
+## Access Denied Flow
+- **Invalid Domain**: Users without `@zeroorigins.in` email trying to access internal areas are redirected to their portal with an "Access Restricted" message.
+- **Pending Approval**: Users with the correct domain but a `CUSTOMER` role are shown a "Pending Approval" status message in their portal.
+
 # ZeroOrigins OS - Auth Gateway & AI Workspace (2026-06-08)
 
 ## Auth Gateway Redesign

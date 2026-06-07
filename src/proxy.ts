@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { INTERNAL_ROLES, type Role } from '@/types'
 
+const INTERNAL_EMAIL_DOMAIN = "@zeroorigins.in";
+
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
@@ -10,58 +12,56 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  let supabaseResponse = NextResponse.next({ request })
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
-  try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-            supabaseResponse = NextResponse.next({ request })
-            cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set(name, value, options)
-            )
-          },
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
         },
-      }
-    )
-    const { data: { user } } = await supabase.auth.getUser()
-
-    // Auth routes
-    if (
-      pathname.startsWith('/login') ||
-      pathname.startsWith('/signup') ||
-      pathname.startsWith('/forgot-password')
-    ) {
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-        const role = profile?.role as Role
-        if (INTERNAL_ROLES.includes(role)) {
-          return NextResponse.redirect(new URL('/internal/control-room', request.url))
-        }
-        if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
-          return NextResponse.redirect(new URL('/portal/partner/dashboard', request.url))
-        }
-        return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))
-      }
-      return supabaseResponse
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
     }
+  )
 
-    // Protected routes — redirect to login if no session
-    if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
+  const { data: { user } } = await supabase.auth.getUser()
 
+  // Root path handling — always allow gateway
+  if (pathname === '/') {
+    return response
+  }
+
+  // Auth routes handling
+  if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/forgot-password')) {
+    return response
+  }
+
+  // Protected routes handling
+  if (!user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // 1. Internal Route Protection (/internal/*)
+  if (pathname.startsWith('/internal')) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
@@ -69,42 +69,53 @@ export async function proxy(request: NextRequest) {
       .single()
 
     const role = (profile?.role ?? 'CUSTOMER') as Role
+    const email = user.email?.toLowerCase() || ""
+    const hasInternalDomain = email.endsWith(INTERNAL_EMAIL_DOMAIN)
+    const hasInternalRole = INTERNAL_ROLES.includes(role)
 
-    if (pathname.startsWith('/internal')) {
-      if (!INTERNAL_ROLES.includes(role)) {
-        if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
-          return NextResponse.redirect(new URL('/portal/partner/dashboard?message=unauthorized_internal', request.url))
-        }
-        return NextResponse.redirect(new URL('/portal/customer/dashboard?message=unauthorized_internal', request.url))
+    // A. Invalid Domain
+    if (!hasInternalDomain) {
+      if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
+        return NextResponse.redirect(new URL('/portal/partner/dashboard?message=unauthorized_internal', request.url))
       }
+      return NextResponse.redirect(new URL('/portal/customer/dashboard?message=unauthorized_internal', request.url))
     }
 
-    if (pathname.startsWith('/portal/customer')) {
-      const allowed = INTERNAL_ROLES.includes(role) || role === 'CUSTOMER'
-      if (!allowed) {
-        return NextResponse.redirect(new URL('/portal/partner/dashboard', request.url))
-      }
+    // B. Correct Domain but No Internal Role
+    if (!hasInternalRole) {
+      return NextResponse.redirect(new URL('/portal/customer/dashboard?message=pending_approval', request.url))
     }
-
-    if (pathname.startsWith('/portal/partner')) {
-      const allowed = INTERNAL_ROLES.includes(role) || role === 'PARTNER' || role === 'REFERRAL_PARTNER'
-      if (!allowed) {
-        return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))
-      }
-    }
-
-    return supabaseResponse
-  } catch {
-    // Middleware must not crash — redirect protected routes to login on any error
-    if (
-      pathname.startsWith('/login') ||
-      pathname.startsWith('/signup') ||
-      pathname.startsWith('/forgot-password')
-    ) {
-      return NextResponse.next()
-    }
-    return NextResponse.redirect(new URL('/login', request.url))
   }
+
+  // 2. Customer Portal Protection
+  if (pathname.startsWith('/portal/customer')) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    const role = (profile?.role ?? 'CUSTOMER') as Role
+    const allowed = INTERNAL_ROLES.includes(role) || role === 'CUSTOMER'
+    if (!allowed) {
+      return NextResponse.redirect(new URL('/portal/partner/dashboard', request.url))
+    }
+  }
+
+  // 3. Partner Portal Protection
+  if (pathname.startsWith('/portal/partner')) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    const role = (profile?.role ?? 'CUSTOMER') as Role
+    const allowed = INTERNAL_ROLES.includes(role) || role === 'PARTNER' || role === 'REFERRAL_PARTNER'
+    if (!allowed) {
+      return NextResponse.redirect(new URL('/portal/customer/dashboard', request.url))
+    }
+  }
+
+  return response
 }
 
 export const config = {

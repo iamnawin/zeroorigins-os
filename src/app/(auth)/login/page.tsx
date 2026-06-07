@@ -9,13 +9,16 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import Link from 'next/link'
 import { INTERNAL_ROLES } from '@/types'
+import { isZeroOriginsEmail } from '@/lib/supabase/auth-helpers'
 
 function LoginForm() {
   const searchParams = useSearchParams()
   const intent = searchParams.get('intent')
+  const initialError = searchParams.get('error')
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(initialError === 'invalid_domain' ? 'Internal workspace requires a @zeroorigins.in email address.' : '')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -32,6 +35,13 @@ function LoginForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    // 1. Domain Validation for Internal Intent
+    if (intent === 'internal' && !isZeroOriginsEmail(email)) {
+      setError('Internal workspace requires a @zeroorigins.in email address.')
+      setLoading(false)
+      return
+    }
     
     try {
       const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({ email, password })
@@ -71,7 +81,7 @@ function LoginForm() {
         redirectPath = '/portal/partner/dashboard'
       }
 
-      // If user intended internal but is CUSTOMER
+      // If user intended internal but domain is right BUT role is not internal
       if (intent === 'internal' && !INTERNAL_ROLES.includes(role)) {
         redirectPath = '/portal/customer/dashboard?message=unauthorized_internal'
       }
@@ -96,13 +106,13 @@ function LoginForm() {
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4 pt-6">
             {error && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-medium">
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-medium leading-relaxed">
                 {error}
               </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Email</Label>
-              <Input id="email" type="email" placeholder="name@company.com" value={email} onChange={e => setEmail(e.target.value)} required />
+              <Input id="email" type="email" placeholder="name@zeroorigins.in" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Password</Label>
@@ -114,7 +124,7 @@ function LoginForm() {
               {loading ? 'Authenticating...' : 'Sign In'}
             </Button>
             <div className="flex gap-6 text-xs text-zo-muted mt-2">
-              <Link href="/signup" className="hover:text-zo-purple transition-colors">Create account</Link>
+              <Link href={`/signup${intent ? `?intent=${intent}` : ''}`} className="hover:text-zo-purple transition-colors">Create account</Link>
               <Link href="/forgot-password" title="Forgot password?" className="hover:text-zo-purple transition-colors">Forgot password?</Link>
             </div>
           </CardFooter>

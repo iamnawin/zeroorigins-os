@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle, ShieldCheck } from 'lucide-react'
 import Image from 'next/image'
 import { promoteToFounder } from '@/lib/actions/auth'
+import { isZeroOriginsEmail } from '@/lib/supabase/auth-helpers'
 
 import { type User } from '@supabase/supabase-js'
 import { type Profile } from '@/types'
@@ -19,6 +20,7 @@ export default function SetupFounderPage() {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [canBootstrap, setCanBootstrap] = useState(false)
+  const [invalidDomain, setInvalidDomain] = useState(false)
   
   const supabase = createClient()
   const router = useRouter()
@@ -28,12 +30,19 @@ export default function SetupFounderPage() {
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser()
         if (!authUser) {
-          router.push('/login')
+          router.push('/login?intent=internal')
           return
         }
         setUser(authUser)
 
-        // Check if any Founder or Super Admin exists
+        // 1. Domain Check
+        if (!isZeroOriginsEmail(authUser.email)) {
+          setInvalidDomain(true)
+          setLoading(false)
+          return
+        }
+
+        // 2. Check if any Founder or Super Admin exists
         const { count, error: countError } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
@@ -47,7 +56,7 @@ export default function SetupFounderPage() {
           setCanBootstrap(true)
         }
 
-        // Get current profile
+        // 3. Get current profile
         const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
@@ -67,7 +76,7 @@ export default function SetupFounderPage() {
   }, [supabase, router])
 
   async function handlePromote() {
-    if (!user || !canBootstrap) return
+    if (!user || !canBootstrap || invalidDomain) return
     
     setPromoting(true)
     setError('')
@@ -88,7 +97,10 @@ export default function SetupFounderPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zo-black flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-zo-purple" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-zo-purple" />
+          <p className="text-[10px] uppercase tracking-widest text-zo-muted animate-pulse">Initializing System...</p>
+        </div>
       </div>
     )
   }
@@ -118,9 +130,24 @@ export default function SetupFounderPage() {
               </div>
             </div>
 
-            {canBootstrap ? (
+            {invalidDomain ? (
               <div className="space-y-4">
-                <p className="text-xs text-zo-muted text-center leading-relaxed">
+                <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-xs text-destructive font-bold uppercase tracking-widest">Invalid Domain</p>
+                    <p className="text-xs text-zo-muted leading-relaxed">
+                      Founder setup requires an official <span className="text-zo-chrome font-bold">@zeroorigins.in</span> email address.
+                    </p>
+                  </div>
+                </div>
+                <Button variant="secondary" className="w-full h-11 border-zo-border-soft" onClick={() => router.push('/')}>
+                  Return to Gateway
+                </Button>
+              </div>
+            ) : canBootstrap ? (
+              <div className="space-y-4">
+                <p className="text-xs text-zo-muted text-center leading-relaxed italic">
                   No Founder account found in the system. 
                   Promote this account to <span className="text-zo-purple-2 font-bold uppercase">FOUNDER</span> to unlock the internal workspace.
                 </p>
@@ -144,13 +171,16 @@ export default function SetupFounderPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                  <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
-                  <p className="text-xs text-destructive font-medium">
-                    A Founder or Super Admin already exists. Manual bootstrap is disabled.
-                  </p>
+                <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <ShieldCheck className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-xs text-destructive font-bold uppercase tracking-widest">Bootstrap Locked</p>
+                    <p className="text-xs text-zo-muted leading-relaxed">
+                      A Founder or Super Admin already exists. Manual bootstrap is disabled for security.
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-zo-muted text-center italic">
+                <p className="text-xs text-zo-muted text-center italic">
                   Please contact the existing administrator to update your role.
                 </p>
                 <Button variant="secondary" className="w-full h-11 border-zo-border-soft" onClick={() => router.push('/')}>
@@ -160,7 +190,7 @@ export default function SetupFounderPage() {
             )}
 
             {error && (
-              <p className="text-xs text-destructive text-center bg-destructive/5 p-3 rounded border border-destructive/10">
+              <p className="text-xs text-destructive text-center bg-destructive/5 p-3 rounded border border-destructive/10 font-medium">
                 Error: {error}
               </p>
             )}

@@ -61,12 +61,25 @@ Single migration `supabase/migrations/001_initial_schema.sql` is the source of t
 
 `src/lib/ai/*.ts` (requirement summarizer, follow-up/proposal/brief generators, partner evaluator) are **placeholders** that return `{ success: false, message: 'AI generation is not configured yet...' }`. Implement these when wiring an LLM provider; don't assume they work.
 
+### Internal access rules
+
+- Internal workspace (`/internal/*`) and Founder Setup (`/setup-founder`) require BOTH:
+  1. An official email ending with `@zeroorigins.in`.
+  2. An approved internal role (`SUPER_ADMIN`, `FOUNDER`, `DIRECTOR`, `STAFF`, `CONTRACTOR`).
+- Access is enforced at the network level via `src/proxy.ts` (edge middleware) and within form logic.
+- Users with `@zeroorigins.in` email but without an internal role see a "Pending Approval" message.
+
+### Gateway behavior
+
+- The root page `/` is a permanent gateway and never auto-redirects. It displays paths for Internal Workspace, Customer Portal, and Partner Portal.
+- Authenticated users see an "Account Identity" card on the root page with a direct link to their dashboard.
+
 ### UI conventions
 
-- shadcn/ui-style primitives in `src/components/ui/`, built on `@base-ui/react` (not Radix) and `class-variance-authority`. Use the `cn()` helper from `src/lib/utils.ts`.
-- Tailwind v4 (CSS-first config in `src/app/globals.css`, no `tailwind.config.js`). Dark theme is the default `:root`.
 - Brand tokens: `zo-purple` (`#8b5cf6`, primary accent), `zo-purple-2`, `zo-chrome` (headings), `zo-silver`. Use these for brand styling (e.g. `text-zo-chrome`, `text-zo-purple`) alongside standard semantic tokens (`bg-card`, `border-border`, `text-muted-foreground`).
-- Path alias `@/*` → `src/*`.
+- Tailwind v4 (CSS-first config in `src/app/globals.css`).
+- Selection styling: `::selection` uses `zo-purple/30` for a branded, non-browser-default look.
+- Forms support `intent` query parameters (`internal`, `customer`, `partner`) for tailored messaging.
 
 ### Environment
 
