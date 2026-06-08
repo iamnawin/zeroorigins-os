@@ -47,6 +47,7 @@ Stack: **Next.js 16 (App Router) + React 19 + Supabase (Postgres, Auth, RLS) + T
 | Partners | ✅ | ✅ | ✅ | ✅ | + contact/automation fields |
 | AI Workspace | ✅ | ✅ | ✅ | ✅ | manual-first, seeded |
 | Control Room | ✅ | — | — | — | real dashboard |
+| **Deals** | ❌ | ❌ | ❌ | ❌ | new entity — table not yet created |
 | **Proposals** | 🟡 placeholder | ❌ | ❌ | ❌ | table exists (FKs ready) |
 | **Customers** | 🟡 placeholder | ❌ | ❌ | ❌ | table exists (FKs ready) |
 | Assets / Content Studio / Finance / Knowledge / Settings | 🟡 placeholder | — | — | — | "Coming Soon" pages |
@@ -64,7 +65,9 @@ The Lead → Proposal → Customer → Project chain is **mostly wired in `001_i
 - `proposals` extended (003): `service_type, scope, timeline, proposal_url, internal_notes, sent_at, expires_at`.
 - `customers` extended (003): `phone, website`.
 
-**Known gap:** `projects` has **no `customer_id`** — a project can only reach a customer indirectly via a proposal. A migration is needed to link projects → customers directly.
+**Known gaps (need a migration):**
+- `projects` has **no `customer_id`** — a project can only reach a customer indirectly via a proposal. Add a direct link.
+- There is **no `deals` table** — the Deal/Opportunity stage is new. Add `deals` + a `deal_stage` enum, and add `proposals.deal_id` so proposals attach to a deal.
 
 Relevant status enums:
 - `lead_status`: new → contacted → discovery_scheduled → discovery_done → proposal_needed → proposal_sent → negotiation → **won** / lost / on_hold / archived
@@ -73,19 +76,31 @@ Relevant status enums:
 
 ---
 
-## 5. In progress — Lead → Proposal → Customer → Project flow
+## 5. In progress — Lead → Deal → Proposal → Customer → Project flow
 
-**Scope decision (LOCKED 2026-06-08):** *Full modules + conversion.* Build Proposals and Customers as complete Resource Kit modules (list/detail/new/edit), replacing the placeholders, **and** wire the convert actions across the whole chain.
+**Canonical chain (LOCKED 2026-06-08):**
+`Lead Captured → Qualified Lead → Create Deal → Create Proposal → Proposal Accepted → Convert to Customer → Create Project`
+
+**Scope decision (LOCKED 2026-06-08):** *Full modules + conversion.* Build **Deals**, **Proposals**, and **Customers** as complete Resource Kit modules (list/detail/new/edit), replacing the placeholders, **and** wire the convert actions across the whole chain.
+
+**Conversion is manual + guided (LOCKED):** no silent cascades. Each step is an explicit button that pre-fills from the parent record; the user reviews and saves. The system *assists* with smart prompts/validation:
+- "This lead is qualified. Create Deal?"
+- "Proposal accepted. Convert this account to customer?"
+- "Missing billing details before customer conversion."
+- "Customer already exists. Link instead of creating duplicate." (dedupe by email)
+
+**Deals — lightweight MVP fields:** `name`, `lead_id`, `stage`, `estimated_value`, `expected_close_date`, `owner_id`, `next_step`, `notes`, linked proposal (`proposals.deal_id`).
 
 ### Open decisions (still being grilled — fill in as resolved)
 | # | Decision | Status | Recommendation |
 |---|----------|--------|----------------|
 | 1 | Scope | ✅ Full modules + conversion | — |
-| 2 | Conversion mechanism: manual buttons vs auto-cascade | ⏳ open | Manual "Convert" buttons with smart next-action hints (no silent cascades) |
+| 2 | Conversion mechanism | ✅ **Manual buttons + smart validation/hints** (no silent cascades; warn on missing data; dedupe by email; suggest next action) | — |
+| 2b | Deal/Opportunity entity | ✅ **Add a lightweight `deals` table** between qualified lead and proposal | — |
 | 3 | Schema: add `projects.customer_id` (+ `lead_id`?) | ⏳ open | Yes — add `projects.customer_id`; skip `lead_id` on projects |
-| 4 | Proposal entry point | ⏳ open | "Create Proposal" from lead detail (prefilled) **and** standalone `/new` |
-| 5 | Customer creation source + dedupe | ⏳ open | From lead (carry `lead_id`); dedupe by email |
-| 6 | Status automation on convert | ⏳ open | Convert→Customer sets lead `won`; proposal `accepted` stays manual |
+| 4 | Proposal entry point | ⏳ open | "Create Proposal" from **deal** detail (prefilled) **and** standalone `/new` |
+| 5 | Customer creation source + dedupe | ⏳ open | From lead/deal (carry `lead_id`); dedupe by email |
+| 6 | Status automation on convert | ⏳ open | All conversions manual; convert→Customer sets lead `won`; proposal `accepted` manual |
 | 7 | Portal exposure of proposals/customers | ⏳ open | Defer — internal-only now (portals are stubs) |
 | 8 | AI proposal generation | ⏳ open | Keep `src/lib/ai/*` stub; manual content for now |
 
@@ -95,14 +110,22 @@ Relevant status enums:
 
 Sequenced so each phase builds + lints green before the next:
 
-- **Phase A — Schema:** migration `004_pipeline_links.sql` → add `projects.customer_id uuid references customers(id)` (+ index). Update `src/types/index.ts` `Project`.
-- **Phase B — Proposals module:** `ProposalForm` + routes `/internal/proposals`, `/new`, `/[id]`, `/[id]/edit` using Resource Kit. Replace placeholder.
-- **Phase C — Customers module:** `CustomerForm` + same route set using Resource Kit. Replace placeholder.
-- **Phase D — Conversion actions:**
-  - Lead detail → **Create Proposal** (prefill `lead_id`, name→title) + **Convert to Customer** (creates customer w/ `lead_id`, sets lead `won`).
-  - Proposal detail → **Mark Accepted** + hint to convert lead.
-  - Customer detail → **Create Project** (creates project w/ `customer_id`).
-- **Phase E — Surface in Control Room:** make the Proposals/Customers cards link to real modules; add pipeline counts.
+- **Phase A — Schema:** ✅ DONE — migration `005_deals_and_pipeline_links.sql` →
+  - new enum `deal_stage` + `deals` table (fields in §5)
+  - `proposals.deal_id uuid references deals(id)`
+  - `projects.customer_id uuid references customers(id)`
+  - indexes on the new FKs
+  - Update `src/types/index.ts` (`Deal`, `DEAL_STAGES`, `Project.customer_id`, `Proposal.deal_id`).
+- **Phase B — Deals module:** `DealForm` + routes `/internal/deals`, `/new`, `/[id]`, `/[id]/edit` (Resource Kit). Add sidebar item.
+- **Phase C — Proposals module:** `ProposalForm` + routes `/internal/proposals`, `/new`, `/[id]`, `/[id]/edit` (Resource Kit). Replace placeholder.
+- **Phase D — Customers module:** `CustomerForm` + same route set (Resource Kit). Replace placeholder.
+- **Phase E — Conversion actions (manual + guided):**
+  - Lead detail → **Qualify Lead** (status) + **Create Deal** (prefill from lead; prompt shown when qualified).
+  - Deal detail → **Create Proposal** (prefill `deal_id`/`lead_id`).
+  - Proposal detail → **Mark Accepted** (+ hint to convert).
+  - Lead/Deal → **Convert to Customer** (creates customer w/ `lead_id`, sets lead `won`; dedupe by email → offer link instead).
+  - Customer detail → **Create Project** (sets `projects.customer_id`).
+- **Phase F — Control Room:** Deals/Proposals/Customers cards link to real modules; add pipeline counts.
 
 Out of scope (per standing rules): GitHub sync, n8n, AI automation, payments/commission, hard delete, full customer/partner portals.
 

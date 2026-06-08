@@ -18,33 +18,45 @@
 
 ---
 
-## 🔜 Priority 1 — Lead → Proposal → Customer → Project flow
+## 🔜 Priority 1 — Lead → Deal → Proposal → Customer → Project flow
 
 **Scope:** Full modules + conversion (decided 2026-06-08).
+**Chain:** Lead Captured → Qualified Lead → Create Deal → Create Proposal → Proposal Accepted → Convert to Customer → Create Project.
+**Conversion:** manual + guided buttons only — no silent cascades; prefill from parent; dedupe by email.
 
-### Phase A — Schema
-- [ ] `supabase/migrations/004_pipeline_links.sql`: add `projects.customer_id` (+ index)
-- [ ] Update `Project` interface in `src/types/index.ts`
+### Phase A — Schema ✅ (`supabase/migrations/005_deals_and_pipeline_links.sql`)
+- [x] New enum `deal_stage` + `deals` table (name, lead_id, stage, estimated_value, expected_close_date, owner_id, next_step, notes)
+- [x] `proposals.deal_id` → `deals(id)`
+- [x] `projects.customer_id` → `customers(id)`
+- [x] Indexes on new FKs; RLS `is_internal_user()` for `deals`; `set_updated_at` trigger
+- [x] Update `src/types/index.ts` (`Deal`, `DEAL_STAGES`, `Proposal.deal_id`, `Project.customer_id`)
+- [ ] **Apply migration to remote DB** (manual — project not MCP-accessible)
 
-### Phase B — Proposals module
+### Phase B — Deals module
+- [ ] `src/components/forms/DealForm.tsx`
+- [ ] `/internal/deals` (list, Resource Kit), `/new`, `/[id]`, `/[id]/edit`
+- [ ] Sidebar item: Deals
+
+### Phase C — Proposals module
 - [ ] `src/components/forms/ProposalForm.tsx`
 - [ ] `/internal/proposals` (list, Resource Kit) — replace placeholder
 - [ ] `/internal/proposals/new`, `/[id]`, `/[id]/edit`
 
-### Phase C — Customers module
+### Phase D — Customers module
 - [ ] `src/components/forms/CustomerForm.tsx`
 - [ ] `/internal/customers` (list, Resource Kit) — replace placeholder
 - [ ] `/internal/customers/new`, `/[id]`, `/[id]/edit`
 
-### Phase D — Conversion actions
-- [ ] Lead detail: **Create Proposal** (prefill `lead_id`)
-- [ ] Lead detail: **Convert to Customer** (carry `lead_id`, set lead `won`, dedupe by email)
+### Phase E — Conversion actions (manual + guided)
+- [ ] Lead detail: **Qualify Lead** + **Create Deal** (prefill from lead; prompt when qualified)
+- [ ] Deal detail: **Create Proposal** (prefill `deal_id`/`lead_id`)
 - [ ] Proposal detail: **Mark Accepted** (+ convert hint)
+- [ ] Lead/Deal: **Convert to Customer** (carry `lead_id`, set lead `won`, dedupe by email → link instead)
 - [ ] Customer detail: **Create Project** (set `projects.customer_id`)
 
-### Phase E — Control Room integration
-- [ ] Proposals/Customers cards link to real modules
-- [ ] Pipeline counts (proposals sent, customers active, won leads)
+### Phase F — Control Room integration
+- [ ] Deals/Proposals/Customers cards link to real modules
+- [ ] Pipeline counts (open deals, proposals sent, customers active, won leads)
 
 ---
 

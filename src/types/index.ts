@@ -41,6 +41,9 @@ export type AIAppCategory = typeof AI_APP_CATEGORIES[number]
 export const AI_APP_TYPES = ['web_app', 'chrome_extension', 'desktop_app', 'n8n_workflow', 'ai_agent', 'website', 'api', 'mobile_app', 'automation_script', 'content_pipeline'] as const
 export type AIAppType = typeof AI_APP_TYPES[number]
 
+export const DEAL_STAGES = ['qualifying', 'proposal', 'negotiation', 'won', 'lost', 'on_hold'] as const
+export type DealStage = typeof DEAL_STAGES[number]
+
 export type Visibility = 'internal' | 'customer_visible' | 'partner_visible'
 export type AssetVisibility = 'internal' | 'customer_visible' | 'partner_visible' | 'public'
 
@@ -86,6 +89,7 @@ export interface Project {
   priority?: 'low' | 'medium' | 'high' | 'critical'
   owner_id: string
   created_by: string
+  customer_id?: string
   customer_visible_summary?: string
   start_date?: string
   target_date?: string
@@ -192,6 +196,7 @@ export interface Proposal {
   lead_id?: string
   customer_id?: string
   project_id?: string
+  deal_id?: string
   amount?: number
   service_type?: string
   scope?: string
@@ -202,6 +207,21 @@ export interface Proposal {
   sent_at?: string
   expires_at?: string
   owner_id?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Deal {
+  id: string
+  name: string
+  lead_id?: string
+  stage: DealStage
+  estimated_value?: number
+  expected_close_date?: string
+  owner_id?: string
+  next_step?: string
+  notes?: string
   created_by?: string
   created_at: string
   updated_at: string

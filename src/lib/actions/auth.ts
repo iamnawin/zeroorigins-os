@@ -4,59 +4,58 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { createClient } from '@/lib/supabase/server'
 
 export async function ensureProfile() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {}
-      },
-    }
-  )
+  try {
+    const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Not authenticated' }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Not authenticated' }
 
-  // Check if profile exists
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+    // Check if profile exists
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-  if (profile) return { success: true, role: profile.role }
+    if (profile) return { success: true, role: profile.role }
 
-  // Create missing profile using service role
-  const serviceRoleClient = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {}
-      },
-    }
-  )
-
-  const { error } = await serviceRoleClient
-    .from('profiles')
-    .insert({
+    // Profile missing — self-heal. Pin role to CUSTOMER; promotion is a separate flow.
+    const insertRow = {
       id: user.id,
       email: user.email,
       full_name: user.user_metadata?.full_name || '',
-      role: 'CUSTOMER'
-    })
+      role: 'CUSTOMER' as const,
+    }
 
-  if (error) {
-    console.error('Self-healing profile creation failed:', error)
-    return { success: false, error }
+    // Preferred path: insert with the authenticated client (requires the
+    // "Users can insert own profile" RLS policy from migration 004).
+    const { error: insertError } = await supabase.from('profiles').insert(insertRow)
+    if (!insertError) return { success: true, role: 'CUSTOMER' }
+
+    // Fallback: service role, only if configured (never required).
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (serviceKey) {
+      const cookieStore = await cookies()
+      const admin = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        serviceKey,
+        { cookies: { getAll() { return cookieStore.getAll() }, setAll() {} } }
+      )
+      const { error: adminError } = await admin.from('profiles').insert(insertRow)
+      if (!adminError) return { success: true, role: 'CUSTOMER' }
+      console.error('Service-role profile self-heal failed:', adminError)
+      return { success: false, error: adminError.message }
+    }
+
+    console.error('Profile self-heal failed (no RLS insert policy and no service role key):', insertError)
+    return { success: false, error: insertError.message }
+  } catch (err) {
+    console.error('ensureProfile unexpected error:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
-
-  return { success: true, role: 'CUSTOMER' }
 }
 
 export async function promoteToFounder() {
