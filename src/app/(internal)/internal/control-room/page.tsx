@@ -2,11 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
-import { signOut } from '@/lib/actions/auth'
 import { cn } from '@/lib/utils'
 import {
   Lightbulb, FolderKanban, CheckSquare, Users, Handshake, Bot,
-  FileText, Building2, Plus, ArrowRight, LogOut, ShieldCheck, Clock
+  FileText, Building2, Plus, ArrowRight, Clock
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -111,36 +110,17 @@ export default async function ControlRoomPage() {
     .slice(0, 5)
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'there'
-  const role = profile?.role ?? 'STAFF'
+  const role = profile?.role ?? 'employee'
 
   return (
     <div className="space-y-8 selection:bg-zo-purple/20">
-      {/* Identity header */}
-      <Card className="relative bg-card border-border overflow-hidden">
-        <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-zo-purple/10 blur-3xl pointer-events-none" />
-        <CardContent className="relative flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-zo-purple-2">
-              <ShieldCheck className="h-4 w-4" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em]">ZeroOrigins Internal</span>
-            </div>
-            <h1 className="mt-2 text-2xl font-bold text-zo-chrome">Welcome, {displayName}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zo-muted">
-              <span>Role: <span className="font-medium text-zo-purple-2">{role.replace('_', ' ')}</span></span>
-              <span className="hidden md:inline text-zo-dim">·</span>
-              <span>Signed in as <span className="font-medium text-zo-silver">{profile?.email || user?.email}</span></span>
-            </div>
-          </div>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex items-center')}
-            >
-              <LogOut className="mr-2 h-3.5 w-3.5" /> Sign Out
-            </button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Control Room</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Welcome back, {displayName}</p>
+        </div>
+      </div>
 
       {/* Module cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -10,7 +10,7 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
-  
+
   --color-sidebar-ring: var(--ring);
   --color-sidebar-border: var(--border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -19,7 +19,7 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--zo-black-2);
-  
+
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -43,16 +43,21 @@
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
 
-  /* ZeroOrigins Premium AI Palette */
-  --color-zo-black: #050505;
-  --color-zo-black-2: #08080b;
-  --color-zo-black-3: #0d0d12;
+  /* ZeroOrigins Brand — Static (same in both modes) */
   --color-zo-purple: #8b5cf6;
   --color-zo-purple-2: #a78bfa;
   --color-zo-purple-dark: #4c1d95;
-  --color-zo-silver: #c8c8d0;
-  --color-zo-chrome: #e5e5ee;
-  --color-zo-grey: #1f1f25;
+
+  /* ZeroOrigins Semantic — Adaptive (change with theme) */
+  --color-zo-black: var(--zo-black);
+  --color-zo-black-2: var(--zo-black-2);
+  --color-zo-black-3: var(--zo-black-3);
+  --color-zo-grey: var(--zo-grey);
+  --color-zo-chrome: var(--zo-chrome);
+  --color-zo-silver: var(--zo-silver);
+  --color-zo-muted: var(--zo-muted-color);
+  --color-zo-dim: var(--zo-dim-color);
+  --color-zo-border-soft: var(--zo-border-soft);
 
   --animate-pulse-slow: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
@@ -62,35 +67,97 @@
   }
 }
 
+/* ─── Light mode (default) ─── */
 :root {
+  --zo-black: #ffffff;
+  --zo-black-2: #fafafa;
+  --zo-black-3: #f4f4f5;
+  --zo-grey: #e4e4e7;
+  --zo-chrome: #09090b;
+  --zo-silver: #3f3f46;
+  --zo-muted-color: #71717a;
+  --zo-dim-color: #a1a1aa;
+  --zo-border-soft: #e4e4e7;
+
+  --background: #f8fafc;
+  --foreground: #09090b;
+
+  --card: #ffffff;
+  --card-foreground: #09090b;
+
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+
+  --accent: #f5f0ff;
+  --accent-foreground: #7c3aed;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: rgba(124, 58, 237, 0.4);
+
+  --radius: 0.5rem;
+
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #09090b;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #7c3aed;
+  --sidebar-border: #e4e4e7;
+}
+
+/* ─── Dark mode ─── */
+.dark {
+  --zo-black: #050505;
+  --zo-black-2: #08080b;
+  --zo-black-3: #0d0d12;
+  --zo-grey: #1f1f25;
+  --zo-chrome: #e5e5ee;
+  --zo-silver: #c8c8d0;
+  --zo-muted-color: rgba(255, 255, 255, 0.58);
+  --zo-dim-color: rgba(255, 255, 255, 0.35);
+  --zo-border-soft: rgba(255, 255, 255, 0.08);
+
   --background: #050505;
   --foreground: rgba(255, 255, 255, 0.94);
-  
+
   --card: #08080b;
   --card-foreground: rgba(255, 255, 255, 0.94);
-  
+
   --popover: #0d0d12;
   --popover-foreground: rgba(255, 255, 255, 0.94);
-  
+
   --primary: #8b5cf6;
   --primary-foreground: #ffffff;
-  
+
   --secondary: rgba(22, 22, 28, 0.78);
   --secondary-foreground: rgba(255, 255, 255, 0.94);
-  
+
   --muted: rgba(22, 22, 28, 0.82);
   --muted-foreground: rgba(255, 255, 255, 0.58);
-  
+
   --accent: rgba(139, 92, 246, 0.15);
   --accent-foreground: #a78bfa;
-  
+
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  
+
   --border: rgba(139, 92, 246, 0.26);
   --input: rgba(255, 255, 255, 0.10);
   --ring: rgba(139, 92, 246, 0.5);
-  
+
   --radius: 0.5rem;
 
   --sidebar: #08080b;
@@ -107,7 +174,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-zo-black text-foreground antialiased;
+    @apply bg-background text-foreground antialiased;
   }
   html {
     @apply font-sans selection:bg-zo-purple/20 selection:text-zo-purple-2;

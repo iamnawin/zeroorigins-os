@@ -77,16 +77,6 @@ function SignupForm() {
         .single()
 
       const role = profile?.role || 'CUSTOMER'
-      
-      const { count: founderCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .in('role', ['FOUNDER', 'SUPER_ADMIN'])
-
-      if (intent === 'internal' && (founderCount === 0 || founderCount === null)) {
-        router.push('/setup-founder')
-        return
-      }
 
       let redirectPath = '/portal/customer/dashboard'
       if (INTERNAL_ROLES.includes(role)) {

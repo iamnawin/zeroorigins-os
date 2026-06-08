@@ -67,24 +67,34 @@ function LoginForm() {
       // Read the profile with the BROWSER client — it has the fresh session,
       // so this avoids the server-action session-propagation race.
       let role: Role | undefined
-      const { data: prof } = await supabase
+      const { data: prof, error: selectError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .maybeSingle()
 
+      if (selectError) {
+        // The profile READ itself failed (e.g. an RLS/policy misconfiguration).
+        // Surface the real error instead of falling through to a self-heal
+        // insert, whose RLS rejection would otherwise mask the true cause.
+        setError(`Could not read your profile: ${selectError.message}. Please contact support.`)
+        setLoading(false)
+        return
+      }
+
       if (prof?.role) {
         role = prof.role as Role
       } else {
-        // Self-heal: create a default CUSTOMER profile if none exists.
+        // Self-heal: create a default profile. @zeroorigins.in → employee, else → CUSTOMER.
+        const defaultRole = user.email?.endsWith('@zeroorigins.in') ? 'employee' : 'CUSTOMER'
         const { error: insertError } = await supabase.from('profiles').insert({
           id: user.id,
           email: user.email,
           full_name: user.user_metadata?.full_name || '',
-          role: 'CUSTOMER',
+          role: defaultRole,
         })
         if (!insertError) {
-          role = 'CUSTOMER'
+          role = defaultRole as Role
         } else {
           // Last resort: server-side self-heal (service role, if configured).
           const res = await ensureProfile()

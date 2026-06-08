@@ -1,14 +1,11 @@
 export type Role =
-  | 'SUPER_ADMIN'
-  | 'FOUNDER'
-  | 'DIRECTOR'
-  | 'STAFF'
-  | 'CONTRACTOR'
+  | 'admin'
+  | 'employee'
   | 'CUSTOMER'
   | 'PARTNER'
   | 'REFERRAL_PARTNER'
 
-export const INTERNAL_ROLES: Role[] = ['SUPER_ADMIN', 'FOUNDER', 'DIRECTOR', 'STAFF', 'CONTRACTOR']
+export const INTERNAL_ROLES: Role[] = ['admin', 'employee']
 export const EXTERNAL_ROLES: Role[] = ['CUSTOMER', 'PARTNER', 'REFERRAL_PARTNER']
 
 export const IDEA_STATUSES = ['draft', 'submitted', 'under_review', 'approved', 'rejected', 'on_hold', 'converted_to_project', 'archived'] as const
@@ -52,6 +49,8 @@ export interface Profile {
   email: string
   full_name: string
   role: Role
+  title?: string
+  status: 'active' | 'pending' | 'disabled'
   avatar_url?: string
   organization_id?: string
   created_at: string

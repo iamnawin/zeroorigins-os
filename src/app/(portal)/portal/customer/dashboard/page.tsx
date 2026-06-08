@@ -23,13 +23,7 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user?.id ?? '').single()
 
-  const { count: founderCount } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .in('role', ['FOUNDER', 'SUPER_ADMIN'])
-
   const isInternal = INTERNAL_ROLES.includes(profile?.role || 'CUSTOMER')
-  const noFounderExists = user && (founderCount || 0) === 0
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 p-4 selection:bg-zo-purple/20">
@@ -108,19 +102,6 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
             </CardContent>
           </Card>
 
-          {noFounderExists && (
-            <Card className="bg-zo-purple/5 border-zo-purple/20 border-dashed">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs text-zo-purple-2 uppercase tracking-widest">First Setup</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-center">
-                <p className="text-[10px] text-zo-muted leading-relaxed">No Founder found. If you are the owner, initialize the system.</p>
-                <Button variant="secondary" className="w-full text-xs h-9 border-zo-purple/30 text-zo-purple-2 hover:bg-zo-purple/10 font-bold">
-                  <Link href="/setup-founder">Set up Founder Account</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Feature Placeholders */}
@@ -191,8 +172,8 @@ export default async function CustomerDashboardPage({ searchParams }: PageProps)
           </CardHeader>
           <CardContent>
             <pre className="p-3 bg-black rounded text-[9px] overflow-x-auto text-zo-silver/50 border border-zo-border-soft">
-{`UPDATE profiles 
-SET role = 'FOUNDER', full_name = 'Naveen'
+{`UPDATE profiles
+SET role = 'admin'
 WHERE email = '${user?.email}';`}
             </pre>
           </CardContent>

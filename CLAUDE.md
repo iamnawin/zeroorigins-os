@@ -25,7 +25,7 @@ ZeroOrigins OS is an internal operating system / CRM for an AI services studio: 
 
 Access control is enforced **both** in middleware (routing) **and** in Postgres RLS (data). Route groups under `src/app/` map to audiences:
 
-- `(internal)` → `/internal/*` — the team. Roles: `SUPER_ADMIN`, `FOUNDER`, `DIRECTOR`, `STAFF`, `CONTRACTOR` (`INTERNAL_ROLES` in `src/types/index.ts`).
+- `(internal)` → `/internal/*` — the team. Roles: `admin`, `employee` (`INTERNAL_ROLES` in `src/types/index.ts`).
 - `(portal)` → `/portal/customer/*` and `/portal/partner/*` — external `CUSTOMER`, `PARTNER`, `REFERRAL_PARTNER`.
 - `(public)` → `/request-build`, `/partner-with-us` — unauthenticated lead/partner intake forms.
 - `(auth)` → `/login`, `/signup`, `/forgot-password`.
@@ -45,7 +45,7 @@ Single migration `supabase/migrations/001_initial_schema.sql` is the source of t
 
 - Status values are **Postgres enums** mirrored as `as const` string-literal unions in `src/types/index.ts`. Changing a status requires editing **both** the enum (a new migration) and the TS type.
 - Most domain tables follow `owner_id` / `created_by` (→ `profiles`) + `created_at` / `updated_at`, with a `set_updated_at` trigger.
-- `handle_new_user()` trigger auto-creates a `profiles` row (default role `CUSTOMER`) on `auth.users` signup.
+- `handle_new_user()` trigger auto-creates a `profiles` row on `auth.users` signup: `@zeroorigins.in` email → `employee`, all others → `CUSTOMER`.
 - RLS leans on `is_internal_user()` / `get_user_role()` SECURITY DEFINER helpers. Pattern: internal users get `for all`; public forms get narrow `for insert with check (true)` on `leads` and `partners`; customers/partners get scoped `select`.
 
 `supabase/seed.sql` holds seed data. There is no generated Supabase types file — `src/types/index.ts` is hand-maintained.
@@ -63,11 +63,12 @@ Single migration `supabase/migrations/001_initial_schema.sql` is the source of t
 
 ### Internal access rules
 
-- Internal workspace (`/internal/*`) and Founder Setup (`/setup-founder`) require BOTH:
+- Internal workspace (`/internal/*`) requires BOTH:
   1. An official email ending with `@zeroorigins.in`.
-  2. An approved internal role (`SUPER_ADMIN`, `FOUNDER`, `DIRECTOR`, `STAFF`, `CONTRACTOR`).
+  2. An internal role (`admin` or `employee`).
+- New `@zeroorigins.in` signups automatically receive the `employee` role. First `admin` must be set directly in the database.
 - Access is enforced at the network level via `src/proxy.ts` (edge middleware) and within form logic.
-- Users with `@zeroorigins.in` email but without an internal role see a "Pending Approval" message.
+- `admin` can see all records and has access to Finance/Settings nav items; `employee` sees the same dashboard shell with scoped data access.
 
 ### Gateway behavior
 
@@ -121,7 +122,7 @@ Phase 1 uses **status-based lifecycle management** instead of hard delete. Recor
 
 List pages default to the **Active** view (excludes closed statuses) with an **All** toggle at `?view=all`.
 
-**Future (Phase 2+):** Hard delete may be added exclusively for `SUPER_ADMIN` role, with a two-step confirmation dialog and an audit log entry before execution. Do not implement without those guardrails.
+**Future (Phase 2+):** Hard delete may be added exclusively for `admin` role, with a two-step confirmation dialog and an audit log entry before execution. Do not implement without those guardrails.
 
 ### Resource Kit
 

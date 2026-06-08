@@ -1,5 +1,4 @@
-import { InternalSidebar } from '@/components/layout/internal-sidebar'
-import { InternalHeader } from '@/components/layout/internal-header'
+import { InternalTopNav } from '@/components/layout/internal-topnav'
 import { createClient } from '@/lib/supabase/server'
 import type { Role } from '@/types'
 
@@ -15,12 +14,11 @@ export default async function InternalLayout({ children }: { children: React.Rea
   const role = profile?.role as Role | undefined
 
   return (
-    <div className="min-h-screen bg-[#050505]">
-      <InternalSidebar role={role} />
-      <div className="ml-60">
-        <InternalHeader email={user?.email} role={role} />
-        <main className="p-6">{children}</main>
-      </div>
+    <div className="min-h-screen bg-background">
+      <InternalTopNav email={user?.email} fullName={profile?.full_name} role={role} />
+      <main className="pt-12 max-w-screen-2xl mx-auto px-6 py-6">
+        {children}
+      </main>
     </div>
   )
 }

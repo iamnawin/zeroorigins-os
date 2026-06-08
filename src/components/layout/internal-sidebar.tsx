@@ -32,9 +32,9 @@ const navItems: NavItem[] = [
   { label: 'Customers', href: '/internal/customers', icon: Building2, built: false },
   { label: 'Assets', href: '/internal/assets', icon: HardDrive, built: false },
   { label: 'Content Studio', href: '/internal/content-studio', icon: Palette, built: false },
-  { label: 'Finance', href: '/internal/finance', icon: DollarSign, built: false, roles: ['SUPER_ADMIN', 'FOUNDER'] },
+  { label: 'Finance', href: '/internal/finance', icon: DollarSign, built: false, roles: ['admin'] },
   { label: 'Knowledge', href: '/internal/knowledge', icon: BookOpen, built: false },
-  { label: 'Settings', href: '/internal/settings', icon: Settings, built: false, roles: ['SUPER_ADMIN', 'FOUNDER'] },
+  { label: 'Settings', href: '/internal/settings', icon: Settings, built: false, roles: ['admin'] },
 ]
 
 export function InternalSidebar({ role }: { role?: Role }) {
