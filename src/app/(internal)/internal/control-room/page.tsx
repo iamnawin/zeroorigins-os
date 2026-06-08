@@ -1,11 +1,42 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
-  Lightbulb, FolderKanban, CheckSquare, Users, 
-  Handshake, Bot, ShieldCheck, Plus, ArrowRight 
+import { buttonVariants } from '@/components/ui/button'
+import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
+import { signOut } from '@/lib/actions/auth'
+import { cn } from '@/lib/utils'
+import {
+  Lightbulb, FolderKanban, CheckSquare, Users, Handshake, Bot,
+  FileText, Building2, Plus, ArrowRight, LogOut, ShieldCheck, Clock
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
+
+interface Row {
+  id: string
+  status: string
+  name?: string
+  title?: string
+  company?: string | null
+  created_at?: string
+  due_date?: string | null
+}
+
+interface AppRow {
+  id: string
+  name: string
+  status: string
+  next_action?: string | null
+  live_url?: string | null
+  vercel_url?: string | null
+  github_url?: string | null
+}
+
+function formatDate(value?: string | null): string {
+  if (!value) return '—'
+  return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+const OPEN_TASK = (s: string) => !['done', 'cancelled'].includes(s)
 
 export default async function ControlRoomPage() {
   const supabase = await createClient()
@@ -13,173 +44,291 @@ export default async function ControlRoomPage() {
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('full_name, email, role')
     .eq('id', user?.id || '')
     .single()
 
-  const [ideas, projects, tasks, leads, partners, apps] = await Promise.all([
-    supabase.from('ideas').select('id, status', { count: 'exact' }),
-    supabase.from('projects').select('id, status', { count: 'exact' }),
-    supabase.from('tasks').select('id, status', { count: 'exact' }),
-    supabase.from('leads').select('id, status', { count: 'exact' }),
-    supabase.from('partners').select('id, status', { count: 'exact' }),
-    supabase.from('ai_workspace_apps').select('*', { count: 'exact' }).order('priority', { ascending: false }).limit(5)
-  ])
+  const [ideasRes, projectsRes, tasksRes, leadsRes, partnersRes, proposalsRes, customersRes, appsRes] =
+    await Promise.all([
+      supabase.from('ideas').select('id, status'),
+      supabase.from('projects').select('id, title, status, created_at'),
+      supabase.from('tasks').select('id, title, status, due_date'),
+      supabase.from('leads').select('id, name, company, status, created_at'),
+      supabase.from('partners').select('id, name, company, status, created_at'),
+      supabase.from('proposals').select('id, status'),
+      supabase.from('customers').select('id, status'),
+      supabase.from('ai_workspace_apps')
+        .select('id, name, status, next_action, live_url, vercel_url, github_url')
+        .order('updated_at', { ascending: false })
+        .limit(8),
+    ])
 
-  const stats = [
-    { label: 'Ideas', count: ideas.count ?? 0, icon: Lightbulb, color: 'text-zo-purple' },
-    { label: 'Apps', count: apps.count ?? 0, icon: Bot, color: 'text-zo-silver' },
-    { label: 'Projects', count: projects.count ?? 0, icon: FolderKanban, color: 'text-zo-purple' },
-    { label: 'Tasks', count: tasks.count ?? 0, icon: CheckSquare, color: 'text-zo-silver' },
-    { label: 'Leads', count: leads.count ?? 0, icon: Users, color: 'text-zo-purple' },
-    { label: 'Partners', count: partners.count ?? 0, icon: Handshake, color: 'text-zo-silver' },
+  const ideas = (ideasRes.data ?? []) as Row[]
+  const projects = (projectsRes.data ?? []) as Row[]
+  const tasks = (tasksRes.data ?? []) as Row[]
+  const leads = (leadsRes.data ?? []) as Row[]
+  const partners = (partnersRes.data ?? []) as Row[]
+  const proposals = (proposalsRes.data ?? []) as Row[]
+  const customers = (customersRes.data ?? []) as Row[]
+  const apps = (appsRes.data ?? []) as AppRow[]
+
+  const count = (rows: Row[], status: string) => rows.filter(r => r.status === status).length
+
+  const modules: {
+    label: string
+    icon: LucideIcon
+    total: number
+    activeLabel?: string
+    description: string
+    href: string
+  }[] = [
+    { label: 'Ideas', icon: Lightbulb, total: ideas.length, activeLabel: `${count(ideas, 'under_review')} under review`, description: 'Capture, review, and convert ideas into projects.', href: '/internal/ideas' },
+    { label: 'Projects', icon: FolderKanban, total: projects.length, activeLabel: `${count(projects, 'active')} active`, description: 'Plan and deliver client and internal builds.', href: '/internal/projects' },
+    { label: 'Tasks', icon: CheckSquare, total: tasks.length, activeLabel: `${tasks.filter(t => OPEN_TASK(t.status)).length} open`, description: 'Track execution across every project.', href: '/internal/tasks' },
+    { label: 'Leads', icon: Users, total: leads.length, activeLabel: `${count(leads, 'new')} new`, description: 'Inbound and outbound sales pipeline.', href: '/internal/leads' },
+    { label: 'Partners', icon: Handshake, total: partners.length, activeLabel: `${count(partners, 'new_application')} new applications`, description: 'Referral and implementation partners.', href: '/internal/partners' },
+    { label: 'AI Workspace', icon: Bot, total: apps.length, activeLabel: `${count(apps as unknown as Row[], 'deployed')} deployed`, description: 'Apps, products, and experiments we build.', href: '/internal/ai-workspace' },
+    { label: 'Proposals', icon: FileText, total: proposals.length, activeLabel: `${count(proposals, 'sent')} sent`, description: 'Proposals sent to leads and customers.', href: '/internal/proposals' },
+    { label: 'Customers', icon: Building2, total: customers.length, activeLabel: `${count(customers, 'active')} active`, description: 'Active customer accounts.', href: '/internal/customers' },
   ]
 
-  const activeProjects = projects.data?.filter(p => p.status === 'active') ?? []
-  const openTasks = tasks.data?.filter(t => !['done', 'cancelled'].includes(t.status)) ?? []
-  const newLeads = leads.data?.filter(l => l.status === 'new') ?? []
+  const quickActions: { label: string; href: string; icon: LucideIcon }[] = [
+    { label: 'Add Idea', href: '/internal/ideas/new', icon: Lightbulb },
+    { label: 'Add Lead', href: '/internal/leads/new', icon: Users },
+    { label: 'Add Partner', href: '/internal/partners/new', icon: Handshake },
+    { label: 'Create Project', href: '/internal/projects/new', icon: FolderKanban },
+    { label: 'Add AI Workspace App', href: '/internal/ai-workspace/new', icon: Bot },
+    { label: 'View Tasks', href: '/internal/tasks', icon: CheckSquare },
+  ]
+
+  const byCreatedDesc = (a: Row, b: Row) => ((a.created_at ?? '') < (b.created_at ?? '') ? 1 : -1)
+  const recentLeads = [...leads].sort(byCreatedDesc).slice(0, 5)
+  const recentPartners = [...partners].sort(byCreatedDesc).slice(0, 5)
+  const recentProjects = [...projects].sort(byCreatedDesc).slice(0, 5)
+  const tasksDueSoon = tasks
+    .filter(t => t.due_date && OPEN_TASK(t.status))
+    .sort((a, b) => ((a.due_date ?? '') < (b.due_date ?? '') ? -1 : 1))
+    .slice(0, 5)
+
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'there'
+  const role = profile?.role ?? 'STAFF'
 
   return (
     <div className="space-y-8 selection:bg-zo-purple/20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-zo-chrome flex items-center gap-3">
-            <ShieldCheck className="w-6 h-6 text-zo-purple" />
-            Control Room
-          </h1>
-          <p className="text-sm text-zo-muted mt-1">
-            Welcome back, <span className="text-zo-chrome font-medium">{profile?.full_name || user?.email}</span>. System is operational.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" className="font-bold">
-            <Link href="/internal/ideas/new" className="flex items-center"><Plus className="w-4 h-4 mr-1" /> New Idea</Link>
-          </Button>
-          <Button size="sm" variant="secondary" className="text-xs">
-            <Link href="/internal/tasks">View Tasks</Link>
-          </Button>
-        </div>
-      </div>
+      {/* Identity header */}
+      <Card className="relative bg-card border-border overflow-hidden">
+        <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-zo-purple/10 blur-3xl pointer-events-none" />
+        <CardContent className="relative flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-zo-purple-2">
+              <ShieldCheck className="h-4 w-4" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em]">ZeroOrigins Internal</span>
+            </div>
+            <h1 className="mt-2 text-2xl font-bold text-zo-chrome">Welcome, {displayName}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zo-muted">
+              <span>Role: <span className="font-medium text-zo-purple-2">{role.replace('_', ' ')}</span></span>
+              <span className="hidden md:inline text-zo-dim">·</span>
+              <span>Signed in as <span className="font-medium text-zo-silver">{profile?.email || user?.email}</span></span>
+            </div>
+          </div>
+          <form action={signOut}>
+            <button
+              type="submit"
+              className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex items-center')}
+            >
+              <LogOut className="mr-2 h-3.5 w-3.5" /> Sign Out
+            </button>
+          </form>
+        </CardContent>
+      </Card>
 
-      {/* Primary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {stats.map(s => (
-          <Card key={s.label} className="bg-card border-border hover:border-zo-purple/30 transition-all group">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <s.icon className={`w-4 h-4 ${s.color} opacity-70 group-hover:opacity-100 transition-opacity`} />
-                <span className="text-2xl font-bold text-zo-chrome">{s.count}</span>
+      {/* Module cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {modules.map(m => (
+          <Card key={m.label} className="group bg-card border-border transition-all hover:border-zo-purple/40">
+            <CardContent className="flex h-full flex-col p-5">
+              <div className="flex items-start justify-between">
+                <m.icon className="h-5 w-5 text-zo-purple opacity-80 transition-opacity group-hover:opacity-100" />
+                <span className="text-2xl font-bold text-zo-chrome">{m.total}</span>
               </div>
-              <p className="text-[10px] text-zo-muted uppercase tracking-widest mt-2 font-bold">{s.label}</p>
+              <p className="mt-3 text-sm font-semibold text-zo-chrome">{m.label}</p>
+              {m.activeLabel && (
+                <p className="mt-0.5 text-[11px] font-medium text-zo-purple-2">{m.total} total · {m.activeLabel}</p>
+              )}
+              <p className="mt-2 flex-1 text-xs leading-relaxed text-zo-muted">{m.description}</p>
+              <Link
+                href={m.href}
+                className="mt-4 flex items-center text-[11px] font-bold uppercase tracking-wider text-zo-muted transition-colors hover:text-zo-purple"
+              >
+                Open {m.label} <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+              </Link>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Active Insights */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-card border-border border-t-2 border-t-zo-purple">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] text-zo-muted uppercase tracking-widest font-bold">Active Projects</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-zo-chrome">{activeProjects.length}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border border-t-2 border-t-zo-silver">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] text-zo-muted uppercase tracking-widest font-bold">Open Tasks</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-zo-chrome">{openTasks.length}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border border-t-2 border-t-zo-purple">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] text-zo-muted uppercase tracking-widest font-bold">New Leads</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-zo-chrome">{newLeads.length}</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* AI Workspace Snapshot */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left: AI Workspace snapshot + recent projects/tasks */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* AI Workspace snapshot */}
           <Card className="bg-card border-border shadow-xl">
             <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-4">
               <div className="flex items-center gap-2">
-                <Bot className="w-4 h-4 text-zo-purple" />
+                <Bot className="h-4 w-4 text-zo-purple" />
                 <CardTitle className="text-sm font-bold uppercase tracking-wider">AI Workspace Snapshot</CardTitle>
               </div>
-              <Button variant="ghost" size="sm" className="text-[10px] h-7 text-zo-muted hover:text-zo-purple">
-                <Link href="/internal/ai-workspace" className="flex items-center">View All <ArrowRight className="w-3 h-3 ml-1" /></Link>
-              </Button>
+              <Link href="/internal/ai-workspace" className="flex items-center text-[10px] text-zo-muted hover:text-zo-purple">
+                View All <ArrowRight className="ml-1 h-3 w-3" />
+              </Link>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="space-y-1">
-                {apps.data && apps.data.length > 0 ? (
-                  apps.data.map(app => (
-                    <Link key={app.id} href={`/internal/ai-workspace/${app.id}`} className="flex items-center justify-between p-3 rounded hover:bg-white/5 transition-colors group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-zo-purple group-hover:animate-pulse" />
-                        <span className="text-sm font-medium text-zo-chrome">{app.name}</span>
-                        <span className="text-[10px] text-zo-muted bg-zo-black-3 px-1.5 py-0.5 rounded capitalize border border-border/30">{app.status.replace('_', ' ')}</span>
-                      </div>
-                      <span className="text-[10px] text-zo-dim italic truncate max-w-[200px]">{app.next_action || 'No next action'}</span>
-                    </Link>
-                  ))
-                ) : (
-                  <p className="text-xs text-zo-muted py-4 text-center">No apps registered yet.</p>
-                )}
-              </div>
+              {apps.length > 0 ? (
+                <div className="space-y-1">
+                  {apps.map(app => {
+                    const url = app.live_url || app.vercel_url || app.github_url
+                    return (
+                      <Link
+                        key={app.id}
+                        href={`/internal/ai-workspace/${app.id}`}
+                        className="group/app flex items-center justify-between gap-3 rounded p-3 transition-colors hover:bg-white/5"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zo-purple group-hover/app:animate-pulse" />
+                          <span className="truncate text-sm font-medium text-zo-chrome">{app.name}</span>
+                          <ResourceStatusBadge status={app.status} />
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="hidden truncate text-[10px] italic text-zo-dim md:block md:max-w-[180px]">
+                            {app.next_action || 'No next action'}
+                          </span>
+                          {url && <span className="text-[9px] font-bold uppercase tracking-tighter text-zo-purple-2">Link</span>}
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <p className="text-xs text-zo-muted">No AI Workspace apps registered yet.</p>
+                  <Link
+                    href="/internal/ai-workspace/new"
+                    className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'mt-4 inline-flex items-center')}
+                  >
+                    <Plus className="mr-1 h-3 w-3" /> Create AI Workspace module
+                  </Link>
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {/* Recent projects + tasks due soon */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <RecentList
+              title="Recent Projects"
+              icon={FolderKanban}
+              items={recentProjects.map(p => ({ id: p.id, primary: p.title ?? 'Untitled', status: p.status, meta: formatDate(p.created_at) }))}
+              emptyText="No projects yet."
+            />
+            <RecentList
+              title="Tasks Due Soon"
+              icon={Clock}
+              items={tasksDueSoon.map(t => ({ id: t.id, primary: t.title ?? 'Untitled', status: t.status, meta: formatDate(t.due_date) }))}
+              emptyText="No upcoming tasks."
+            />
+          </div>
         </div>
 
-        {/* Quick Actions / Activity Placeholder */}
+        {/* Right: quick actions + recent leads + recent partners */}
         <div className="space-y-6">
           <Card className="bg-card border-border shadow-lg">
             <CardHeader className="border-b border-border/50 pb-4">
               <CardTitle className="text-sm font-bold uppercase tracking-wider">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 pt-4">
-              <Button variant="secondary" className="w-full justify-start text-xs h-10 hover:border-zo-purple/30 group">
-                <Link href="/internal/leads/new" className="flex items-center"><Users className="w-3 h-3 mr-3 text-zo-purple opacity-70 group-hover:opacity-100" /> Add New Lead</Link>
-              </Button>
-              <Button variant="secondary" className="w-full justify-start text-xs h-10 hover:border-zo-purple/30 group">
-                <Link href="/internal/partners/new" className="flex items-center"><Handshake className="w-3 h-3 mr-3 text-zo-purple opacity-70 group-hover:opacity-100" /> Add Partner</Link>
-              </Button>
-              <Button variant="secondary" className="w-full justify-start text-xs h-10 hover:border-zo-purple/30 group">
-                <Link href="/internal/projects/new" className="flex items-center"><FolderKanban className="w-3 h-3 mr-3 text-zo-purple opacity-70 group-hover:opacity-100" /> Create Project</Link>
-              </Button>
-              <Button variant="secondary" className="w-full justify-start text-xs h-10 hover:border-zo-purple/30 group">
-                <Link href="/internal/ai-workspace/new" className="flex items-center"><Bot className="w-3 h-3 mr-3 text-zo-purple opacity-70 group-hover:opacity-100" /> Register App</Link>
-              </Button>
+              {quickActions.map(a => (
+                <Link
+                  key={a.label}
+                  href={a.href}
+                  className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'group/qa h-10 w-full justify-start text-xs')}
+                >
+                  <a.icon className="mr-3 h-3 w-3 text-zo-purple opacity-70 group-hover/qa:opacity-100" /> {a.label}
+                </Link>
+              ))}
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-sm font-bold uppercase tracking-wider">System Info</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-1">
-                <p className="text-[10px] text-zo-muted uppercase tracking-widest font-bold">Environment</p>
-                <p className="text-xs font-mono text-zo-chrome">Production / Vercel</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] text-zo-muted uppercase tracking-widest font-bold">Database</p>
-                <p className="text-xs font-mono text-green-500/80 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  Live Connection
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <RecentList
+            title="Recent Leads"
+            icon={Users}
+            items={recentLeads.map(l => ({ id: l.id, primary: l.name ?? 'Unknown', status: l.status, meta: l.company || formatDate(l.created_at), href: `/internal/leads/${l.id}` }))}
+            emptyText="No leads yet."
+          />
+
+          <RecentList
+            title="Recent Partner Applications"
+            icon={Handshake}
+            items={recentPartners.map(p => ({ id: p.id, primary: p.name ?? 'Unknown', status: p.status, meta: p.company || formatDate(p.created_at), href: `/internal/partners/${p.id}` }))}
+            emptyText="No partner applications yet."
+          />
         </div>
       </div>
     </div>
+  )
+}
+
+interface RecentItem {
+  id: string
+  primary: string
+  status: string
+  meta: string
+  href?: string
+}
+
+function RecentList({
+  title,
+  icon: Icon,
+  items,
+  emptyText,
+}: {
+  title: string
+  icon: LucideIcon
+  items: RecentItem[]
+  emptyText: string
+}) {
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="flex flex-row items-center gap-2 border-b border-border/50 pb-4">
+        <Icon className="h-4 w-4 text-zo-purple" />
+        <CardTitle className="text-sm font-bold uppercase tracking-wider">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-4">
+        {items.length > 0 ? (
+          <div className="space-y-1">
+            {items.map(item => {
+              const inner = (
+                <>
+                  <div className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm font-medium text-zo-chrome">{item.primary}</span>
+                    <span className="truncate text-[10px] text-zo-dim">{item.meta}</span>
+                  </div>
+                  <ResourceStatusBadge status={item.status} />
+                </>
+              )
+              return item.href ? (
+                <Link key={item.id} href={item.href} className="flex items-center justify-between gap-3 rounded p-2.5 transition-colors hover:bg-white/5">
+                  {inner}
+                </Link>
+              ) : (
+                <div key={item.id} className="flex items-center justify-between gap-3 rounded p-2.5">
+                  {inner}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="py-6 text-center text-xs text-zo-muted">{emptyText}</p>
+        )}
+      </CardContent>
+    </Card>
   )
 }

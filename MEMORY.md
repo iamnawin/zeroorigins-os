@@ -1,3 +1,12 @@
+# ZeroOrigins OS — Current State (updated 2026-06-08)
+
+- **Internal Control Room** (`/internal/control-room`) is the first real operating dashboard: identity header (name/role/email/workspace + sign out), 8 module cards with live Supabase counts (Ideas, Projects, Tasks, Leads, Partners, AI Workspace, Proposals, Customers), 6 quick actions, AI Workspace snapshot, and recent-activity sections (Recent Leads, Recent Partner Applications, Recent Projects, Tasks Due Soon).
+- **AI Workspace is manual-first.** Apps are entered/edited by hand via `/internal/ai-workspace`. Full CRUD exists; `ai_workspace_apps` table is migrated and seeded with 9 apps.
+- **GitHub/Vercel sync is DEFERRED** — deliberately not built. Manual curation first; automation later without clobbering business fields. See `docs/AI_WORKSPACE.md`.
+- **Sidebar** is role-aware (Finance & Settings limited to FOUNDER/SUPER_ADMIN) and has **no dead links** — unbuilt modules route to clean "Coming Soon" placeholder pages.
+- **Next priority:** Lead → Proposal → Customer → Project flow.
+
+---
 
 claude-mem
 81.1k
