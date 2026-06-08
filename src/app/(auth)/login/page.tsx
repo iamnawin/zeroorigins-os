@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import Link from 'next/link'
-import { INTERNAL_ROLES } from '@/types'
+import { INTERNAL_ROLES, type Role } from '@/types'
 import { isZeroOriginsEmail } from '@/lib/supabase/auth-helpers'
 import { ensureProfile } from '@/lib/actions/auth'
 
@@ -51,7 +51,7 @@ function LoginForm() {
     
     try {
       const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({ email, password })
-      
+
       if (authError) {
         setError(authError.message)
         setLoading(false)
@@ -64,26 +64,46 @@ function LoginForm() {
         return
       }
 
-      // 2. Profile Self-Healing: Ensure profile exists
-      const { success: profileOk, role, error: profileError } = await ensureProfile()
+      // Read the profile with the BROWSER client — it has the fresh session,
+      // so this avoids the server-action session-propagation race.
+      let role: Role | undefined
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
 
-      if (!profileOk) {
-        console.error('Profile fetch/creation error:', profileError)
-        setError('User profile not found. Please contact support.')
-        setLoading(false)
-        return
+      if (prof?.role) {
+        role = prof.role as Role
+      } else {
+        // Self-heal: create a default CUSTOMER profile if none exists.
+        const { error: insertError } = await supabase.from('profiles').insert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || '',
+          role: 'CUSTOMER',
+        })
+        if (!insertError) {
+          role = 'CUSTOMER'
+        } else {
+          // Last resort: server-side self-heal (service role, if configured).
+          const res = await ensureProfile()
+          if (res.success && res.role) {
+            role = res.role as Role
+          } else {
+            setError(`Could not load your profile: ${insertError.message}. Please contact support.`)
+            setLoading(false)
+            return
+          }
+        }
       }
 
       let redirectPath = '/portal/customer/dashboard'
-
-      if (INTERNAL_ROLES.includes(role as any)) {
+      if (role && INTERNAL_ROLES.includes(role)) {
         redirectPath = '/internal/control-room'
       } else if (role === 'PARTNER' || role === 'REFERRAL_PARTNER') {
         redirectPath = '/portal/partner/dashboard'
-      }
-
-      // If user intended internal but domain is right BUT role is not internal
-      if (intent === 'internal' && !INTERNAL_ROLES.includes(role as any)) {
+      } else if (intent === 'internal') {
         redirectPath = '/portal/customer/dashboard?message=unauthorized_internal'
       }
 
@@ -91,7 +111,7 @@ function LoginForm() {
       router.refresh()
     } catch (err) {
       console.error('Login error:', err)
-      setError('An unexpected error occurred. Please try again.')
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.')
       setLoading(false)
     }
   }

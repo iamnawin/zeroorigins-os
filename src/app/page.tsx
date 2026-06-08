@@ -4,29 +4,17 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { INTERNAL_ROLES } from '@/types'
 import Image from 'next/image'
-import { ShieldCheck, Building2, Handshake, LogOut, ArrowRight, UserCircle, Sparkles } from 'lucide-react'
-import { signOut } from '@/lib/actions/auth'
+import { ShieldCheck, Building2, Handshake } from 'lucide-react'
 
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
   let profile = null
-  let founderCount = 0
   if (user) {
-    const [{ data: profileData }, { count }] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['FOUNDER', 'SUPER_ADMIN'])
-    ])
-    profile = profileData
-    founderCount = count || 0
-  } else {
-    // If not logged in, still check if no founder exists for the setup button
-    const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['FOUNDER', 'SUPER_ADMIN'])
-    founderCount = count || 0
+    const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    profile = data
   }
-
-  const noFounderExists = founderCount === 0
 
   return (
     <div className="min-h-screen bg-zo-black flex flex-col items-center justify-center p-6 selection:bg-zo-purple/30">
@@ -49,53 +37,6 @@ export default async function HomePage() {
             <p className="text-zo-silver/60 italic text-lg">Company Operating System</p>
           </div>
         </div>
-
-        {/* Account Identity Card (If logged in) */}
-        {user && (
-          <div className="max-w-md mx-auto w-full">
-            <Card className="border-zo-purple/30 bg-zo-black-2 shadow-2xl shadow-zo-purple/5">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-zo-purple/10 rounded-full">
-                    <UserCircle className="w-5 h-5 text-zo-purple" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-sm">Account Identity</CardTitle>
-                    <CardDescription className="text-[10px] truncate">{user.email}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-3 bg-white/5 rounded border border-white/5 flex justify-between items-center">
-                  <span className="text-[10px] uppercase tracking-widest text-zo-muted font-bold">Role</span>
-                  <span className="text-xs text-zo-purple-2 font-bold uppercase">{profile?.role || 'CUSTOMER'}</span>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {INTERNAL_ROLES.includes(profile?.role) ? (
-                    <Button variant="default" className="w-full h-10 text-xs font-bold">
-                      <Link href="/internal/control-room">Open Control Room</Link>
-                    </Button>
-                  ) : profile?.role === 'PARTNER' || profile?.role === 'REFERRAL_PARTNER' ? (
-                    <Button variant="default" className="w-full h-10 text-xs font-bold">
-                      <Link href="/portal/partner/dashboard">Open Partner Portal</Link>
-                    </Button>
-                  ) : (
-                    <Button variant="default" className="w-full h-10 text-xs font-bold">
-                      <Link href="/portal/customer/dashboard">Open Customer Portal</Link>
-                    </Button>
-                  )}
-                  
-                  <form action={signOut} className="w-full">
-                    <Button type="submit" variant="secondary" className="w-full h-10 text-xs border-zo-border-soft hover:bg-destructive/10 hover:text-destructive">
-                      <LogOut className="w-3 h-3 mr-2" /> Sign Out
-                    </Button>
-                  </form>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Three-Path Gateway */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -121,11 +62,6 @@ export default async function HomePage() {
                 <Button variant="secondary" className="w-full text-xs border-zo-border-soft">
                   <Link href="/signup?intent=internal">Internal Signup</Link>
                 </Button>
-                {noFounderExists && (
-                  <Button variant="outline" className="w-full text-[10px] uppercase tracking-widest border-zo-purple/30 text-zo-purple-2 hover:bg-zo-purple/10 animate-pulse">
-                    <Link href="/setup-founder">Set up Founder Account</Link>
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>
