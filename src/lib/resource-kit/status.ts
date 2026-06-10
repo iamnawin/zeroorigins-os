@@ -4,6 +4,7 @@ export const TERMINAL_STATUSES = {
   tasks: ['done', 'cancelled'],
   leads: ['archived', 'lost'],
   partners: ['archived', 'rejected'],
+  customers: ['inactive', 'churned'],
   proposals: ['accepted', 'rejected', 'expired'],
   ai_workspace_apps: ['archived', 'paused'],
 } as const

@@ -26,6 +26,9 @@ export type PartnerStatus = typeof PARTNER_STATUSES[number]
 export const PROPOSAL_STATUSES = ['draft', 'internal_review', 'sent', 'viewed', 'accepted', 'rejected', 'revision_requested', 'expired'] as const
 export type ProposalStatus = typeof PROPOSAL_STATUSES[number]
 
+export const CUSTOMER_STATUSES = ['active', 'inactive', 'churned'] as const
+export type CustomerStatus = typeof CUSTOMER_STATUSES[number]
+
 export const CUSTOMER_REQUEST_STATUSES = ['submitted', 'under_review', 'discovery_call', 'proposal_shared', 'approved', 'in_progress', 'review', 'delivered', 'support', 'closed'] as const
 export type CustomerRequestStatus = typeof CUSTOMER_REQUEST_STATUSES[number]
 
@@ -177,7 +180,7 @@ export interface Customer {
   organization_id?: string
   lead_id?: string
   profile_id?: string
-  status: 'active' | 'inactive' | 'churned'
+  status: CustomerStatus
   notes?: string
   phone?: string
   website?: string
