@@ -123,7 +123,7 @@ function LoginForm() {
         }
       } else {
         // Self-heal: create a default profile. @zeroorigins.in → employee, else → CUSTOMER.
-        const defaultRole = user.email?.endsWith('@zeroorigins.in') ? 'employee' : 'CUSTOMER'
+        const defaultRole = user.email?.toLowerCase().endsWith('@zeroorigins.in') ? 'employee' : 'CUSTOMER'
         const { error: insertError } = await supabase.from('profiles').insert({
           id: user.id,
           email: user.email,

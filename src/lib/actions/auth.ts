@@ -22,7 +22,8 @@ export async function ensureProfile() {
     if (profile) return { success: true, role: profile.role }
 
     // Profile missing — self-heal. @zeroorigins.in → employee, all others → CUSTOMER.
-    const defaultRole = user.email?.endsWith('@zeroorigins.in') ? 'employee' : 'CUSTOMER'
+    const email = user.email?.toLowerCase() ?? ''
+    const defaultRole = email.endsWith('@zeroorigins.in') ? 'employee' : 'CUSTOMER'
     const insertRow = {
       id: user.id,
       email: user.email,
