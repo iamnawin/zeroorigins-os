@@ -167,6 +167,5 @@ The AI Workspace page (`/internal/ai-workspace`) reads from the `ai_workspace_ap
 
 ### Remaining gaps
 
-- Detail pages do not yet show the new contact/automation fields for leads and partners — add them in a Phase 2 edit.
 - Portal pages (`/portal/customer/dashboard`, `/portal/partner/dashboard`) are stubs.
 - All AI helpers (`src/lib/ai/*.ts`): stubs returning `{ success: false }`.
