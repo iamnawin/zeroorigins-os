@@ -1,245 +1,356 @@
 #!/usr/bin/env node
-/**
- * AI Workspace Folder Sync Script
- * Scans D:\AI-Workspace and upserts records into the ai_workspace_apps table.
- *
- * Usage:
- *   node scripts/sync-ai-workspace.mjs
- *   node scripts/sync-ai-workspace.mjs --dry-run
- *
- * Env:
- *   AI_WORKSPACE_ROOT    (default: D:\AI-Workspace)
- *   NEXT_PUBLIC_SUPABASE_URL
- *   SUPABASE_SERVICE_ROLE_KEY
- */
 
-import fs from 'fs'
+import fs from 'fs/promises'
 import path from 'path'
+import { fileURLToPath } from 'url'
+import { createClient } from '@supabase/supabase-js'
 
-const DRY_RUN = process.argv.includes('--dry-run')
-const ROOT = process.env.AI_WORKSPACE_ROOT || 'D:\\AI-Workspace'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-// Folders that map directly to folder_group
-const GROUP_FOLDERS = [
-  'Ideas', 'Experiments', 'Projects', 'Repos', 'Tools',
-  'Media', 'Video-Outputs', 'Delivered', 'Live', 'Backups', 'Sandbox', 'Temp'
-]
-
-// Known brand folders at top-level
-const BRAND_FOLDERS = [
-  'Alwithnobrain Audio Labs', 'Alwithnobrain Stuff', 'EpicsToYou'
-]
-
-// Ignore these inside app folders
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', '.turbo',
-  'coverage', '.cache', '__pycache__', '.venv', 'target'
-])
-
-// Group → default category/status mapping
-const GROUP_DEFAULTS = {
-  Ideas: { category: 'idea', status: 'idea' },
-  Experiments: { category: 'experimental', status: 'idea' },
-  Projects: { category: 'internal_tool', status: 'in_progress' },
-  Repos: { category: 'repo', status: 'active' },
-  Tools: { category: 'internal_tool', status: 'active' },
-  Media: { category: 'media', status: 'active' },
-  'Video-Outputs': { category: 'media', status: 'active' },
-  Delivered: { category: 'delivered', status: 'delivered' },
-  Live: { category: 'live', status: 'live' },
-  Backups: { category: 'internal_tool', status: 'archived' },
-  Sandbox: { category: 'experimental', status: 'idea' },
-  Temp: { category: 'experimental', status: 'idea' },
-  Brands: { category: 'brand', status: 'active' },
+// Load environment variables from .env.local
+try {
+  const envPath = path.join(path.dirname(__dirname), '.env.local')
+  const envContent = await fs.readFile(envPath, 'utf-8')
+  for (const line of envContent.split('\n')) {
+    const [key, ...valueParts] = line.split('=')
+    if (key && valueParts.length) {
+      const value = valueParts.join('=').replace(/^["']|["']$/g, '')
+      process.env[key.trim()] = value.trim()
+    }
+  }
+} catch {
+  console.log('No .env.local file found or error reading it')
 }
 
-function slugify(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+// Configuration
+const AI_WORKSPACE_ROOT = process.env.AI_WORKSPACE_ROOT || 'D:\\AI-Workspace'
+const DRY_RUN = process.argv.includes('--dry-run')
+
+// Supabase client
+let supabase = null
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+}
+
+// Folder group mappings
+const FOLDER_GROUPS = {
+  'Ideas': 'Ideas',
+  'Experiments': 'Experiments', 
+  'Projects': 'Projects',
+  'Repos': 'Repos',
+  'Tools': 'Tools',
+  'Media': 'Media',
+  'Video-Outputs': 'Video-Outputs',
+  'Delivered': 'Delivered',
+  'Live': 'Live',
+  'Backups': 'Backups',
+  'Sandbox': 'Sandbox',
+  'Temp': 'Temp',
+  'Brands': 'Brands'
+}
+
+// Brand folders (top-level brand directories)
+const BRAND_FOLDERS = [
+  'Alwithnobrain Audio Labs',
+  'Alwithnobrain Stuff', 
+  'EpicsToYou'
+]
+
+// Ignore these folders/files
+const IGNORE_PATTERNS = [
+  'node_modules',
+  '.git',
+  '.next',
+  'dist',
+  'build',
+  '.turbo',
+  'coverage',
+  '.cache',
+  'AGENTS',
+  'AI_WORKSPACE_RULES',
+  'CLAUDE'
+]
+
+function generateSlug(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim()
 }
 
 function detectAppType(appPath) {
-  const has = (f) => fs.existsSync(path.join(appPath, f))
-  if (has('next.config.ts') || has('next.config.js') || has('next.config.mjs')) return 'nextjs_app'
-  if (has('vite.config.ts') || has('vite.config.js') || has('vite.config.mjs')) return 'vite_app'
-  if (has('sfdx-project.json')) return 'salesforce_app'
-  if (has('pyproject.toml') || has('requirements.txt')) return 'python_app'
-  if (has('package.json')) return 'node_app'
-  if (has('README.md') && !has('package.json')) return 'documentation_or_concept'
-  // Check parent group for media
-  return 'workspace_folder'
-}
-
-function readMetaOverride(appPath) {
-  const metaPath = path.join(appPath, 'zo.meta.json')
-  if (!fs.existsSync(metaPath)) return null
   try {
-    const raw = fs.readFileSync(metaPath, 'utf-8')
-    return JSON.parse(raw)
-  } catch { return null }
-}
-
-function extractUrlsFromPackageJson(appPath) {
-  const pkgPath = path.join(appPath, 'package.json')
-  if (!fs.existsSync(pkgPath)) return {}
-  try {
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
-    const urls = {}
-    if (pkg.homepage) urls.website_url = pkg.homepage
-    if (pkg.repository?.url) urls.github_url = pkg.repository.url.replace(/^git\+/, '').replace(/\.git$/, '')
-    return urls
-  } catch { return {} }
-}
-
-function buildRecord(name, appPath, folderGroup) {
-  const defaults = GROUP_DEFAULTS[folderGroup] || GROUP_DEFAULTS.Repos
-  let appType = detectAppType(appPath)
-  if (['Media', 'Video-Outputs'].includes(folderGroup)) appType = 'media_project'
-
-  const record = {
-    name,
-    slug: slugify(name),
-    local_path: appPath,
-    folder_group: folderGroup,
-    category: defaults.category,
-    status: defaults.status,
-    app_type: appType,
-    is_live: folderGroup === 'Live',
-    is_delivered: folderGroup === 'Delivered',
-    is_internal_tool: !['Live', 'Delivered', 'Brands'].includes(folderGroup),
-    is_client_demo: false,
-    is_sellable_product: false,
-    is_open_source: false,
-    last_synced_at: new Date().toISOString(),
-  }
-
-  if (folderGroup === 'Repos') record.repo_path = appPath
-
-  // Extract URLs from package.json
-  const pkgUrls = extractUrlsFromPackageJson(appPath)
-  Object.assign(record, pkgUrls)
-
-  // Apply zo.meta.json overrides
-  const meta = readMetaOverride(appPath)
-  if (meta) {
-    const allowed = [
-      'name', 'status', 'category', 'app_type', 'description', 'github_url',
-      'vercel_url', 'live_url', 'prototype_url', 'website_url', 'brand_url',
-      'target_user', 'business_value', 'monetization_idea', 'is_internal_tool',
-      'is_client_demo', 'is_sellable_product', 'is_open_source', 'is_live',
-      'is_delivered', 'priority', 'next_action', 'current_issue', 'owner'
-    ]
-    for (const key of allowed) {
-      if (meta[key] !== undefined) record[key] = meta[key]
+    const files = fs.readdirSync(appPath)
+    
+    if (files.includes('next.config.js') || files.includes('next.config.ts')) {
+      return 'nextjs_app'
     }
-    // Re-slug if name changed
-    if (meta.name) record.slug = slugify(meta.name)
+    if (files.some(f => f.startsWith('vite.config'))) {
+      return 'vite_app'
+    }
+    if (files.includes('package.json')) {
+      return 'node_app'
+    }
+    if (files.includes('sfdx-project.json')) {
+      return 'salesforce_app'
+    }
+    if (files.includes('pyproject.toml') || files.includes('requirements.txt')) {
+      return 'python_app'
+    }
+    if (files.includes('README.md') && files.length <= 5) {
+      return 'documentation_or_concept'
+    }
+    
+    return 'workspace_folder'
+  } catch {
+    return 'workspace_folder'
   }
-
-  return record
 }
 
-function scanWorkspace() {
-  if (!fs.existsSync(ROOT)) {
-    console.error(`ERROR: AI_WORKSPACE_ROOT not found: ${ROOT}`)
-    process.exit(1)
+async function loadMetadataOverride(appPath) {
+  try {
+    const metaPath = path.join(appPath, 'zo.meta.json')
+    const content = await fs.readFile(metaPath, 'utf-8')
+    return JSON.parse(content)
+  } catch {
+    return null
   }
+}
 
-  const records = []
-  const entries = fs.readdirSync(ROOT, { withFileTypes: true })
+async function extractUrlsFromPackageJson(appPath) {
+  try {
+    const packagePath = path.join(appPath, 'package.json')
+    const content = await fs.readFile(packagePath, 'utf-8')
+    const pkg = JSON.parse(content)
+    return {
+      homepage: pkg.homepage,
+      repository: typeof pkg.repository === 'string' ? pkg.repository : pkg.repository?.url
+    }
+  } catch {
+    return {}
+  }
+}
 
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue
-    if (IGNORE_DIRS.has(entry.name)) continue
-
-    const entryPath = path.join(ROOT, entry.name)
-
-    // Known group folders → scan children
-    if (GROUP_FOLDERS.includes(entry.name)) {
-      const children = fs.readdirSync(entryPath, { withFileTypes: true })
-      for (const child of children) {
-        if (!child.isDirectory()) continue
-        if (IGNORE_DIRS.has(child.name)) continue
-        const childPath = path.join(entryPath, child.name)
-        records.push(buildRecord(child.name, childPath, entry.name))
+async function extractUrlsFromReadme(appPath) {
+  try {
+    const readmePath = path.join(appPath, 'README.md')
+    const content = await fs.readFile(readmePath, 'utf-8')
+    const limitedContent = content.slice(0, 2000) // Limit to first 2000 chars
+    
+    const urls = {}
+    const httpMatches = limitedContent.match(/https?:\/\/[^\s)]+/g) || []
+    
+    for (const url of httpMatches.slice(0, 3)) { // Max 3 URLs
+      if (url.includes('github.com')) {
+        urls.github_url = url
+      } else if (url.includes('vercel.app') || url.includes('netlify.app')) {
+        urls.vercel_url = url
+      } else if (!urls.website_url) {
+        urls.website_url = url
       }
     }
-    // Known brand folders → single record
-    else if (BRAND_FOLDERS.includes(entry.name)) {
-      records.push(buildRecord(entry.name, entryPath, 'Brands'))
-    }
-    // Skip special top-level non-app folders
-    // (AGENTS, AI_WORKSPACE_RULES, CLAUDE are config, not apps)
+    
+    return urls
+  } catch {
+    return {}
   }
-
-  return records
 }
 
-async function upsertToSupabase(records) {
-  if (!SUPABASE_URL || !SERVICE_KEY) {
-    console.error('\nERROR: Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
-    console.error('Set these env vars to write to the database.')
-    console.error('You can still use --dry-run without them.\n')
+function mapFolderToCategory(folderGroup) {
+  switch (folderGroup) {
+    case 'Ideas': return 'idea'
+    case 'Experiments': return 'experimental'
+    case 'Projects': return 'saas_product'
+    case 'Repos': return 'repo'
+    case 'Tools': return 'internal_tool'
+    case 'Media': case 'Video-Outputs': return 'media'
+    case 'Delivered': return 'delivered'
+    case 'Live': return 'live'
+    case 'Brands': return 'brand'
+    default: return 'internal_tool'
+  }
+}
+
+function mapFolderToStatus(folderGroup) {
+  switch (folderGroup) {
+    case 'Ideas': return 'idea'
+    case 'Experiments': return 'planned'
+    case 'Projects': return 'in_progress'
+    case 'Repos': return 'active'
+    case 'Delivered': return 'delivered'
+    case 'Live': return 'live'
+    case 'Brands': return 'active'
+    default: return 'active'
+  }
+}
+
+async function scanDirectory(dirPath) {
+  try {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true })
+    return entries.filter(entry => entry.isDirectory()).map(entry => entry.name)
+  } catch (error) {
+    console.log(`Warning: Could not scan directory ${dirPath}:`, error.message)
+    return []
+  }
+}
+
+async function scanWorkspace() {
+  console.log(`🔍 Scanning workspace: ${AI_WORKSPACE_ROOT}`)
+  
+  if (!await fs.access(AI_WORKSPACE_ROOT).then(() => true).catch(() => false)) {
+    throw new Error(`Workspace directory not found: ${AI_WORKSPACE_ROOT}`)
+  }
+
+  const apps = []
+  const topLevelDirs = await scanDirectory(AI_WORKSPACE_ROOT)
+
+  for (const dirName of topLevelDirs) {
+    if (IGNORE_PATTERNS.includes(dirName)) continue
+
+    const dirPath = path.join(AI_WORKSPACE_ROOT, dirName)
+    
+    // Handle brand folders (top-level brand directories)
+    if (BRAND_FOLDERS.includes(dirName)) {
+      const metadata = await loadMetadataOverride(dirPath)
+      const packageUrls = await extractUrlsFromPackageJson(dirPath)
+      const readmeUrls = await extractUrlsFromReadme(dirPath)
+      
+      apps.push({
+        name: dirName === 'Alwithnobrain Audio Labs' ? 'AIwithNoBrain Audio Labs' : dirName,
+        slug: generateSlug(dirName),
+        local_path: dirPath,
+        repo_path: dirPath,
+        folder_group: 'Brands',
+        category: 'brand',
+        app_type: detectAppType(dirPath),
+        status: 'active',
+        priority: 'medium',
+        is_internal_tool: false,
+        is_client_demo: false,
+        is_sellable_product: true,
+        is_open_source: false,
+        is_live: false,
+        is_delivered: false,
+        ...packageUrls,
+        ...readmeUrls,
+        ...metadata,
+        last_synced_at: new Date().toISOString()
+      })
+      continue
+    }
+
+    // Handle standard folder groups
+    if (FOLDER_GROUPS[dirName]) {
+      const folderGroup = FOLDER_GROUPS[dirName]
+      const subDirs = await scanDirectory(dirPath)
+      
+      for (const subDir of subDirs) {
+        if (IGNORE_PATTERNS.includes(subDir)) continue
+        
+        const appPath = path.join(dirPath, subDir)
+        const metadata = await loadMetadataOverride(appPath)
+        const packageUrls = await extractUrlsFromPackageJson(appPath)
+        const readmeUrls = await extractUrlsFromReadme(appPath)
+        
+        const app = {
+          name: subDir,
+          slug: generateSlug(subDir),
+          local_path: appPath,
+          repo_path: appPath,
+          folder_group: folderGroup,
+          category: mapFolderToCategory(folderGroup),
+          app_type: detectAppType(appPath),
+          status: mapFolderToStatus(folderGroup),
+          priority: 'medium',
+          is_internal_tool: folderGroup === 'Tools',
+          is_client_demo: false,
+          is_sellable_product: ['Projects', 'Delivered', 'Live'].includes(folderGroup),
+          is_open_source: false,
+          is_live: folderGroup === 'Live',
+          is_delivered: folderGroup === 'Delivered',
+          ...packageUrls,
+          ...readmeUrls,
+          ...metadata,
+          last_synced_at: new Date().toISOString()
+        }
+        
+        apps.push(app)
+      }
+    }
+  }
+
+  return apps
+}
+
+async function syncToDatabase(apps) {
+  if (!supabase) {
+    console.log('❌ No database connection. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY')
+    return
+  }
+
+  console.log(`💾 Syncing ${apps.length} apps to database...`)
+  
+  for (const app of apps) {
+    try {
+      const { error } = await supabase
+        .from('ai_workspace_apps')
+        .upsert(app, { 
+          onConflict: 'slug',
+          ignoreDuplicates: false 
+        })
+      
+      if (error) {
+        console.log(`❌ Error syncing ${app.name}:`, error.message)
+      } else {
+        console.log(`✅ Synced: ${app.name}`)
+      }
+    } catch (error) {
+      console.log(`❌ Error syncing ${app.name}:`, error.message)
+    }
+  }
+}
+
+async function main() {
+  console.log('🌱 AI Workspace Sync')
+  console.log('===================')
+  
+  try {
+    const apps = await scanWorkspace()
+    
+    console.log(`\n📊 Found ${apps.length} apps:`)
+    
+    // Group by folder group for display
+    const grouped = apps.reduce((acc, app) => {
+      const group = app.folder_group || 'Other'
+      if (!acc[group]) acc[group] = []
+      acc[group].push(app)
+      return acc
+    }, {})
+    
+    for (const [group, groupApps] of Object.entries(grouped)) {
+      console.log(`\n  ${group} (${groupApps.length}):`)
+      for (const app of groupApps) {
+        console.log(`    • ${app.name} [${app.status}] - ${app.app_type}`)
+      }
+    }
+    
+    if (DRY_RUN) {
+      console.log('\n🔍 Dry run complete - no changes made')
+    } else {
+      await syncToDatabase(apps)
+      console.log('\n✅ Sync complete!')
+    }
+    
+  } catch (error) {
+    console.error('❌ Error:', error.message)
     process.exit(1)
   }
-
-  const url = `${SUPABASE_URL}/rest/v1/ai_workspace_apps`
-  let upserted = 0
-  let errors = 0
-
-  for (const record of records) {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SERVICE_KEY,
-        'Authorization': `Bearer ${SERVICE_KEY}`,
-        'Prefer': 'resolution=merge-duplicates',
-      },
-      body: JSON.stringify(record),
-    })
-
-    if (res.ok) {
-      upserted++
-    } else {
-      errors++
-      const text = await res.text()
-      console.error(`  FAIL: ${record.name} → ${res.status} ${text}`)
-    }
-  }
-
-  return { upserted, errors }
 }
 
-// --- Main ---
-console.log(`\n🔍 AI Workspace Sync`)
-console.log(`   Root: ${ROOT}`)
-console.log(`   Mode: ${DRY_RUN ? 'DRY RUN' : 'LIVE UPSERT'}\n`)
-
-const records = scanWorkspace()
-
-console.log(`Found ${records.length} apps:\n`)
-for (const r of records) {
-  const flags = [
-    r.is_live && '🟢 live',
-    r.is_delivered && '📦 delivered',
-  ].filter(Boolean).join(' ')
-  console.log(`  [${r.folder_group}] ${r.name} (${r.app_type}) ${flags}`)
-}
-
-if (DRY_RUN) {
-  console.log(`\n✅ Dry run complete. ${records.length} records detected. No writes made.\n`)
-  process.exit(0)
-}
-
-// Check for slug uniqueness constraint - need to add slug to upsert
-// Supabase needs a unique constraint on slug for merge-duplicates to work.
-// We'll use local_path as the conflict target instead via custom approach.
-// Actually use ON CONFLICT by adding the unique constraint expectation:
-// For now, we delete-and-insert by matching slug.
-
-console.log(`\nUpserting ${records.length} records...`)
-const { upserted, errors } = await upsertToSupabase(records)
-console.log(`\n✅ Done. Upserted: ${upserted}, Errors: ${errors}\n`)
+main()
