@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from 'fs/promises'
+import fsSync from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { createClient } from '@supabase/supabase-js'
@@ -86,7 +87,7 @@ function generateSlug(name) {
 
 function detectAppType(appPath) {
   try {
-    const files = fs.readdirSync(appPath)
+    const files = fsSync.readdirSync(appPath)
     
     if (files.includes('next.config.js') || files.includes('next.config.ts')) {
       return 'nextjs_app'
@@ -290,8 +291,8 @@ async function scanWorkspace() {
 
 async function syncToDatabase(apps) {
   if (!supabase) {
-    console.log('❌ No database connection. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY')
-    return
+    console.error('Database sync requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local')
+    return false
   }
 
   console.log(`💾 Syncing ${apps.length} apps to database...`)
@@ -307,13 +308,17 @@ async function syncToDatabase(apps) {
       
       if (error) {
         console.log(`❌ Error syncing ${app.name}:`, error.message)
+        return false
       } else {
         console.log(`✅ Synced: ${app.name}`)
       }
     } catch (error) {
       console.log(`❌ Error syncing ${app.name}:`, error.message)
+      return false
     }
   }
+
+  return true
 }
 
 async function main() {
@@ -343,7 +348,11 @@ async function main() {
     if (DRY_RUN) {
       console.log('\n🔍 Dry run complete - no changes made')
     } else {
-      await syncToDatabase(apps)
+      const synced = await syncToDatabase(apps)
+      if (!synced) {
+        process.exitCode = 1
+        return
+      }
       console.log('\n✅ Sync complete!')
     }
     

@@ -42,22 +42,33 @@ export async function GET(request: Request) {
         
         if (!profile) {
           console.log('Self-healing profile for callback user:', user.email)
-          const serviceRoleClient = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            {
-              cookies: {
-                getAll() { return cookieStore.getAll() },
-                setAll() {}
-              },
-            }
-          )
-          await serviceRoleClient.from('profiles').insert({
+          const email = user.email?.toLowerCase() ?? ''
+          const defaultRole = email.endsWith('@zeroorigins.in') ? 'employee' : 'CUSTOMER'
+          const profilePayload = {
             id: user.id,
             email: user.email,
             full_name: user.user_metadata?.full_name || '',
-            role: 'CUSTOMER'
-          })
+            role: defaultRole,
+            status: 'active',
+          }
+
+          const { error: selfHealError } = await supabase.from('profiles').insert(profilePayload)
+
+          if (selfHealError && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            const serviceRoleClient = createServerClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              process.env.SUPABASE_SERVICE_ROLE_KEY,
+              {
+                cookies: {
+                  getAll() { return cookieStore.getAll() },
+                  setAll() {}
+                },
+              }
+            )
+            await serviceRoleClient.from('profiles').insert(profilePayload)
+          } else if (selfHealError) {
+            console.error('Profile callback self-heal failed:', selfHealError)
+          }
         }
       } catch (err) {
         console.error('Profile check/healing error in callback:', err)
