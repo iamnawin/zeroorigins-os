@@ -137,6 +137,27 @@ Migration `002_contact_and_automation_fields.sql` adds contact fields (`phone`, 
 
 Public forms set `automation_status = 'not_started'` and `automation_source = 'zeroorigins_os_public_form'` on every insert. This is the hook for future n8n workflows — filter `leads` or `partners` where `automation_status = 'not_started'` to find unprocessed submissions.
 
+### AI Workspace sync — rules
+
+The AI Workspace page (`/internal/ai-workspace`) reads from the `ai_workspace_apps` table. Rows get there via `scripts/sync-ai-workspace.mjs`, which scans `D:\AI-Workspace` locally and upserts to Supabase. The browser never scans disk.
+
+**Commands:**
+- `pnpm sync:workspace --dry-run` — preview detected records, no writes
+- `pnpm sync:workspace` — upsert to database
+- Tests: `node --test scripts/sync-ai-workspace.test.mjs`
+
+**Rules that must hold:**
+1. Upsert key is `slug` (unique index `ai_workspace_apps_slug_key`, migration 009). Never change the conflict target without a matching migration.
+2. The sync only upserts — it never deletes rows. Folders removed from disk keep their DB row.
+3. Dry-run must always work without any Supabase env. Write mode must fail loudly (exit 1, name the missing var) if `SUPABASE_SERVICE_ROLE_KEY` or `NEXT_PUBLIC_SUPABASE_URL` is missing from `.env.local`.
+4. `BRAND_FOLDERS` and `FOLDER_GROUPS` in the script must match the real top-level folder names in `D:\AI-Workspace` exactly (case/spelling — past bug: `Alwithnobrain` vs `AIwithnobrain`). When a new top-level folder is added on disk, add it to the script AND to `AI_FOLDER_GROUPS` in `src/types/index.ts` if it should appear as a UI filter.
+5. Dot-folders (`.claude`, `.git`, …) and `IGNORE_PATTERNS` entries are skipped — keep it that way.
+6. New columns written by the sync require a migration on the remote DB **before** syncing — Supabase silently has no column otherwise. Verify remote schema is current when debugging "missing data" (the remote DB has previously lagged behind `supabase/migrations/`).
+
+**Automation:** Windows Task Scheduler task "AI Workspace Sync" runs the script daily at 9:00 AM on Naveen's machine; log at `D:\AI-Workspace\Temp\sync-ai-workspace.log`. Manual `pnpm sync:workspace` for immediate updates.
+
+**Known data nuance:** 9 seed rows from migration 003 have `slug = NULL` and overlap by name with synced rows (e.g. OrgTrace, QureWell). Do not delete them without explicit approval.
+
 ### Remaining gaps
 
 - Detail pages do not yet show the new contact/automation fields for leads and partners — add them in a Phase 2 edit.
