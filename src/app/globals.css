@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: Inter, Geist, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: Inter, Geist, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   --color-sidebar-ring: var(--ring);
   --color-sidebar-border: var(--border);
@@ -120,53 +120,53 @@
 
 /* ─── Dark mode ─── */
 .dark {
-  --zo-black: #050505;
-  --zo-black-2: #08080b;
-  --zo-black-3: #0d0d12;
-  --zo-grey: #1f1f25;
-  --zo-chrome: #e5e5ee;
-  --zo-silver: #c8c8d0;
-  --zo-muted-color: rgba(255, 255, 255, 0.58);
-  --zo-dim-color: rgba(255, 255, 255, 0.35);
-  --zo-border-soft: rgba(255, 255, 255, 0.08);
+  --zo-black: #000000;
+  --zo-black-2: #0a0a0a;
+  --zo-black-3: #111111;
+  --zo-grey: #1a1a1a;
+  --zo-chrome: #f5f5f5;
+  --zo-silver: #d4d4d4;
+  --zo-muted-color: rgba(255, 255, 255, 0.6);
+  --zo-dim-color: rgba(255, 255, 255, 0.4);
+  --zo-border-soft: rgba(255, 255, 255, 0.1);
 
-  --background: #050505;
-  --foreground: rgba(255, 255, 255, 0.94);
+  --background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.15), transparent 60%), #000000;
+  --foreground: rgba(255, 255, 255, 0.95);
 
-  --card: #08080b;
-  --card-foreground: rgba(255, 255, 255, 0.94);
+  --card: rgba(255, 255, 255, 0.04);
+  --card-foreground: rgba(255, 255, 255, 0.95);
 
-  --popover: #0d0d12;
-  --popover-foreground: rgba(255, 255, 255, 0.94);
+  --popover: rgba(10, 10, 10, 0.95);
+  --popover-foreground: rgba(255, 255, 255, 0.95);
 
   --primary: #8b5cf6;
   --primary-foreground: #ffffff;
 
-  --secondary: rgba(22, 22, 28, 0.78);
-  --secondary-foreground: rgba(255, 255, 255, 0.94);
+  --secondary: rgba(255, 255, 255, 0.05);
+  --secondary-foreground: rgba(255, 255, 255, 0.9);
 
-  --muted: rgba(22, 22, 28, 0.82);
-  --muted-foreground: rgba(255, 255, 255, 0.58);
+  --muted: rgba(255, 255, 255, 0.03);
+  --muted-foreground: rgba(255, 255, 255, 0.6);
 
-  --accent: rgba(139, 92, 246, 0.15);
+  --accent: rgba(139, 92, 246, 0.1);
   --accent-foreground: #a78bfa;
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --border: rgba(139, 92, 246, 0.26);
-  --input: rgba(255, 255, 255, 0.10);
-  --ring: rgba(139, 92, 246, 0.5);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: rgba(139, 92, 246, 0.4);
 
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 
-  --sidebar: #08080b;
-  --sidebar-foreground: rgba(255, 255, 255, 0.94);
+  --sidebar: rgba(10, 10, 10, 0.9);
+  --sidebar-foreground: rgba(255, 255, 255, 0.95);
   --sidebar-primary: #8b5cf6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(22, 22, 28, 0.78);
+  --sidebar-accent: rgba(255, 255, 255, 0.05);
   --sidebar-accent-foreground: #a78bfa;
-  --sidebar-border: rgba(139, 92, 246, 0.26);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
 }
 
 @layer base {
@@ -185,12 +185,106 @@
   .zo-gradient-purple {
     background: linear-gradient(135deg, #8b5cf6 0%, #4c1d95 100%);
   }
+  
   .zo-glass {
-    background: rgba(14, 14, 18, 0.86);
+    background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(139, 92, 246, 0.26);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
+  
+  .zo-glass-elevated {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 
+      0 20px 40px rgba(0, 0, 0, 0.4),
+      0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  }
+  
   .zo-glow-purple {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+    box-shadow: 
+      0 0 20px rgba(139, 92, 246, 0.1),
+      0 0 40px rgba(139, 92, 246, 0.05);
+  }
+  
+  .zo-glow-purple-intense {
+    box-shadow: 
+      0 0 30px rgba(139, 92, 246, 0.2),
+      0 0 60px rgba(139, 92, 246, 0.1);
+  }
+  
+  .zo-surface {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .zo-surface-elevated {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  .zo-grid-pattern {
+    background-image: 
+      linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  .zo-button-primary {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    border: 1px solid rgba(139, 92, 246, 0.5);
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+    transition: all 150ms ease;
+  }
+  
+  .zo-button-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+    border-color: rgba(139, 92, 246, 0.8);
+  }
+  
+  .zo-button-primary:active {
+    transform: translateY(0);
+    transition: transform 80ms ease;
+  }
+  
+  .zo-focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black;
+  }
+  
+  .zo-motion-safe {
+    @apply motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out;
+  }
+  
+  /* Mobile optimizations */
+  @screen max-sm {
+    .zo-glass, .zo-glass-elevated {
+      backdrop-filter: blur(8px);
+    }
+    
+    .zo-grid-pattern {
+      background-size: 15px 15px;
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .zo-motion-safe {
+      transition: none !important;
+      animation: none !important;
+    }
+    
+    .animate-pulse, .animate-spin {
+      animation: none !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .zo-glass, .zo-glass-elevated {
+      border-width: 2px;
+    }
   }
 }

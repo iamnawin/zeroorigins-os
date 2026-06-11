@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import { cn } from '@/lib/utils'
 import {
   Lightbulb, FolderKanban, CheckSquare, Users, Handshake, Bot,
-  FileText, Building2, Plus, ArrowRight, Clock, Workflow, ClipboardList
+  FileText, Building2, Plus, ArrowRight, Clock, Workflow, 
+  ClipboardList, Activity, TrendingUp, Zap
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -39,6 +40,155 @@ function formatDate(value?: string | null): string {
 
 const OPEN_TASK = (s: string) => !['done', 'cancelled'].includes(s)
 const OPEN_LEAD = (s: string) => !['lost', 'archived'].includes(s)
+
+function KPICard({ 
+  icon: Icon, 
+  label, 
+  count, 
+  status, 
+  description, 
+  href,
+  accent = 'purple' 
+}: {
+  icon: LucideIcon
+  label: string
+  count: number
+  status: string
+  description: string
+  href: string
+  accent?: 'purple' | 'blue' | 'green' | 'orange'
+}) {
+  const accentColors = {
+    purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/20 group-hover:border-purple-500/40',
+    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/20 group-hover:border-blue-500/40',
+    green: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/20 group-hover:border-emerald-500/40',
+    orange: 'from-amber-500/20 to-amber-600/10 border-amber-500/20 group-hover:border-amber-500/40'
+  }
+
+  const iconColors = {
+    purple: 'text-purple-400 group-hover:text-purple-300',
+    blue: 'text-blue-400 group-hover:text-blue-300',
+    green: 'text-emerald-400 group-hover:text-emerald-300',
+    orange: 'text-amber-400 group-hover:text-amber-300'
+  }
+
+  return (
+    <Link 
+      href={href}
+      className={cn(
+        "group relative overflow-hidden zo-surface-elevated hover:zo-glass zo-motion-safe block p-6 rounded-xl border",
+        accentColors[accent]
+      )}
+    >
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-5 group-hover:opacity-10 zo-motion-safe">
+        <div className="absolute top-4 right-4">
+          <Icon className="w-12 h-12 text-white" />
+        </div>
+      </div>
+      
+      {/* Accent line */}
+      <div className={cn(
+        "absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-current to-transparent opacity-60 group-hover:opacity-100 zo-motion-safe",
+        iconColors[accent]
+      )} />
+
+      <div className="relative z-10 space-y-4">
+        {/* Icon and count */}
+        <div className="flex items-start justify-between">
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center zo-motion-safe",
+            accent === 'purple' ? 'bg-purple-500/10 group-hover:bg-purple-500/15' :
+            accent === 'blue' ? 'bg-blue-500/10 group-hover:bg-blue-500/15' :
+            accent === 'green' ? 'bg-emerald-500/10 group-hover:bg-emerald-500/15' :
+            'bg-amber-500/10 group-hover:bg-amber-500/15'
+          )}>
+            <Icon className={cn("w-5 h-5 zo-motion-safe", iconColors[accent])} />
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-white tabular-nums">{count}</div>
+            <div className={cn("text-sm font-medium", iconColors[accent])}>{status}</div>
+          </div>
+        </div>
+
+        {/* Label and description */}
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold text-white">{label}</h3>
+          <p className="text-sm text-white/60 leading-relaxed">{description}</p>
+        </div>
+
+        {/* Hover indicator */}
+        <div className="flex items-center text-white/40 group-hover:text-white/60 zo-motion-safe">
+          <span className="text-xs font-medium">View details</span>
+          <ArrowRight className="ml-1 w-3 h-3 group-hover:translate-x-0.5 zo-motion-safe" />
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+function EmptyState({ 
+  icon: Icon, 
+  title, 
+  description, 
+  actionLabel, 
+  actionHref 
+}: {
+  icon: LucideIcon
+  title: string
+  description: string
+  actionLabel?: string
+  actionHref?: string
+}) {
+  return (
+    <div className="py-12 text-center space-y-4">
+      <div className="w-12 h-12 mx-auto bg-white/5 rounded-xl flex items-center justify-center">
+        <Icon className="w-6 h-6 text-white/40" />
+      </div>
+      <div className="space-y-2">
+        <h3 className="font-medium text-white/80">{title}</h3>
+        <p className="text-sm text-white/50 max-w-sm mx-auto leading-relaxed">{description}</p>
+      </div>
+      {actionLabel && actionHref && (
+        <Link 
+          href={actionHref}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-300 hover:text-purple-200 zo-motion-safe"
+        >
+          <Plus className="w-4 h-4" />
+          {actionLabel}
+        </Link>
+      )}
+    </div>
+  )
+}
+
+function RecentItem({ 
+  href, 
+  title, 
+  subtitle, 
+  status 
+}: {
+  href: string
+  title: string
+  subtitle: string
+  status: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg zo-motion-safe group"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-white/90 truncate">{title}</div>
+        <div className="text-xs text-white/50 truncate">{subtitle}</div>
+      </div>
+      <div className="flex items-center gap-3">
+        <ResourceStatusBadge status={status} />
+        <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white/60 group-hover:translate-x-0.5 zo-motion-safe" />
+      </div>
+    </Link>
+  )
+}
 
 export default async function ControlRoomPage() {
   const supabase = await createClient()
@@ -76,326 +226,234 @@ export default async function ControlRoomPage() {
 
   const count = (rows: Row[], status: string) => rows.filter(r => r.status === status).length
 
-  const kpis: {
-    label: string
-    icon: LucideIcon
-    total: number
-    subLabel: string
-    description: string
-    href: string
-  }[] = [
-    { label: 'Leads', icon: Users, total: leads.filter(l => OPEN_LEAD(l.status)).length, subLabel: `${count(leads, 'new')} new`, description: 'Open sales pipeline', href: '/internal/leads' },
-    { label: 'Projects', icon: FolderKanban, total: count(projects, 'active'), subLabel: `${projects.length} total`, description: 'Active builds in delivery', href: '/internal/projects' },
-    { label: 'Tasks', icon: CheckSquare, total: tasks.filter(t => OPEN_TASK(t.status)).length, subLabel: `${count(tasks, 'in_progress')} in progress`, description: 'Pending execution items', href: '/internal/tasks' },
-    { label: 'Partners', icon: Handshake, total: count(partners, 'new_application'), subLabel: `${partners.length} total`, description: 'New partner requests', href: '/internal/partners' },
-    { label: 'Customers', icon: Building2, total: count(customers, 'active'), subLabel: `${customers.length} total`, description: 'Active customer accounts', href: '/internal/customers' },
-    { label: 'Ideas', icon: Lightbulb, total: ideas.length, subLabel: `${count(ideas, 'under_review')} under review`, description: 'Concepts in the funnel', href: '/internal/ideas' },
-    { label: 'AI Workspace', icon: Bot, total: apps.length, subLabel: `${count(apps as unknown as Row[], 'deployed')} deployed`, description: 'Apps and experiments', href: '/internal/ai-workspace' },
-    { label: 'Proposals', icon: FileText, total: proposals.length, subLabel: `${count(proposals, 'sent')} sent`, description: 'Sent to leads and customers', href: '/internal/proposals' },
-  ]
-
-  const quickActions: { label: string; href: string; icon: LucideIcon }[] = [
-    { label: 'Add Idea', href: '/internal/ideas/new', icon: Lightbulb },
-    { label: 'Add Lead', href: '/internal/leads/new', icon: Users },
-    { label: 'Add Partner', href: '/internal/partners/new', icon: Handshake },
-    { label: 'Create Project', href: '/internal/projects/new', icon: FolderKanban },
-    { label: 'Add AI Workspace App', href: '/internal/ai-workspace/new', icon: Bot },
-    { label: 'View Tasks', href: '/internal/tasks', icon: CheckSquare },
-  ]
-
-  const byCreatedDesc = (a: Row, b: Row) => ((a.created_at ?? '') < (b.created_at ?? '') ? 1 : -1)
-  const recentLeads = [...leads].sort(byCreatedDesc).slice(0, 5)
-  const recentPartners = [...partners].sort(byCreatedDesc).slice(0, 5)
-  const activeProjects = projects.filter(p => p.status === 'active').sort(byCreatedDesc).slice(0, 5)
-  const tasksDueSoon = tasks
-    .filter(t => t.due_date && OPEN_TASK(t.status))
-    .sort((a, b) => ((a.due_date ?? '') < (b.due_date ?? '') ? -1 : 1))
-    .slice(0, 5)
-
-  const leadsQueued = leads.filter(l => l.automation_status === 'not_started').length
-  const partnersQueued = partners.filter(p => p.automation_status === 'not_started').length
-
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'there'
   const role = (profile?.role ?? 'employee') as string
   const isAdmin = role === 'admin'
-  const myTasks = tasks.filter(t => t.assigned_to === user?.id && OPEN_TASK(t.status)).slice(0, 5)
 
   const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata',
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
   })
 
+  const byCreatedDesc = (a: Row, b: Row) => ((a.created_at ?? '') < (b.created_at ?? '') ? 1 : -1)
+  const recentLeads = [...leads].sort(byCreatedDesc).slice(0, 4)
+  const recentProjects = [...projects].sort(byCreatedDesc).slice(0, 4)
+  const recentApps = apps.slice(0, 4)
+
   return (
-    <div className="space-y-8 selection:bg-zo-purple/20">
-      {/* Hero / status band */}
-      <section className="relative overflow-hidden rounded-xl border border-border bg-card p-6">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse 50% 90% at 85% 0%, rgba(139, 92, 246, 0.12), transparent 65%)' }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.035]"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(139,92,246,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.7) 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
-          }}
-        />
-        <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold tracking-tight text-zo-chrome">
-                {isAdmin ? 'Control Room' : 'My Workspace'}
-              </h1>
-              <span className="inline-flex items-center rounded-full bg-zo-purple/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zo-purple dark:bg-zo-purple/15">
-                {role}
-              </span>
+    <div className="max-w-7xl mx-auto space-y-12 p-6">
+      {/* Command Hero Panel */}
+      <div className="relative overflow-hidden zo-glass-elevated rounded-2xl border-white/10">
+        {/* Background pattern */}
+        <div className="absolute inset-0 zo-grid-pattern opacity-10" />
+        
+        <div className="relative z-10 p-8">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+            {/* Status Info */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <h1 className="text-4xl font-bold text-white">Control Room</h1>
+                <div className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full">
+                  <span className="text-xs font-bold uppercase tracking-wider text-purple-300">{role}</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <p className="text-xl text-white/80">Welcome back, {displayName}</p>
+                <div className="flex items-center gap-4 text-sm text-white/60">
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                      <div className="absolute inset-0 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    </div>
+                    <span>Workspace online</span>
+                  </div>
+                  <span>•</span>
+                  <span>{today}</span>
+                </div>
+              </div>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">Welcome back, {displayName}</p>
-            <div className="mt-3 flex items-center gap-3 text-[11px] text-zo-muted">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                </span>
-                Workspace online
-              </span>
-              <span className="text-zo-dim">·</span>
-              <span>{today}</span>
+
+            {/* Quick Actions */}
+            <div className="flex flex-wrap gap-3">
+              <Link href="/internal/leads/new" className="zo-button-primary h-12 px-6 flex items-center gap-2 font-semibold text-white">
+                <Plus className="w-4 h-4" />
+                New Lead
+              </Link>
+              <Link href="/internal/projects/new" className="h-12 px-6 bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl flex items-center gap-2 font-semibold text-white zo-motion-safe">
+                <FolderKanban className="w-4 h-4" />
+                New Project
+              </Link>
+              <Link href="/internal/tasks" className="h-12 px-6 bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl flex items-center gap-2 font-semibold text-white zo-motion-safe">
+                <CheckSquare className="w-4 h-4" />
+                View Tasks
+              </Link>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href="/internal/leads/new" className={cn(buttonVariants(), 'font-semibold')}>
-              <Plus className="h-3.5 w-3.5" /> New Lead
-            </Link>
-            <Link href="/internal/projects/new" className={cn(buttonVariants({ variant: 'secondary' }), 'font-semibold')}>
-              <Plus className="h-3.5 w-3.5" /> New Project
-            </Link>
-            <Link href="/internal/tasks" className={cn(buttonVariants({ variant: 'secondary' }), 'font-semibold')}>
-              <CheckSquare className="h-3.5 w-3.5" /> View Tasks
-            </Link>
           </div>
         </div>
-      </section>
-
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {kpis.map(k => (
-          <Link
-            key={k.label}
-            href={k.href}
-            className="group rounded-xl border border-border bg-card p-4 transition-all hover:border-zo-purple/40 hover:shadow-lg hover:shadow-zo-purple/5 active:translate-y-px"
-          >
-            <div className="flex items-start justify-between">
-              <k.icon className="h-4 w-4 text-zo-purple opacity-80 transition-opacity group-hover:opacity-100" />
-              <span className="text-2xl font-bold tabular-nums text-zo-chrome">{k.total}</span>
-            </div>
-            <p className="mt-2.5 text-sm font-semibold text-zo-chrome">{k.label}</p>
-            <p className="mt-0.5 text-[11px] font-medium text-zo-purple-2">{k.subLabel}</p>
-            <p className="mt-1 hidden text-xs text-zo-muted sm:block">{k.description}</p>
-          </Link>
-        ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Main column */}
-        <div className="space-y-6 lg:col-span-2">
-          {!isAdmin && (
-            <SectionCard title="My Tasks" icon={ClipboardList}>
-              {myTasks.length > 0 ? (
-                <RowList
-                  items={myTasks.map(t => ({ id: t.id, primary: t.title ?? 'Untitled', status: t.status, meta: t.due_date ? `Due ${formatDate(t.due_date)}` : 'No due date', href: `/internal/tasks/${t.id}` }))}
-                />
-              ) : (
-                <p className="py-6 text-center text-xs text-zo-muted">
-                  Assigned work will appear here once Admin assigns records.
-                </p>
-              )}
-            </SectionCard>
-          )}
+      {/* KPI Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KPICard
+          icon={Users}
+          label="Leads"
+          count={leads.filter(l => OPEN_LEAD(l.status)).length}
+          status={`${count(leads, 'new')} new`}
+          description="Open sales pipeline"
+          href="/internal/leads"
+          accent="purple"
+        />
+        <KPICard
+          icon={FolderKanban}
+          label="Projects"
+          count={count(projects, 'active')}
+          status={`${projects.length} total`}
+          description="Builds in delivery"
+          href="/internal/projects"
+          accent="blue"
+        />
+        <KPICard
+          icon={CheckSquare}
+          label="Tasks"
+          count={tasks.filter(t => OPEN_TASK(t.status)).length}
+          status={`${count(tasks, 'in_progress')} in progress`}
+          description="Execution queue"
+          href="/internal/tasks"
+          accent="green"
+        />
+        <KPICard
+          icon={Bot}
+          label="AI Workspace"
+          count={apps.length}
+          status={`${count(apps as unknown as Row[], 'deployed')} deployed`}
+          description="Apps and experiments"
+          href="/internal/ai-workspace"
+          accent="orange"
+        />
+      </div>
 
-          <SectionCard title="Recent Leads" icon={Users} viewAllHref="/internal/leads">
+      {/* Main Work Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recent Leads */}
+        <Card className="zo-glass border-white/10 col-span-1">
+          <CardHeader className="border-b border-white/10 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                  <Users className="w-4 h-4 text-purple-400" />
+                </div>
+                <CardTitle className="text-white">Recent Leads</CardTitle>
+              </div>
+              <Link href="/internal/leads" className="text-xs text-purple-300 hover:text-purple-200 zo-motion-safe">
+                View all →
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
             {recentLeads.length > 0 ? (
-              <RowList
-                items={recentLeads.map(l => ({ id: l.id, primary: l.name ?? 'Unknown', status: l.status, meta: l.company || formatDate(l.created_at), href: `/internal/leads/${l.id}` }))}
-              />
-            ) : (
-              <EmptyHint text="No leads yet." ctaLabel="Add your first lead" ctaHref="/internal/leads/new" />
-            )}
-          </SectionCard>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <SectionCard title="Active Projects" icon={FolderKanban} viewAllHref="/internal/projects">
-              {activeProjects.length > 0 ? (
-                <RowList
-                  items={activeProjects.map(p => ({ id: p.id, primary: p.title ?? 'Untitled', status: p.status, meta: formatDate(p.created_at), href: `/internal/projects/${p.id}` }))}
-                />
-              ) : (
-                <EmptyHint text="No active projects yet. Create one from a won lead." ctaLabel="Create project" ctaHref="/internal/projects/new" />
-              )}
-            </SectionCard>
-            <SectionCard title="Tasks Due Soon" icon={Clock} viewAllHref="/internal/tasks">
-              {tasksDueSoon.length > 0 ? (
-                <RowList
-                  items={tasksDueSoon.map(t => ({ id: t.id, primary: t.title ?? 'Untitled', status: t.status, meta: formatDate(t.due_date), href: `/internal/tasks/${t.id}` }))}
-                />
-              ) : (
-                <p className="py-6 text-center text-xs text-zo-muted">No upcoming tasks.</p>
-              )}
-            </SectionCard>
-          </div>
-
-          <SectionCard title="AI Workspace Snapshot" icon={Bot} viewAllHref="/internal/ai-workspace">
-            {apps.length > 0 ? (
-              <div className="space-y-1">
-                {apps.map(app => {
-                  const url = app.live_url || app.vercel_url || app.github_url
-                  return (
-                    <Link
-                      key={app.id}
-                      href={`/internal/ai-workspace/${app.id}`}
-                      className="group/app flex items-center justify-between gap-3 rounded p-3 transition-colors hover:bg-zo-purple/5 dark:hover:bg-white/5"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zo-purple" />
-                        <span className="truncate text-sm font-medium text-zo-chrome">{app.name}</span>
-                        <ResourceStatusBadge status={app.status} />
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="hidden truncate text-[10px] italic text-zo-dim md:block md:max-w-[180px]">
-                          {app.next_action || 'No next action'}
-                        </span>
-                        {url && <span className="text-[9px] font-bold uppercase tracking-tighter text-zo-purple-2">Link</span>}
-                      </div>
-                    </Link>
-                  )
-                })}
+              <div className="divide-y divide-white/5">
+                {recentLeads.map(lead => (
+                  <RecentItem
+                    key={lead.id}
+                    href={`/internal/leads/${lead.id}`}
+                    title={lead.name ?? 'Unknown'}
+                    subtitle={lead.company || formatDate(lead.created_at)}
+                    status={lead.status}
+                  />
+                ))}
               </div>
             ) : (
-              <EmptyHint text="No AI Workspace apps registered yet." ctaLabel="Create AI Workspace module" ctaHref="/internal/ai-workspace/new" />
-            )}
-          </SectionCard>
-        </div>
-
-        {/* Side column */}
-        <div className="space-y-6">
-          <SectionCard title="Automation Queue" icon={Workflow}>
-            {leadsQueued + partnersQueued > 0 ? (
-              <div className="space-y-1">
-                <Link href="/internal/leads" className="flex items-center justify-between gap-3 rounded p-2.5 transition-colors hover:bg-zo-purple/5 dark:hover:bg-white/5">
-                  <span className="text-sm text-zo-silver">Leads awaiting automation</span>
-                  <span className="text-sm font-bold tabular-nums text-zo-purple-2">{leadsQueued}</span>
-                </Link>
-                <Link href="/internal/partners" className="flex items-center justify-between gap-3 rounded p-2.5 transition-colors hover:bg-zo-purple/5 dark:hover:bg-white/5">
-                  <span className="text-sm text-zo-silver">Partner requests awaiting automation</span>
-                  <span className="text-sm font-bold tabular-nums text-zo-purple-2">{partnersQueued}</span>
-                </Link>
-                <p className="px-2.5 pt-2 text-[10px] leading-relaxed text-zo-dim">
-                  n8n workflows pick up records marked <span className="font-mono">not_started</span>.
-                </p>
-              </div>
-            ) : (
-              <p className="py-6 text-center text-xs text-zo-muted">No automation events yet.</p>
-            )}
-          </SectionCard>
-
-          <SectionCard title="Recent Partner Requests" icon={Handshake} viewAllHref="/internal/partners">
-            {recentPartners.length > 0 ? (
-              <RowList
-                items={recentPartners.map(p => ({ id: p.id, primary: p.name ?? 'Unknown', status: p.status, meta: p.company || formatDate(p.created_at), href: `/internal/partners/${p.id}` }))}
+              <EmptyState
+                icon={Users}
+                title="No leads yet"
+                description="Capture your first build request or create one manually."
+                actionLabel="Add Lead"
+                actionHref="/internal/leads/new"
               />
-            ) : (
-              <p className="py-6 text-center text-xs text-zo-muted">No partner requests yet.</p>
             )}
-          </SectionCard>
+          </CardContent>
+        </Card>
 
-          <SectionCard title="Quick Actions" icon={Plus}>
-            <div className="space-y-2">
-              {quickActions.map(a => (
-                <Link
-                  key={a.label}
-                  href={a.href}
-                  className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'group/qa h-10 w-full justify-start text-xs')}
-                >
-                  <a.icon className="mr-3 h-3 w-3 text-zo-purple opacity-70 group-hover/qa:opacity-100" /> {a.label}
-                </Link>
-              ))}
+        {/* Active Projects */}
+        <Card className="zo-glass border-white/10 col-span-1">
+          <CardHeader className="border-b border-white/10 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                  <FolderKanban className="w-4 h-4 text-blue-400" />
+                </div>
+                <CardTitle className="text-white">Recent Projects</CardTitle>
+              </div>
+              <Link href="/internal/projects" className="text-xs text-blue-300 hover:text-blue-200 zo-motion-safe">
+                View all →
+              </Link>
             </div>
-          </SectionCard>
-        </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {recentProjects.length > 0 ? (
+              <div className="divide-y divide-white/5">
+                {recentProjects.map(project => (
+                  <RecentItem
+                    key={project.id}
+                    href={`/internal/projects/${project.id}`}
+                    title={project.title ?? 'Untitled'}
+                    subtitle={formatDate(project.created_at)}
+                    status={project.status}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={FolderKanban}
+                title="No active projects yet"
+                description="Create one from a won lead or start a new project."
+                actionLabel="Create Project"
+                actionHref="/internal/projects/new"
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* AI Workspace */}
+        <Card className="zo-glass border-white/10 col-span-1">
+          <CardHeader className="border-b border-white/10 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-orange-400" />
+                </div>
+                <CardTitle className="text-white">AI Workspace</CardTitle>
+              </div>
+              <Link href="/internal/ai-workspace" className="text-xs text-orange-300 hover:text-orange-200 zo-motion-safe">
+                View all →
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {recentApps.length > 0 ? (
+              <div className="divide-y divide-white/5">
+                {recentApps.map(app => (
+                  <RecentItem
+                    key={app.id}
+                    href={`/internal/ai-workspace/${app.id}`}
+                    title={app.name}
+                    subtitle={app.next_action || 'No next action'}
+                    status={app.status}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Bot}
+                title="No apps yet"
+                description="Create your first AI workspace app to get started."
+                actionLabel="Add App"
+                actionHref="/internal/ai-workspace/new"
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
-    </div>
-  )
-}
-
-function SectionCard({
-  title,
-  icon: Icon,
-  viewAllHref,
-  children,
-}: {
-  title: string
-  icon: LucideIcon
-  viewAllHref?: string
-  children: React.ReactNode
-}) {
-  return (
-    <Card className="bg-card border-border">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-4">
-        <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-zo-purple" />
-          <CardTitle className="text-sm font-bold uppercase tracking-wider">{title}</CardTitle>
-        </div>
-        {viewAllHref && (
-          <Link href={viewAllHref} className="flex items-center text-[10px] text-zo-muted transition-colors hover:text-zo-purple">
-            View All <ArrowRight className="ml-1 h-3 w-3" />
-          </Link>
-        )}
-      </CardHeader>
-      <CardContent className="pt-4">{children}</CardContent>
-    </Card>
-  )
-}
-
-interface RowItem {
-  id: string
-  primary: string
-  status: string
-  meta: string
-  href: string
-}
-
-function RowList({ items }: { items: RowItem[] }) {
-  return (
-    <div className="space-y-1">
-      {items.map(item => (
-        <Link
-          key={item.id}
-          href={item.href}
-          className="flex items-center justify-between gap-3 rounded p-2.5 transition-colors hover:bg-zo-purple/5 dark:hover:bg-white/5"
-        >
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-medium text-zo-chrome">{item.primary}</span>
-            <span className="truncate text-[10px] text-zo-dim">{item.meta}</span>
-          </div>
-          <ResourceStatusBadge status={item.status} />
-        </Link>
-      ))}
-    </div>
-  )
-}
-
-function EmptyHint({ text, ctaLabel, ctaHref }: { text: string; ctaLabel: string; ctaHref: string }) {
-  return (
-    <div className="py-8 text-center">
-      <p className="text-xs text-zo-muted">{text}</p>
-      <Link
-        href={ctaHref}
-        className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'mt-4 inline-flex items-center')}
-      >
-        <Plus className="mr-1 h-3 w-3" /> {ctaLabel}
-      </Link>
     </div>
   )
 }

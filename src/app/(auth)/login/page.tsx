@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react'
 import { INTERNAL_ROLES, EXTERNAL_ROLES, type Role } from '@/types'
 import { isZeroOriginsEmail } from '@/lib/supabase/auth-helpers'
 import { ensureProfile } from '@/lib/actions/auth'
+import Image from 'next/image'
 
 function LoginForm() {
   const searchParams = useSearchParams()
@@ -33,13 +34,23 @@ function LoginForm() {
   const router = useRouter()
   const supabase = createClient()
 
-  const intentLabels: Record<string, string> = {
-    internal: 'Internal Login',
-    customer: 'Customer Login',
-    partner: 'Partner Login'
+  const intentLabels: Record<string, { title: string, subtitle: string, note?: string }> = {
+    internal: { 
+      title: 'Internal Login', 
+      subtitle: 'Sign in to your ZeroOrigins workspace.',
+      note: 'Internal access is limited to active @zeroorigins.in accounts.'
+    },
+    customer: { 
+      title: 'Customer Login', 
+      subtitle: 'Access your client portal and project dashboard.',
+    },
+    partner: { 
+      title: 'Partner Login', 
+      subtitle: 'Access collaboration tools and partner resources.',
+    }
   }
 
-  const currentLabel = intent ? intentLabels[intent] || 'Sign In' : 'Sign In'
+  const currentIntent = intent ? intentLabels[intent] || { title: 'Sign In', subtitle: 'Access your account.' } : { title: 'Sign In', subtitle: 'Access your account.' }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -154,46 +165,104 @@ function LoginForm() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-center gap-2 mb-2">
-        <h1 className="text-2xl font-bold text-zo-chrome">{currentLabel}</h1>
-        <p className="text-sm text-zo-muted">Sign in to your ZeroOrigins workspace</p>
+    <div className="w-full max-w-md space-y-8">
+      {/* Header */}
+      <div className="text-center space-y-6">
+        <div className="flex justify-center">
+          <Image
+            src="/logo.png"
+            alt="ZeroOrigins"
+            width={48}
+            height={48}
+            className="w-12 h-12"
+            priority
+          />
+        </div>
+        <div className="space-y-3">
+          <h1 className="text-3xl font-bold text-white">{currentIntent.title}</h1>
+          <p className="text-white/60">{currentIntent.subtitle}</p>
+          {currentIntent.note && (
+            <p className="text-sm text-white/40 max-w-sm mx-auto leading-relaxed">
+              {currentIntent.note}
+            </p>
+          )}
+        </div>
       </div>
 
-      <Card className="border-border bg-card shadow-2xl">
+      {/* Auth Card */}
+      <Card className="zo-glass-elevated border-white/10 backdrop-blur-xl">
         <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4 pt-6">
+          <CardContent className="p-8 space-y-6">
             {error && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-medium leading-relaxed">
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-300 leading-relaxed">
                 {error}
               </div>
             )}
-            <fieldset disabled={loading} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Email</Label>
-                <Input id="email" type="email" placeholder="name@zeroorigins.in" value={email} onChange={e => setEmail(e.target.value)} required />
+            <fieldset disabled={loading} className="space-y-5">
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-white/80 font-medium">
+                  Email Address
+                </Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder={intent === 'internal' ? 'name@zeroorigins.in' : 'your@email.com'}
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  required 
+                  className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring"
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Password</Label>
-                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-white/80 font-medium">
+                  Password
+                </Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="Enter your password"
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  required 
+                  className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring"
+                />
               </div>
             </fieldset>
           </CardContent>
-          <CardFooter className="flex-col gap-3">
-            <Button type="submit" className="w-full font-bold h-11" disabled={loading}>
+          <CardFooter className="p-8 pt-0 flex-col gap-6">
+            <Button 
+              type="submit" 
+              className="w-full h-12 zo-button-primary text-white font-semibold" 
+              disabled={loading}
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {redirecting ? 'Opening workspace...' : loading ? 'Signing in...' : 'Sign In'}
             </Button>
-            <div className="flex gap-6 text-xs text-zo-muted mt-2">
-              <Link href={`/signup${intent ? `?intent=${intent}` : ''}`} className="hover:text-zo-purple transition-colors">Create account</Link>
-              <Link href="/forgot-password" title="Forgot password?" className="hover:text-zo-purple transition-colors">Forgot password?</Link>
+            
+            <div className="flex justify-center gap-8 text-sm text-white/60">
+              <Link 
+                href={`/signup${intent ? `?intent=${intent}` : ''}`} 
+                className="hover:text-white zo-motion-safe"
+              >
+                Create account
+              </Link>
+              <Link 
+                href="/forgot-password" 
+                className="hover:text-white zo-motion-safe"
+              >
+                Forgot password?
+              </Link>
             </div>
           </CardFooter>
         </form>
       </Card>
       
+      {/* Footer */}
       <div className="text-center">
-        <Link href="/" className="text-[10px] uppercase tracking-widest text-zo-muted hover:text-zo-purple transition-colors">
+        <Link 
+          href="/" 
+          className="text-xs text-white/40 hover:text-white/60 zo-motion-safe uppercase tracking-wide"
+        >
           ← Back to Gateway
         </Link>
       </div>
@@ -205,7 +274,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center p-12">
-        <div className="w-6 h-6 border-2 border-zo-purple border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>
       <LoginForm />

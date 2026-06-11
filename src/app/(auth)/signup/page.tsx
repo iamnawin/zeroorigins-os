@@ -3,12 +3,12 @@
 import { useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Loader2 } from 'lucide-react'
 import { INTERNAL_ROLES } from '@/types'
 import { isZeroOriginsEmail } from '@/lib/supabase/auth-helpers'
@@ -26,6 +26,24 @@ function SignupForm() {
   
   const router = useRouter()
   const supabase = createClient()
+
+  const intentLabels: Record<string, { title: string, subtitle: string, note?: string }> = {
+    internal: { 
+      title: 'Internal Signup', 
+      subtitle: 'Create your ZeroOrigins workspace account.',
+      note: 'Internal accounts require @zeroorigins.in email addresses.'
+    },
+    customer: { 
+      title: 'Customer Signup', 
+      subtitle: 'Create your client portal account.',
+    },
+    partner: { 
+      title: 'Partner Signup', 
+      subtitle: 'Join the ZeroOrigins partner network.',
+    }
+  }
+
+  const currentIntent = intent ? intentLabels[intent] || { title: 'Create Account', subtitle: 'Join ZeroOrigins today.' } : { title: 'Create Account', subtitle: 'Join ZeroOrigins today.' }
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
@@ -98,20 +116,33 @@ function SignupForm() {
 
   if (success) {
     return (
-      <div className="space-y-6">
-        <div className="flex flex-col items-center gap-2 mb-2 text-center">
-          <h1 className="text-2xl font-bold text-zo-chrome">Check your email</h1>
-          <p className="text-sm text-zo-muted italic font-medium">Verification link sent to {email}</p>
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center space-y-6">
+          <div className="flex justify-center">
+            <Image
+              src="/logo.png"
+              alt="ZeroOrigins"
+              width={48}
+              height={48}
+              className="w-12 h-12"
+              priority
+            />
+          </div>
+          <div className="space-y-3">
+            <h1 className="text-3xl font-bold text-white">Check your email</h1>
+            <p className="text-white/60">Verification link sent to</p>
+            <p className="text-purple-300 font-medium">{email}</p>
+          </div>
         </div>
 
-        <Card className="border-border bg-card shadow-2xl">
-          <CardContent className="pt-8 text-center space-y-6">
-            <div className="p-3 bg-zo-purple/5 border border-zo-purple/20 rounded-lg">
-              <p className="text-sm text-zo-muted leading-relaxed">
+        <Card className="zo-glass-elevated border-white/10 backdrop-blur-xl">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+              <p className="text-sm text-white/80 leading-relaxed">
                 Please click the link in your inbox to verify your ZeroOrigins account.
               </p>
             </div>
-            <Link href="/login" className={cn(buttonVariants(), 'w-full font-bold h-11')}>
+            <Link href="/login" className="w-full h-12 flex items-center justify-center rounded-xl font-semibold zo-button-primary text-white">
               Back to Login
             </Link>
           </CardContent>
@@ -121,51 +152,110 @@ function SignupForm() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-center gap-2 mb-2 text-center">
-        <h1 className="text-2xl font-bold text-zo-chrome">
-          {intent === 'internal' ? 'Internal Signup' : 'Create Account'}
-        </h1>
-        <p className="text-sm text-zo-muted">Join the ZeroOrigins ecosystem</p>
+    <div className="w-full max-w-md space-y-8">
+      {/* Header */}
+      <div className="text-center space-y-6">
+        <div className="flex justify-center">
+          <Image
+            src="/logo.png"
+            alt="ZeroOrigins"
+            width={48}
+            height={48}
+            className="w-12 h-12"
+            priority
+          />
+        </div>
+        <div className="space-y-3">
+          <h1 className="text-3xl font-bold text-white">{currentIntent.title}</h1>
+          <p className="text-white/60">{currentIntent.subtitle}</p>
+          {currentIntent.note && (
+            <p className="text-sm text-white/40 max-w-sm mx-auto leading-relaxed">
+              {currentIntent.note}
+            </p>
+          )}
+        </div>
       </div>
 
-      <Card className="border-border bg-card shadow-2xl">
+      {/* Auth Card */}
+      <Card className="zo-glass-elevated border-white/10 backdrop-blur-xl">
         <form onSubmit={handleSignup}>
-          <CardContent className="space-y-4 pt-6">
+          <CardContent className="p-8 space-y-6">
             {error && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-medium leading-relaxed">
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-300 leading-relaxed">
                 {error}
               </div>
             )}
-            <fieldset disabled={loading} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Full Name</Label>
-                <Input id="name" placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} required />
+            <fieldset disabled={loading} className="space-y-5">
+              <div className="space-y-3">
+                <Label htmlFor="name" className="text-white/80 font-medium">
+                  Full Name
+                </Label>
+                <Input 
+                  id="name" 
+                  placeholder="John Doe" 
+                  value={fullName} 
+                  onChange={e => setFullName(e.target.value)} 
+                  required 
+                  className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring"
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Email</Label>
-                <Input id="email" type="email" placeholder={intent === 'internal' ? "name@zeroorigins.in" : "name@company.com"} value={email} onChange={e => setEmail(e.target.value)} required />
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-white/80 font-medium">
+                  Email Address
+                </Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder={intent === 'internal' ? "name@zeroorigins.in" : "name@company.com"}
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  required 
+                  className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring"
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Password</Label>
-                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-white/80 font-medium">
+                  Password
+                </Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="Enter a secure password"
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  required 
+                  minLength={6}
+                  className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring"
+                />
               </div>
             </fieldset>
           </CardContent>
-          <CardFooter className="flex-col gap-3">
-            <Button type="submit" className="w-full font-bold h-11" disabled={loading}>
+          <CardFooter className="p-8 pt-0 flex-col gap-6">
+            <Button 
+              type="submit" 
+              className="w-full h-12 zo-button-primary text-white font-semibold" 
+              disabled={loading}
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? 'Creating account...' : 'Create Account'}
             </Button>
-            <Link href={`/login${intent ? `?intent=${intent}` : ''}`} className="text-sm text-zo-muted hover:text-zo-purple transition-colors">
+            
+            <Link 
+              href={`/login${intent ? `?intent=${intent}` : ''}`} 
+              className="text-sm text-white/60 hover:text-white zo-motion-safe"
+            >
               Already have an account? Sign in
             </Link>
           </CardFooter>
         </form>
       </Card>
       
+      {/* Footer */}
       <div className="text-center">
-        <Link href="/" className="text-[10px] uppercase tracking-widest text-zo-muted hover:text-zo-purple transition-colors">
+        <Link 
+          href="/" 
+          className="text-xs text-white/40 hover:text-white/60 zo-motion-safe uppercase tracking-wide"
+        >
           ← Back to Gateway
         </Link>
       </div>

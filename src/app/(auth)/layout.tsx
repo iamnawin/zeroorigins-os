@@ -1,25 +1,11 @@
-import Image from 'next/image'
-import Link from 'next/link'
-
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    // `dark` forces the brand-dark theme — auth is always a black brand surface.
-    <div className="dark relative min-h-screen flex items-center justify-center bg-[#050505] selection:bg-zo-purple/30 overflow-hidden">
-      {/* Ambient violet glow — pure CSS, no animation cost */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(139, 92, 246, 0.10), transparent 70%)',
-        }}
-      />
-      <div className="relative w-full max-w-md p-8 space-y-8">
-        <Link href="/" className="flex justify-center">
-          <div className="relative w-14 h-14">
-            <Image src="/logo.png" alt="ZeroOrigins" fill className="object-contain" priority />
-          </div>
-        </Link>
+    <div className="dark min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Background pattern */}
+      <div className="absolute inset-0 zo-grid-pattern opacity-20" />
+      
+      {/* Content */}
+      <div className="relative z-10 w-full flex items-center justify-center">
         {children}
       </div>
     </div>

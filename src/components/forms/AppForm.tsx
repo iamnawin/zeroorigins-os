@@ -101,167 +101,340 @@ export function AppForm({ initialData }: AppFormProps) {
   }
 
   return (
-    <Card className="bg-card border-border shadow-xl">
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column - Basics */}
+    <div className="max-w-4xl mx-auto">
+      <Card className="zo-glass-elevated border-white/10">
+        <CardContent className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-10">
+            {/* Header Section */}
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name">App Name</Label>
-                <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="ZeroOrigins OS" required />
+                <h3 className="text-lg font-semibold text-white">App Details</h3>
+                <p className="text-sm text-white/60">Basic information about your AI workspace app.</p>
               </div>
+              
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <Label htmlFor="name" className="text-white/80 font-medium">App Name</Label>
+                  <Input 
+                    id="name" 
+                    value={name} 
+                    onChange={e => setName(e.target.value)} 
+                    placeholder="ZeroOrigins OS" 
+                    required 
+                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring"
+                  />
+                </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="description" className="text-white/80 font-medium">Description</Label>
+                  <Textarea 
+                    id="description" 
+                    value={description} 
+                    onChange={e => setDescription(e.target.value)} 
+                    placeholder="Company operating system for managing projects, leads, and AI workspace..." 
+                    rows={4}
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Configuration Section */}
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-white">Configuration</h3>
+                <p className="text-sm text-white/60">Status, priority, and categorization settings.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="status" className="text-white/80 font-medium">Status</Label>
                   <select
                     id="status"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-12 w-full bg-white/5 border border-white/10 rounded-xl px-4 text-white zo-focus-ring"
                     value={status}
                     onChange={e => setStatus(e.target.value as AIAppStatus)}
                   >
                     {AI_APP_STATUSES.map(s => (
-                      <option key={s} value={s}>{s.replace('_', ' ')}</option>
+                      <option key={s} value={s} className="bg-black text-white">
+                        {s.replace('_', ' ')}
+                      </option>
                     ))}
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="priority">Priority</Label>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="priority" className="text-white/80 font-medium">Priority</Label>
                   <select
                     id="priority"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-12 w-full bg-white/5 border border-white/10 rounded-xl px-4 text-white zo-focus-ring"
                     value={priority}
                     onChange={e => setPriority(e.target.value as 'low' | 'medium' | 'high' | 'critical')}
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
+                    <option value="low" className="bg-black text-white">Low</option>
+                    <option value="medium" className="bg-black text-white">Medium</option>
+                    <option value="high" className="bg-black text-white">High</option>
+                    <option value="critical" className="bg-black text-white">Critical</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="category" className="text-white/80 font-medium">Category</Label>
                   <select
                     id="category"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-12 w-full bg-white/5 border border-white/10 rounded-xl px-4 text-white zo-focus-ring"
                     value={category}
                     onChange={e => setCategory(e.target.value as AIAppCategory)}
                   >
                     {AI_APP_CATEGORIES.map(c => (
-                      <option key={c} value={c}>{c.replace('_', ' ')}</option>
+                      <option key={c} value={c} className="bg-black text-white">
+                        {c.replace('_', ' ')}
+                      </option>
                     ))}
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="appType">App Type</Label>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="appType" className="text-white/80 font-medium">App Type</Label>
                   <select
                     id="appType"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-12 w-full bg-white/5 border border-white/10 rounded-xl px-4 text-white zo-focus-ring"
                     value={appType}
                     onChange={e => setAppType(e.target.value as AIAppType)}
                   >
                     {AI_APP_TYPES.map(t => (
-                      <option key={t} value={t}>{t.replace('_', ' ')}</option>
+                      <option key={t} value={t} className="bg-black text-white">
+                        {t.replace('_', ' ')}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
-
+            </div>
+            {/* Attributes Section */}
+            <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="description">Short Description</Label>
-                <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Company operating system..." rows={3} />
+                <h3 className="text-lg font-semibold text-white">Attributes</h3>
+                <p className="text-sm text-white/60">Define the nature and purpose of this app.</p>
               </div>
               
-              <div className="space-y-4 pt-2">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Attributes</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={isInternalTool} onChange={e => setIsInternalTool(e.target.checked)} className="accent-zo-purple" />
-                    <span className="text-sm group-hover:text-zo-purple transition-colors">Internal Tool</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={isClientDemo} onChange={e => setIsClientDemo(e.target.checked)} className="accent-zo-purple" />
-                    <span className="text-sm group-hover:text-zo-purple transition-colors">Client Demo</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={isSellableProduct} onChange={e => setIsSellableProduct(e.target.checked)} className="accent-zo-purple" />
-                    <span className="text-sm group-hover:text-zo-purple transition-colors">Sellable Product</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={isOpenSource} onChange={e => setIsOpenSource(e.target.checked)} className="accent-zo-purple" />
-                    <span className="text-sm group-hover:text-zo-purple transition-colors">Open Source</span>
-                  </label>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer zo-motion-safe group">
+                  <input 
+                    type="checkbox" 
+                    checked={isInternalTool} 
+                    onChange={e => setIsInternalTool(e.target.checked)} 
+                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50 focus:ring-offset-0"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white group-hover:text-purple-300 zo-motion-safe">Internal Tool</div>
+                    <div className="text-xs text-white/50">For ZeroOrigins team use</div>
+                  </div>
+                </label>
+                
+                <label className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer zo-motion-safe group">
+                  <input 
+                    type="checkbox" 
+                    checked={isClientDemo} 
+                    onChange={e => setIsClientDemo(e.target.checked)} 
+                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50 focus:ring-offset-0"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white group-hover:text-purple-300 zo-motion-safe">Client Demo</div>
+                    <div className="text-xs text-white/50">Showcase for prospects</div>
+                  </div>
+                </label>
+                
+                <label className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer zo-motion-safe group">
+                  <input 
+                    type="checkbox" 
+                    checked={isSellableProduct} 
+                    onChange={e => setIsSellableProduct(e.target.checked)} 
+                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50 focus:ring-offset-0"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white group-hover:text-purple-300 zo-motion-safe">Sellable Product</div>
+                    <div className="text-xs text-white/50">Commercial offering</div>
+                  </div>
+                </label>
+                
+                <label className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer zo-motion-safe group">
+                  <input 
+                    type="checkbox" 
+                    checked={isOpenSource} 
+                    onChange={e => setIsOpenSource(e.target.checked)} 
+                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50 focus:ring-offset-0"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white group-hover:text-purple-300 zo-motion-safe">Open Source</div>
+                    <div className="text-xs text-white/50">Public repository</div>
+                  </div>
+                </label>
               </div>
             </div>
 
-            {/* Right Column - Links & Business */}
+            {/* Links & Paths Section */}
             <div className="space-y-6">
-              <div className="space-y-4">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Links & Paths</Label>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-white">Links & Paths</h3>
+                <p className="text-sm text-white/60">Development and deployment endpoints.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="localPath" className="text-[10px]">Local Path</Label>
-                    <Input id="localPath" value={localPath} onChange={e => setLocalPath(e.target.value)} placeholder="D:\AI-Workspace\Repos\..." className="h-8 text-xs" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="githubUrl" className="text-[10px]">GitHub URL</Label>
-                    <Input id="githubUrl" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} placeholder="https://github.com/..." className="h-8 text-xs" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="vercelUrl" className="text-[10px]">Vercel URL</Label>
-                    <Input id="vercelUrl" value={vercelUrl} onChange={e => setVercelUrl(e.target.value)} placeholder="https://....vercel.app" className="h-8 text-xs" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="liveUrl" className="text-[10px]">Live URL</Label>
-                    <Input id="liveUrl" value={liveUrl} onChange={e => setLiveUrl(e.target.value)} placeholder="https://..." className="h-8 text-xs" />
-                  </div>
+                  <Label htmlFor="localPath" className="text-white/80 font-medium">Local Path</Label>
+                  <Input 
+                    id="localPath" 
+                    value={localPath} 
+                    onChange={e => setLocalPath(e.target.value)} 
+                    placeholder="D:\AI-Workspace\Repos\..." 
+                    className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring text-sm font-mono"
+                  />
+                  <p className="text-xs text-white/40">Local development directory</p>
+                </div>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="githubUrl" className="text-white/80 font-medium">GitHub URL</Label>
+                  <Input 
+                    id="githubUrl" 
+                    value={githubUrl} 
+                    onChange={e => setGithubUrl(e.target.value)} 
+                    placeholder="https://github.com/..." 
+                    className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring text-sm"
+                  />
+                  <p className="text-xs text-white/40">Source code repository</p>
+                </div>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="vercelUrl" className="text-white/80 font-medium">Vercel URL</Label>
+                  <Input 
+                    id="vercelUrl" 
+                    value={vercelUrl} 
+                    onChange={e => setVercelUrl(e.target.value)} 
+                    placeholder="https://....vercel.app" 
+                    className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring text-sm"
+                  />
+                  <p className="text-xs text-white/40">Preview deployment</p>
+                </div>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="liveUrl" className="text-white/80 font-medium">Live URL</Label>
+                  <Input 
+                    id="liveUrl" 
+                    value={liveUrl} 
+                    onChange={e => setLiveUrl(e.target.value)} 
+                    placeholder="https://..." 
+                    className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring text-sm"
+                  />
+                  <p className="text-xs text-white/40">Production domain</p>
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Business Context</Label>
+            {/* Business Context Section */}
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-white">Business Context</h3>
+                <p className="text-sm text-white/60">Market positioning and value proposition.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="targetUser" className="text-[10px]">Target User</Label>
-                    <Input id="targetUser" value={targetUser} onChange={e => setTargetUser(e.target.value)} placeholder="Founders, Agencies..." className="h-8 text-xs" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="businessValue" className="text-[10px]">Business Value</Label>
-                    <Textarea id="businessValue" value={businessValue} onChange={e => setBusinessValue(e.target.value)} placeholder="What does this solve?" rows={2} className="text-xs" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="monetization" className="text-[10px]">Monetization Idea</Label>
-                    <Input id="monetization" value={monetizationIdea} onChange={e => setMonetizationIdea(e.target.value)} placeholder="Subscription, License..." className="h-8 text-xs" />
-                  </div>
+                  <Label htmlFor="targetUser" className="text-white/80 font-medium">Target User</Label>
+                  <Input 
+                    id="targetUser" 
+                    value={targetUser} 
+                    onChange={e => setTargetUser(e.target.value)} 
+                    placeholder="Founders, Agencies, SMBs..." 
+                    className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring"
+                  />
+                </div>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="monetization" className="text-white/80 font-medium">Monetization</Label>
+                  <Input 
+                    id="monetization" 
+                    value={monetizationIdea} 
+                    onChange={e => setMonetizationIdea(e.target.value)} 
+                    placeholder="Subscription, License, Usage-based..." 
+                    className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="businessValue" className="text-white/80 font-medium">Business Value</Label>
+                <Textarea 
+                  id="businessValue" 
+                  value={businessValue} 
+                  onChange={e => setBusinessValue(e.target.value)} 
+                  placeholder="What problem does this solve? How does it create value?" 
+                  rows={3}
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Status & Next Steps Section */}
+            <div className="space-y-6 border-t border-white/10 pt-8">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-white">Current Status</h3>
+                <p className="text-sm text-white/60">Track progress and next actions.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="currentIssue" className="text-white/80 font-medium">Current Issue / Blocker</Label>
+                  <Input 
+                    id="currentIssue" 
+                    value={currentIssue} 
+                    onChange={e => setCurrentIssue(e.target.value)} 
+                    placeholder="Deployment failing on edge cases..." 
+                    className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring"
+                  />
+                </div>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="nextAction" className="text-white/80 font-medium">Next Action</Label>
+                  <Input 
+                    id="nextAction" 
+                    value={nextAction} 
+                    onChange={e => setNextAction(e.target.value)} 
+                    placeholder="Stabilize auth gateway, add error handling..." 
+                    className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 zo-focus-ring"
+                  />
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-border/50 pt-6">
-            <div className="space-y-2">
-              <Label htmlFor="currentIssue">Current Issue / Blocker</Label>
-              <Input id="currentIssue" value={currentIssue} onChange={e => setCurrentIssue(e.target.value)} placeholder="Deployment failing on edge..." />
+            {/* Form Actions */}
+            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-8 border-t border-white/10">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => router.back()}
+                className="h-12 px-8 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-white/30 zo-motion-safe"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="h-12 px-8 zo-button-primary font-semibold text-white" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 
+                    Saving...
+                  </>
+                ) : (
+                  initialData?.id ? 'Update App' : 'Create App'
+                )}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="nextAction">Next Action</Label>
-              <Input id="nextAction" value={nextAction} onChange={e => setNextAction(e.target.value)} placeholder="Stabilize auth gateway..." />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-            <Button type="submit" className="font-bold px-8" disabled={loading}>
-              {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : initialData?.id ? 'Update App' : 'Create App'}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

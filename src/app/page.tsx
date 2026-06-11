@@ -1,11 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { INTERNAL_ROLES } from '@/types'
 import Image from 'next/image'
-import { ShieldCheck, Building2, Handshake } from 'lucide-react'
+import { ShieldCheck, Building2, Handshake, ArrowRight } from 'lucide-react'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -18,77 +17,117 @@ export default async function HomePage() {
   }
 
   return (
-    // `dark` forces the brand-dark theme on the gateway regardless of system
-    // preference — the chrome/silver logo assets are designed for black.
-    <div className="dark min-h-screen bg-zo-black flex flex-col items-center justify-center p-6 selection:bg-zo-purple/30">
-      <div className="max-w-5xl w-full space-y-12 py-12">
-        {/* Logo & Header */}
-        <div className="text-center space-y-4">
-          <h1 className="sr-only">ZeroOrigins OS</h1>
-          <div className="flex justify-center">
+    <div className="dark min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Subtle grid pattern */}
+      <div className="absolute inset-0 zo-grid-pattern opacity-20" />
+      
+      {/* Content */}
+      <div className="relative z-10 max-w-6xl w-full space-y-16 py-16">
+        {/* Header Section */}
+        <div className="text-center space-y-6">
+          <div className="flex justify-center mb-8">
             <Image
               src="/wordmark.png"
               alt="ZeroOrigins"
               width={560}
               height={187}
-              className="w-full max-w-[560px] h-auto"
+              className="w-full max-w-[480px] h-auto opacity-90"
               priority
             />
           </div>
-          <p className="text-zo-silver/60 italic text-lg">Company Operating System</p>
+          <div className="space-y-3">
+            <p className="text-white/40 text-sm font-medium tracking-wider uppercase">Company Operating System</p>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-br from-white to-white/70 bg-clip-text text-transparent">
+              Choose your operating layer.
+            </h1>
+            <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
+              Access the internal workspace, client portal, or partner channel from one secure gateway.
+            </p>
+          </div>
         </div>
 
-        {/* Three-Path Gateway */}
+        {/* Portal Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Internal Workspace */}
-          <Card className="border-border bg-card flex flex-col hover:border-zo-purple/50 transition-all group shadow-xl shadow-black relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-30 transition-opacity">
-              <ShieldCheck className="w-12 h-12 text-zo-purple" />
+          <Card className="group relative overflow-hidden zo-glass hover:zo-glass-elevated zo-motion-safe border-white/10 hover:border-purple-500/30">
+            {/* Accent glow */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-60 group-hover:opacity-100 zo-motion-safe" />
+            
+            {/* Background watermark */}
+            <div className="absolute top-4 right-4 opacity-5 group-hover:opacity-10 zo-motion-safe">
+              <ShieldCheck className="w-16 h-16 text-purple-400" />
             </div>
-            <CardHeader>
-              <div className="w-10 h-10 bg-zo-purple/10 rounded flex items-center justify-center mb-4 group-hover:bg-zo-purple/20 transition-colors">
-                <ShieldCheck className="w-5 h-5 text-zo-purple" />
+            
+            <CardHeader className="relative z-10 pb-6">
+              <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-purple-500/15 zo-motion-safe ring-1 ring-purple-500/20">
+                <ShieldCheck className="w-6 h-6 text-purple-400" />
               </div>
-              <CardTitle className="text-xl">Internal Workspace</CardTitle>
-              <CardDescription className="text-xs min-h-[40px] text-zo-muted leading-relaxed">
-                For ZeroOrigins team members using <span className="text-zo-purple-2 font-medium">@zeroorigins.in</span> email.
+              <CardTitle className="text-2xl font-bold text-white mb-3">Internal Workspace</CardTitle>
+              <CardDescription className="text-white/60 leading-relaxed min-h-[48px]">
+                For active team members using <span className="text-purple-300 font-medium">@zeroorigins.in</span> accounts.
               </CardDescription>
             </CardHeader>
-            <CardContent className="mt-auto p-6 pt-0 space-y-3">
-              <div className="grid gap-2">
+            
+            <CardContent className="relative z-10 space-y-4">
+              <div className="space-y-3">
                 <Link
                   href="/login?intent=internal"
-                  className={cn(buttonVariants({ variant: user && INTERNAL_ROLES.includes(profile?.role) ? 'secondary' : 'default' }), 'w-full font-bold')}
+                  className={cn(
+                    "w-full h-12 flex items-center justify-center gap-2 rounded-xl font-semibold zo-motion-safe group/btn",
+                    user && INTERNAL_ROLES.includes(profile?.role) 
+                      ? "bg-white/10 text-white/90 border border-white/20 hover:bg-white/15" 
+                      : "zo-button-primary text-white"
+                  )}
                 >
                   Internal Login
+                  <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 zo-motion-safe" />
                 </Link>
-                <Link href="/signup?intent=internal" className={cn(buttonVariants({ variant: 'secondary' }), 'w-full text-xs border-zo-border-soft')}>
+                <Link 
+                  href="/signup?intent=internal" 
+                  className="w-full h-10 flex items-center justify-center rounded-lg font-medium bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:border-white/20 zo-motion-safe"
+                >
                   Internal Signup
                 </Link>
               </div>
+              <p className="text-xs text-white/40 text-center italic">
+                For active @zeroorigins.in accounts.
+              </p>
             </CardContent>
           </Card>
 
           {/* Customer Portal */}
-          <Card className="border-border bg-card flex flex-col hover:border-zo-silver/40 transition-all group shadow-xl shadow-black relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-20 transition-opacity">
-              <Building2 className="w-12 h-12 text-zo-silver" />
+          <Card className="group relative overflow-hidden zo-glass hover:zo-glass-elevated zo-motion-safe border-white/10 hover:border-white/20">
+            {/* Accent glow */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-40 group-hover:opacity-60 zo-motion-safe" />
+            
+            {/* Background watermark */}
+            <div className="absolute top-4 right-4 opacity-5 group-hover:opacity-10 zo-motion-safe">
+              <Building2 className="w-16 h-16 text-white" />
             </div>
-            <CardHeader>
-              <div className="w-10 h-10 bg-zo-silver/5 rounded flex items-center justify-center mb-4 group-hover:bg-zo-silver/10 transition-colors">
-                <Building2 className="w-5 h-5 text-zo-silver" />
+            
+            <CardHeader className="relative z-10 pb-6">
+              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6 group-hover:bg-white/10 zo-motion-safe ring-1 ring-white/10">
+                <Building2 className="w-6 h-6 text-white/70" />
               </div>
-              <CardTitle className="text-xl">Customer Portal</CardTitle>
-              <CardDescription className="text-xs min-h-[40px] text-zo-muted leading-relaxed">
+              <CardTitle className="text-2xl font-bold text-white mb-3">Customer Portal</CardTitle>
+              <CardDescription className="text-white/60 leading-relaxed min-h-[48px]">
                 For clients requesting AI systems, automations, and digital infrastructure.
               </CardDescription>
             </CardHeader>
-            <CardContent className="mt-auto p-6 pt-0 space-y-3">
-              <div className="grid gap-2">
-                <Link href="/login?intent=customer" className={cn(buttonVariants({ variant: 'secondary' }), 'w-full font-bold border-zo-border-soft')}>
+            
+            <CardContent className="relative z-10 space-y-4">
+              <div className="space-y-3">
+                <Link 
+                  href="/login?intent=customer" 
+                  className="w-full h-12 flex items-center justify-center gap-2 rounded-xl font-semibold bg-white/10 text-white/90 border border-white/20 hover:bg-white/15 hover:border-white/30 zo-motion-safe group/btn"
+                >
                   Customer Login
+                  <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 zo-motion-safe" />
                 </Link>
-                <Link href="/request-build" className={cn(buttonVariants({ variant: 'outline' }), 'w-full text-xs border-zo-border-soft')}>
+                <Link 
+                  href="/request-build" 
+                  className="w-full h-10 flex items-center justify-center rounded-lg font-medium bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:border-white/20 zo-motion-safe"
+                >
                   Request a Build
                 </Link>
               </div>
@@ -96,25 +135,38 @@ export default async function HomePage() {
           </Card>
 
           {/* Partner Portal */}
-          <Card className="border-border bg-card flex flex-col hover:border-zo-purple/30 transition-all group shadow-xl shadow-black relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Handshake className="w-12 h-12 text-zo-purple" />
+          <Card className="group relative overflow-hidden zo-glass hover:zo-glass-elevated zo-motion-safe border-white/10 hover:border-purple-500/20">
+            {/* Accent glow */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-400/50 to-transparent opacity-50 group-hover:opacity-80 zo-motion-safe" />
+            
+            {/* Background watermark */}
+            <div className="absolute top-4 right-4 opacity-5 group-hover:opacity-10 zo-motion-safe">
+              <Handshake className="w-16 h-16 text-purple-400" />
             </div>
-            <CardHeader>
-              <div className="w-10 h-10 bg-zo-purple/5 rounded flex items-center justify-center mb-4 group-hover:bg-zo-purple/10 transition-colors">
-                <Handshake className="w-5 h-5 text-zo-purple/70" />
+            
+            <CardHeader className="relative z-10 pb-6">
+              <div className="w-12 h-12 bg-purple-500/5 rounded-xl flex items-center justify-center mb-6 group-hover:bg-purple-500/10 zo-motion-safe ring-1 ring-purple-500/20">
+                <Handshake className="w-6 h-6 text-purple-400/70" />
               </div>
-              <CardTitle className="text-xl">Partner Portal</CardTitle>
-              <CardDescription className="text-xs min-h-[40px] text-zo-muted leading-relaxed">
+              <CardTitle className="text-2xl font-bold text-white mb-3">Partner Portal</CardTitle>
+              <CardDescription className="text-white/60 leading-relaxed min-h-[48px]">
                 For collaborators, referral partners, and implementation partners.
               </CardDescription>
             </CardHeader>
-            <CardContent className="mt-auto p-6 pt-0 space-y-3">
-              <div className="grid gap-2">
-                <Link href="/login?intent=partner" className={cn(buttonVariants({ variant: 'secondary' }), 'w-full font-bold border-zo-border-soft')}>
+            
+            <CardContent className="relative z-10 space-y-4">
+              <div className="space-y-3">
+                <Link 
+                  href="/login?intent=partner" 
+                  className="w-full h-12 flex items-center justify-center gap-2 rounded-xl font-semibold bg-white/10 text-white/90 border border-white/20 hover:bg-white/15 hover:border-white/30 zo-motion-safe group/btn"
+                >
                   Partner Login
+                  <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 zo-motion-safe" />
                 </Link>
-                <Link href="/partner-with-us" className={cn(buttonVariants({ variant: 'outline' }), 'w-full text-xs border-zo-border-soft')}>
+                <Link 
+                  href="/partner-with-us" 
+                  className="w-full h-10 flex items-center justify-center rounded-lg font-medium bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:border-white/20 zo-motion-safe"
+                >
                   Partner With Us
                 </Link>
               </div>
@@ -122,12 +174,12 @@ export default async function HomePage() {
           </Card>
         </div>
 
-        {/* Footer Info */}
-        <div className="text-center pt-8 space-y-2">
-          <p className="text-[10px] text-zo-muted uppercase tracking-[0.4em] font-bold opacity-40">
-            Automated by ZeroOrigins OS
+        {/* Footer */}
+        <div className="text-center pt-12 space-y-3">
+          <p className="text-white/20 uppercase tracking-[0.3em] font-bold text-xs">
+            ZeroOrigins Operating System
           </p>
-          <p className="text-[9px] text-zo-muted/30">Version 0.1.0-VIOLET</p>
+          <p className="text-white/10 text-xs font-mono">v0.1.0-VIOLET</p>
         </div>
       </div>
     </div>
