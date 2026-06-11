@@ -18,25 +18,24 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-zo-black flex flex-col items-center justify-center p-6 selection:bg-zo-purple/30">
+    // `dark` forces the brand-dark theme on the gateway regardless of system
+    // preference — the chrome/silver logo assets are designed for black.
+    <div className="dark min-h-screen bg-zo-black flex flex-col items-center justify-center p-6 selection:bg-zo-purple/30">
       <div className="max-w-5xl w-full space-y-12 py-12">
         {/* Logo & Header */}
         <div className="text-center space-y-4">
+          <h1 className="sr-only">ZeroOrigins OS</h1>
           <div className="flex justify-center">
-            <div className="relative w-32 h-32">
-              <Image 
-                src="/logo.png" 
-                alt="ZeroOrigins Logo" 
-                fill 
-                className="object-contain animate-pulse-slow"
-                priority
-              />
-            </div>
+            <Image
+              src="/wordmark.png"
+              alt="ZeroOrigins"
+              width={560}
+              height={187}
+              className="w-full max-w-[560px] h-auto"
+              priority
+            />
           </div>
-          <div className="space-y-1">
-            <h1 className="text-5xl font-bold tracking-tight text-zo-chrome">ZeroOrigins OS</h1>
-            <p className="text-zo-silver/60 italic text-lg">Company Operating System</p>
-          </div>
+          <p className="text-zo-silver/60 italic text-lg">Company Operating System</p>
         </div>
 
         {/* Three-Path Gateway */}

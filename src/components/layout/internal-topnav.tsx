@@ -73,8 +73,9 @@ export function InternalTopNav({ email, fullName, role }: InternalTopNavProps) {
 
         {/* Logo + Brand */}
         <Link href="/internal/control-room" className="flex items-center gap-2.5 shrink-0">
+          {/* invert in light mode — the chrome mark is designed for dark surfaces */}
           <div className="relative w-6 h-6">
-            <Image src="/logo.png" alt="ZO" fill className="object-contain" />
+            <Image src="/logo.png" alt="ZO" fill className="object-contain invert dark:invert-0" />
           </div>
           <span className="text-sm font-bold tracking-tight text-foreground hidden sm:block">
             ZeroOrigins

@@ -3,7 +3,8 @@ import Link from 'next/link'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-[#050505] selection:bg-zo-purple/30 overflow-hidden">
+    // `dark` forces the brand-dark theme — auth is always a black brand surface.
+    <div className="dark relative min-h-screen flex items-center justify-center bg-[#050505] selection:bg-zo-purple/30 overflow-hidden">
       {/* Ambient violet glow — pure CSS, no animation cost */}
       <div
         aria-hidden
