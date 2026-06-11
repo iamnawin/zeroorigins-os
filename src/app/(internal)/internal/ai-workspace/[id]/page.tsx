@@ -220,11 +220,13 @@ export default async function AppDetailPage({ params }: PageProps) {
             </CardContent>
           </Card>
 
-          <Button variant="secondary" className="w-full text-xs h-10 border-zo-border-soft hover:border-zo-purple/30" asChild>
-            <Link href="/internal/ai-workspace" className="flex items-center justify-center gap-2">
-              <ArrowLeft className="w-3 h-3" /> Back to Workspace
-            </Link>
-          </Button>
+          <Link href="/internal/ai-workspace" className="w-full">
+            <Button variant="secondary" className="w-full text-xs h-10 border-zo-border-soft hover:border-zo-purple/30">
+              <div className="flex items-center justify-center gap-2">
+                <ArrowLeft className="w-3 h-3" /> Back to Workspace
+              </div>
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
