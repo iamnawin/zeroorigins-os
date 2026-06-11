@@ -99,8 +99,9 @@ Requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 | Partners | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
 | Customers | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
 | AI Workspace | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ (group/status filters) |
+| Proposals | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
 
-Stub pages behind `ComingSoon` component: Proposals, Assets, Content Studio, Finance (admin), Knowledge, Settings (admin). The `deals` table (migration 005) has **no UI or code references yet**.
+Stub pages behind `ComingSoon` component: Assets, Content Studio, Finance (admin), Knowledge, Settings (admin). The `deals` table (migration 005) has **no UI or code references yet**.
 
 - Hard delete: intentionally absent — see **Record lifecycle** below.
 - Control room: counts + active/open/new summaries. No edit actions from here.

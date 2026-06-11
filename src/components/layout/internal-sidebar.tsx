@@ -28,7 +28,7 @@ const navItems: NavItem[] = [
   { label: 'Leads', href: '/internal/leads', icon: Users, built: true },
   { label: 'Partners', href: '/internal/partners', icon: Handshake, built: true },
   { label: 'AI Workspace', href: '/internal/ai-workspace', icon: Bot, built: true },
-  { label: 'Proposals', href: '/internal/proposals', icon: FileText, built: false },
+  { label: 'Proposals', href: '/internal/proposals', icon: FileText, built: true },
   { label: 'Customers', href: '/internal/customers', icon: Building2, built: true },
   { label: 'Assets', href: '/internal/assets', icon: HardDrive, built: false },
   { label: 'Content Studio', href: '/internal/content-studio', icon: Palette, built: false },
