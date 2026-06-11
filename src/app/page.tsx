@@ -36,7 +36,7 @@ export default async function HomePage() {
             />
           </div>
           <div className="space-y-3">
-            <p className="text-white/40 text-sm font-medium tracking-wider uppercase">Company Operating System</p>
+            <p className="text-white/40 text-sm font-medium tracking-wider uppercase">Company Operating System • v2.0</p>
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-br from-white to-white/70 bg-clip-text text-transparent">
               Choose your operating layer.
             </h1>
