@@ -1,0 +1,354 @@
+# Instincts generated from https://github.com/iamnawin/zeroorigins-os
+# Generated: 2026-06-11T20:10:37.350Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: zeroorigins-os-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Commit Length
+
+## Action
+
+Write moderate-length commit messages (~55 characters)
+
+## Evidence
+
+- Average commit message length: 55 chars
+- Based on 1 commits
+
+---
+id: zeroorigins-os-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Naming Files
+
+## Action
+
+Use kebab-case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: kebab-case
+
+---
+id: zeroorigins-os-import-alias
+trigger: "when importing modules"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Import Alias
+
+## Action
+
+Use path aliases (@/, ~/) instead of relative imports
+
+## Evidence
+
+- Import analysis shows alias pattern
+- Example: import { x } from '@/lib/x'
+
+---
+id: zeroorigins-os-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Export Style
+
+## Action
+
+Prefer default exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: default
+
+---
+id: zeroorigins-os-arch-type-based
+trigger: "when adding new code"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Arch Type Based
+
+## Action
+
+Place code in the appropriate type folder (components/, services/, utils/, etc.)
+
+## Evidence
+
+- Type-based module organization detected
+- Folders: app, lib
+
+---
+id: zeroorigins-os-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct File Naming
+
+## Action
+
+Name the file using kebab-case
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: zeroorigins-os-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct Function Naming
+
+## Action
+
+Use camelCase for the function name
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: zeroorigins-os-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct Class Naming
+
+## Action
+
+Use PascalCase for the class name
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: zeroorigins-os-instinct-constant-naming
+trigger: "When defining a new constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for the constant name
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: zeroorigins-os-instinct-import-alias
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct Import Alias
+
+## Action
+
+Use alias import style
+
+## Evidence
+
+- Pattern in importStyle
+
+---
+id: zeroorigins-os-instinct-export-default
+trigger: "When exporting modules or components"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct Export Default
+
+## Action
+
+Use default export style
+
+## Evidence
+
+- Pattern in exportStyle
+
+---
+id: zeroorigins-os-instinct-error-try-catch
+trigger: "When handling errors in code"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct Error Try Catch
+
+## Action
+
+Use try-catch blocks for error handling
+
+## Evidence
+
+- Pattern in errorHandling.style
+
+---
+id: zeroorigins-os-instinct-no-custom-error-classes
+trigger: "When considering custom error classes"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct No Custom Error Classes
+
+## Action
+
+Do not implement custom error classes
+
+## Evidence
+
+- Pattern in errorHandling.customErrorClasses
+
+---
+id: zeroorigins-os-instinct-no-error-boundaries
+trigger: "When considering error boundaries"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct No Error Boundaries
+
+## Action
+
+Do not implement error boundaries
+
+## Evidence
+
+- Pattern in errorHandling.errorBoundaries
+
+---
+id: zeroorigins-os-instinct-no-global-error-handler
+trigger: "When considering a global error handler"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct No Global Error Handler
+
+## Action
+
+Do not implement a global error handler
+
+## Evidence
+
+- Pattern in errorHandling.globalHandler
+
+---
+id: zeroorigins-os-instinct-test-location-mixed
+trigger: "When adding tests for new code"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct Test Location Mixed
+
+## Action
+
+Place test files in both source folders and dedicated test folders as appropriate
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+
+---
+id: zeroorigins-os-instinct-git-commit-freeform
+trigger: "When writing a commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct Git Commit Freeform
+
+## Action
+
+Write a concise, freeform message without a required prefix
+
+## Evidence
+
+- Pattern in commits.type
+- Example: 'Restore reliable internal CRM access and workspace sync'
+
+---
+id: zeroorigins-os-instinct-git-commit-length
+trigger: "When composing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: iamnawin/zeroorigins-os
+---
+
+# Zeroorigins Os Instinct Git Commit Length
+
+## Action
+
+Keep the message around 55 characters on average
+
+## Evidence
+
+- Pattern in commits.averageLength
+
