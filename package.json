@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sync:workspace": "node scripts/sync-ai-workspace.mjs"
+    "sync:workspace": "node scripts/sync-ai-workspace.mjs",
+    "check:migrations": "node scripts/check-migrations.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

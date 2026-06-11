@@ -50,6 +50,8 @@ Single migration `supabase/migrations/001_initial_schema.sql` is the source of t
 
 `supabase/seed.sql` holds seed data. There is no generated Supabase types file — `src/types/index.ts` is hand-maintained.
 
+**Migration discipline:** there is no CLI link to the remote project — migrations are applied by pasting files into the Supabase SQL editor, which drifts. Run `pnpm check:migrations` (sentinel-column probe against the remote DB) before debugging any "missing data" issue and after adding a migration. When you add a migration, also add its sentinel to `scripts/check-migrations.mjs`.
+
 ### Form validation strategy
 
 - **Public forms** (`/request-build`, `/partner-with-us`) — minimal inline pre-submit validation via `src/lib/validation.ts` (`isValidEmail`, `isValidPhoneLike`, `isValidUrl`, `minLength`). Errors shown inline per field; Supabase insert blocked until valid. Also have server-error fallback for failed inserts.
