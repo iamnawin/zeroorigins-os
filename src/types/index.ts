@@ -32,14 +32,17 @@ export type CustomerStatus = typeof CUSTOMER_STATUSES[number]
 export const CUSTOMER_REQUEST_STATUSES = ['submitted', 'under_review', 'discovery_call', 'proposal_shared', 'approved', 'in_progress', 'review', 'delivered', 'support', 'closed'] as const
 export type CustomerRequestStatus = typeof CUSTOMER_REQUEST_STATUSES[number]
 
-export const AI_APP_STATUSES = ['idea', 'planned', 'in_progress', 'mvp_ready', 'testing', 'deployed', 'broken', 'paused', 'archived', 'ready_to_sell', 'client_demo'] as const
+export const AI_APP_STATUSES = ['idea', 'planned', 'in_progress', 'mvp_ready', 'testing', 'deployed', 'broken', 'paused', 'archived', 'ready_to_sell', 'client_demo', 'active', 'live', 'delivered'] as const
 export type AIAppStatus = typeof AI_APP_STATUSES[number]
 
-export const AI_APP_CATEGORIES = ['internal_tool', 'client_demo', 'saas_product', 'automation', 'ai_agent', 'content_system', 'salesforce_tool', 'marketing_tool', 'data_tool', 'experimental'] as const
+export const AI_APP_CATEGORIES = ['internal_tool', 'client_demo', 'saas_product', 'automation', 'ai_agent', 'content_system', 'salesforce_tool', 'marketing_tool', 'data_tool', 'experimental', 'repo', 'idea', 'brand', 'media', 'delivered', 'live'] as const
 export type AIAppCategory = typeof AI_APP_CATEGORIES[number]
 
-export const AI_APP_TYPES = ['web_app', 'chrome_extension', 'desktop_app', 'n8n_workflow', 'ai_agent', 'website', 'api', 'mobile_app', 'automation_script', 'content_pipeline'] as const
+export const AI_APP_TYPES = ['web_app', 'chrome_extension', 'desktop_app', 'n8n_workflow', 'ai_agent', 'website', 'api', 'mobile_app', 'automation_script', 'content_pipeline', 'nextjs_app', 'vite_app', 'node_app', 'python_app', 'salesforce_app', 'documentation_or_concept', 'media_project', 'workspace_folder'] as const
 export type AIAppType = typeof AI_APP_TYPES[number]
+
+export const AI_FOLDER_GROUPS = ['Ideas', 'Experiments', 'Projects', 'Repos', 'Tools', 'Media', 'Video-Outputs', 'Delivered', 'Live', 'Backups', 'Sandbox', 'Temp', 'Brands'] as const
+export type AIFolderGroup = typeof AI_FOLDER_GROUPS[number]
 
 export const DEAL_STAGES = ['qualifying', 'proposal', 'negotiation', 'won', 'lost', 'on_hold'] as const
 export type DealStage = typeof DEAL_STAGES[number]
@@ -239,17 +242,25 @@ export interface AIWorkspaceApp {
   status: AIAppStatus
   priority: 'low' | 'medium' | 'high' | 'critical'
   local_path?: string
+  repo_path?: string
   github_url?: string
   vercel_url?: string
   live_url?: string
+  prototype_url?: string
+  website_url?: string
+  brand_url?: string
   docs_url?: string
   tech_stack?: string[]
+  folder_group?: AIFolderGroup
+  owner?: string
   owner_id?: string
   created_by?: string
   is_client_demo: boolean
   is_sellable_product: boolean
   is_internal_tool: boolean
   is_open_source: boolean
+  is_live: boolean
+  is_delivered: boolean
   current_version?: string
   current_issue?: string
   next_action?: string
@@ -258,6 +269,7 @@ export interface AIWorkspaceApp {
   target_user?: string
   monetization_idea?: string
   last_checked_at?: string
+  last_synced_at?: string
   created_at: string
   updated_at: string
 }
