@@ -30,7 +30,7 @@ Access control is enforced **both** in middleware (routing) **and** in Postgres 
 - `(public)` → `/request-build`, `/partner-with-us` — unauthenticated lead/partner intake forms.
 - `(auth)` → `/login`, `/signup`, `/forgot-password`.
 
-`src/middleware.ts` reads the user's `profiles.role` on every request and redirects based on audience. After login it routes internal roles to `/internal/control-room`, partners to the partner portal, everyone else to the customer portal. **When adding a new role or protected route, update both `middleware.ts` and the corresponding RLS policy** — they are independent and must stay in sync.
+`src/proxy.ts` (Next.js 16 edge proxy — there is no `middleware.ts`) reads the user's `profiles.role` on every request and redirects based on audience. After login it routes internal roles to `/internal/control-room`, partners to the partner portal, everyone else to the customer portal. **When adding a new role or protected route, update both `proxy.ts` and the corresponding RLS policy** — they are independent and must stay in sync.
 
 ### Supabase clients — pick the right one
 
@@ -97,6 +97,10 @@ Requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 | Tasks | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
 | Leads | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
 | Partners | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
+| Customers | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
+| AI Workspace | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ (group/status filters) |
+
+Stub pages behind `ComingSoon` component: Proposals, Assets, Content Studio, Finance (admin), Knowledge, Settings (admin). The `deals` table (migration 005) has **no UI or code references yet**.
 
 - Hard delete: intentionally absent — see **Record lifecycle** below.
 - Control room: counts + active/open/new summaries. No edit actions from here.

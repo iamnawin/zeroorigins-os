@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
   { label: 'Partners', href: '/internal/partners', icon: Handshake, built: true },
   { label: 'AI Workspace', href: '/internal/ai-workspace', icon: Bot, built: true },
   { label: 'Proposals', href: '/internal/proposals', icon: FileText, built: false },
-  { label: 'Customers', href: '/internal/customers', icon: Building2, built: false },
+  { label: 'Customers', href: '/internal/customers', icon: Building2, built: true },
   { label: 'Assets', href: '/internal/assets', icon: HardDrive, built: false },
   { label: 'Content Studio', href: '/internal/content-studio', icon: Palette, built: false },
   { label: 'Finance', href: '/internal/finance', icon: DollarSign, built: false, roles: ['admin'] },
