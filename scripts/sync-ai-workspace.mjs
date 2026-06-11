@@ -56,8 +56,8 @@ const FOLDER_GROUPS = {
 
 // Brand folders (top-level brand directories)
 const BRAND_FOLDERS = [
-  'Alwithnobrain Audio Labs',
-  'Alwithnobrain Stuff', 
+  'AIwithnobrain Audio Labs',
+  'AIwithnobrain Stuff',
   'EpicsToYou'
 ]
 
@@ -194,7 +194,9 @@ function mapFolderToStatus(folderGroup) {
 async function scanDirectory(dirPath) {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true })
-    return entries.filter(entry => entry.isDirectory()).map(entry => entry.name)
+    return entries
+      .filter(entry => entry.isDirectory() && !entry.name.startsWith('.'))
+      .map(entry => entry.name)
   } catch (error) {
     console.log(`Warning: Could not scan directory ${dirPath}:`, error.message)
     return []
@@ -202,14 +204,18 @@ async function scanDirectory(dirPath) {
 }
 
 async function scanWorkspace() {
-  console.log(`🔍 Scanning workspace: ${AI_WORKSPACE_ROOT}`)
-  
-  if (!await fs.access(AI_WORKSPACE_ROOT).then(() => true).catch(() => false)) {
+  console.log(`AI Workspace root: ${AI_WORKSPACE_ROOT}`)
+
+  const rootExists = await fs.access(AI_WORKSPACE_ROOT).then(() => true).catch(() => false)
+  console.log(`Root exists: ${rootExists}`)
+  if (!rootExists) {
     throw new Error(`Workspace directory not found: ${AI_WORKSPACE_ROOT}`)
   }
 
   const apps = []
   const topLevelDirs = await scanDirectory(AI_WORKSPACE_ROOT)
+  const foundGroups = topLevelDirs.filter(d => FOLDER_GROUPS[d] || BRAND_FOLDERS.includes(d))
+  console.log(`Found groups: ${foundGroups.join(', ') || '(none)'}`)
 
   for (const dirName of topLevelDirs) {
     if (IGNORE_PATTERNS.includes(dirName)) continue
@@ -223,7 +229,7 @@ async function scanWorkspace() {
       const readmeUrls = await extractUrlsFromReadme(dirPath)
       
       apps.push({
-        name: dirName === 'Alwithnobrain Audio Labs' ? 'AIwithNoBrain Audio Labs' : dirName,
+        name: dirName === 'AIwithnobrain Audio Labs' ? 'AIwithNoBrain Audio Labs' : dirName,
         slug: generateSlug(dirName),
         local_path: dirPath,
         repo_path: dirPath,
@@ -291,34 +297,43 @@ async function scanWorkspace() {
 
 async function syncToDatabase(apps) {
   if (!supabase) {
-    console.error('Database sync requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local')
+    const missing = []
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push('NEXT_PUBLIC_SUPABASE_URL')
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) missing.push('SUPABASE_SERVICE_ROLE_KEY')
+    console.error(`❌ Database sync aborted. Missing in .env.local: ${missing.join(', ')}`)
+    console.error('   Dry-run still works: pnpm sync:workspace --dry-run')
     return false
   }
 
   console.log(`💾 Syncing ${apps.length} apps to database...`)
-  
+
+  let upserted = 0
+  let failed = 0
   for (const app of apps) {
     try {
       const { error } = await supabase
         .from('ai_workspace_apps')
-        .upsert(app, { 
+        .upsert(app, {
           onConflict: 'slug',
-          ignoreDuplicates: false 
+          ignoreDuplicates: false
         })
-      
+
       if (error) {
+        failed++
         console.log(`❌ Error syncing ${app.name}:`, error.message)
-        return false
       } else {
+        upserted++
         console.log(`✅ Synced: ${app.name}`)
       }
     } catch (error) {
+      failed++
       console.log(`❌ Error syncing ${app.name}:`, error.message)
-      return false
     }
   }
 
-  return true
+  console.log(`\nRecords upserted: ${upserted}`)
+  console.log(`Records failed: ${failed}`)
+  return failed === 0
 }
 
 async function main() {
@@ -327,7 +342,9 @@ async function main() {
   
   try {
     const apps = await scanWorkspace()
-    
+
+    console.log(`Detected records: ${apps.length}`)
+    console.log(`Dry run: ${DRY_RUN}`)
     console.log(`\n📊 Found ${apps.length} apps:`)
     
     // Group by folder group for display
@@ -346,7 +363,7 @@ async function main() {
     }
     
     if (DRY_RUN) {
-      console.log('\n🔍 Dry run complete - no changes made')
+      console.log('\n🔍 Dry run complete - no database writes performed.')
     } else {
       const synced = await syncToDatabase(apps)
       if (!synced) {

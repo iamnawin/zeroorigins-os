@@ -148,8 +148,23 @@ export default async function AIWorkspacePage({ searchParams }: PageProps) {
             </Link>
           ))}
         </div>
-      ) : (
+      ) : search || group || status ? (
         <ResourceEmptyState showAll={true} basePath="/internal/ai-workspace" />
+      ) : (
+        <div className="max-w-xl mx-auto text-center py-10 space-y-4">
+          <p className="text-sm text-zo-chrome font-bold">No apps synced yet.</p>
+          <div className="text-left bg-zo-black-3 border border-border rounded p-4 space-y-1 font-mono text-xs text-zo-muted">
+            <p># 1. Preview what will be synced</p>
+            <p className="text-zo-chrome">pnpm sync:workspace --dry-run</p>
+            <p className="pt-2"># 2. Sync to database</p>
+            <p className="text-zo-chrome">pnpm sync:workspace</p>
+            <p className="pt-2"># Required env (.env.local)</p>
+            <p className="text-zo-chrome">AI_WORKSPACE_ROOT, SUPABASE_SERVICE_ROLE_KEY</p>
+          </div>
+          <p className="text-xs text-zo-muted italic">
+            The browser cannot scan D:\AI-Workspace directly. Run the local sync command from your repo.
+          </p>
+        </div>
       )}
     </div>
   )
