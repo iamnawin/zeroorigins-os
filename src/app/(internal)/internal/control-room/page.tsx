@@ -1,12 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button, buttonVariants } from '@/components/ui/button'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import { cn } from '@/lib/utils'
 import {
-  Lightbulb, FolderKanban, CheckSquare, Users, Handshake, Bot,
-  FileText, Building2, Plus, ArrowRight, Clock, Workflow, 
-  ClipboardList, Activity, TrendingUp, Zap
+  FolderKanban, CheckSquare, Users, Bot, Plus, ArrowRight
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -200,35 +197,26 @@ export default async function ControlRoomPage() {
     .eq('id', user?.id || '')
     .single()
 
-  const [ideasRes, projectsRes, tasksRes, leadsRes, partnersRes, proposalsRes, customersRes, appsRes] =
+  const [projectsRes, tasksRes, leadsRes, appsRes] =
     await Promise.all([
-      supabase.from('ideas').select('id, status'),
       supabase.from('projects').select('id, title, status, created_at'),
       supabase.from('tasks').select('id, title, status, due_date, assigned_to'),
       supabase.from('leads').select('id, name, company, status, created_at, automation_status'),
-      supabase.from('partners').select('id, name, company, status, created_at, automation_status'),
-      supabase.from('proposals').select('id, status'),
-      supabase.from('customers').select('id, status'),
       supabase.from('ai_workspace_apps')
         .select('id, name, status, next_action, live_url, vercel_url, github_url')
         .order('updated_at', { ascending: false })
         .limit(8),
     ])
 
-  const ideas = (ideasRes.data ?? []) as Row[]
   const projects = (projectsRes.data ?? []) as Row[]
   const tasks = (tasksRes.data ?? []) as Row[]
   const leads = (leadsRes.data ?? []) as Row[]
-  const partners = (partnersRes.data ?? []) as Row[]
-  const proposals = (proposalsRes.data ?? []) as Row[]
-  const customers = (customersRes.data ?? []) as Row[]
   const apps = (appsRes.data ?? []) as AppRow[]
 
   const count = (rows: Row[], status: string) => rows.filter(r => r.status === status).length
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'there'
   const role = (profile?.role ?? 'employee') as string
-  const isAdmin = role === 'admin'
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
