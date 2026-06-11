@@ -12,14 +12,17 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setLoading(true)
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/login`,
     })
+    setLoading(false)
     if (error) { setError(error.message); return }
     setSent(true)
   }
@@ -40,11 +43,13 @@ export default function ForgotPasswordPage() {
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={loading} />
           </div>
         </CardContent>
         <CardFooter className="flex-col gap-3">
-          <Button type="submit" className="w-full">Send Reset Link</Button>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Sending...' : 'Send Reset Link'}
+          </Button>
           <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">Back to login</Link>
         </CardFooter>
       </form>

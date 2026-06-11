@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import Link from 'next/link'
-import { INTERNAL_ROLES, type Role } from '@/types'
+import { Loader2 } from 'lucide-react'
+import { INTERNAL_ROLES, EXTERNAL_ROLES, type Role } from '@/types'
 import { isZeroOriginsEmail } from '@/lib/supabase/auth-helpers'
 import { ensureProfile } from '@/lib/actions/auth'
 
@@ -18,14 +19,17 @@ function LoginForm() {
   const initialError = searchParams.get('error')
   
   const errorMessages: Record<string, string> = {
-    invalid_domain: 'Internal workspace requires a @zeroorigins.in email address.',
+    invalid_domain: 'Use your ZeroOrigins internal email.',
     auth_callback_failed: 'Authentication handshake failed. Please try signing in again or contact support.',
+    invalid_role: 'Invalid internal role configuration.',
+    pending_approval: 'Your account is pending admin approval.',
   }
   
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(initialError ? errorMessages[initialError] || '' : '')
   const [loading, setLoading] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -44,7 +48,7 @@ function LoginForm() {
 
     // 1. Domain Validation for Internal Intent
     if (intent === 'internal' && !isZeroOriginsEmail(email)) {
-      setError('Internal workspace requires a @zeroorigins.in email address.')
+      setError('Use your ZeroOrigins internal email.')
       setLoading(false)
       return
     }
@@ -67,9 +71,10 @@ function LoginForm() {
       // Read the profile with the BROWSER client — it has the fresh session,
       // so this avoids the server-action session-propagation race.
       let role: Role | undefined
+      let profileStatus: string | undefined
       const { data: prof, error: selectError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, status')
         .eq('id', user.id)
         .maybeSingle()
 
@@ -84,6 +89,27 @@ function LoginForm() {
 
       if (prof?.role) {
         role = prof.role as Role
+        profileStatus = prof.status ?? 'active'
+        // Legacy/unknown roles (pre-simplification FOUNDER/SUPER_ADMIN etc.)
+        // must be fixed in the database — never route them into the portals.
+        if (!([...INTERNAL_ROLES, ...EXTERNAL_ROLES] as Role[]).includes(role)) {
+          await supabase.auth.signOut()
+          setError('Invalid internal role configuration.')
+          setLoading(false)
+          return
+        }
+        if (profileStatus === 'pending') {
+          await supabase.auth.signOut()
+          setError('Your account is pending admin approval.')
+          setLoading(false)
+          return
+        }
+        if (profileStatus === 'disabled') {
+          await supabase.auth.signOut()
+          setError('Your account has been disabled. Contact admin.')
+          setLoading(false)
+          return
+        }
       } else {
         // Self-heal: create a default profile. @zeroorigins.in → employee, else → CUSTOMER.
         const defaultRole = user.email?.endsWith('@zeroorigins.in') ? 'employee' : 'CUSTOMER'
@@ -101,7 +127,7 @@ function LoginForm() {
           if (res.success && res.role) {
             role = res.role as Role
           } else {
-            setError(`Could not load your profile: ${insertError.message}. Please contact support.`)
+            setError('Account exists but internal profile is not active. Contact admin.')
             setLoading(false)
             return
           }
@@ -117,6 +143,7 @@ function LoginForm() {
         redirectPath = '/portal/customer/dashboard?message=unauthorized_internal'
       }
 
+      setRedirecting(true)
       router.push(redirectPath)
       router.refresh()
     } catch (err) {
@@ -141,18 +168,21 @@ function LoginForm() {
                 {error}
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Email</Label>
-              <Input id="email" type="email" placeholder="name@zeroorigins.in" value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
-            </div>
+            <fieldset disabled={loading} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Email</Label>
+                <Input id="email" type="email" placeholder="name@zeroorigins.in" value={email} onChange={e => setEmail(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Password</Label>
+                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+              </div>
+            </fieldset>
           </CardContent>
           <CardFooter className="flex-col gap-3">
             <Button type="submit" className="w-full font-bold h-11" disabled={loading}>
-              {loading ? 'Authenticating...' : 'Sign In'}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {redirecting ? 'Opening workspace...' : loading ? 'Signing in...' : 'Sign In'}
             </Button>
             <div className="flex gap-6 text-xs text-zo-muted mt-2">
               <Link href={`/signup${intent ? `?intent=${intent}` : ''}`} className="hover:text-zo-purple transition-colors">Create account</Link>

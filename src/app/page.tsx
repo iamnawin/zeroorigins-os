@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { INTERNAL_ROLES } from '@/types'
 import Image from 'next/image'
@@ -56,12 +57,15 @@ export default async function HomePage() {
             </CardHeader>
             <CardContent className="mt-auto p-6 pt-0 space-y-3">
               <div className="grid gap-2">
-                <Button variant={user && INTERNAL_ROLES.includes(profile?.role) ? "secondary" : "default"} className="w-full font-bold">
-                  <Link href="/login?intent=internal">Internal Login</Link>
-                </Button>
-                <Button variant="secondary" className="w-full text-xs border-zo-border-soft">
-                  <Link href="/signup?intent=internal">Internal Signup</Link>
-                </Button>
+                <Link
+                  href="/login?intent=internal"
+                  className={cn(buttonVariants({ variant: user && INTERNAL_ROLES.includes(profile?.role) ? 'secondary' : 'default' }), 'w-full font-bold')}
+                >
+                  Internal Login
+                </Link>
+                <Link href="/signup?intent=internal" className={cn(buttonVariants({ variant: 'secondary' }), 'w-full text-xs border-zo-border-soft')}>
+                  Internal Signup
+                </Link>
               </div>
             </CardContent>
           </Card>
@@ -82,12 +86,12 @@ export default async function HomePage() {
             </CardHeader>
             <CardContent className="mt-auto p-6 pt-0 space-y-3">
               <div className="grid gap-2">
-                <Button variant="secondary" className="w-full font-bold border-zo-border-soft">
-                  <Link href="/login?intent=customer">Customer Login</Link>
-                </Button>
-                <Button variant="outline" className="w-full text-xs border-zo-border-soft">
-                  <Link href="/request-build">Request a Build</Link>
-                </Button>
+                <Link href="/login?intent=customer" className={cn(buttonVariants({ variant: 'secondary' }), 'w-full font-bold border-zo-border-soft')}>
+                  Customer Login
+                </Link>
+                <Link href="/request-build" className={cn(buttonVariants({ variant: 'outline' }), 'w-full text-xs border-zo-border-soft')}>
+                  Request a Build
+                </Link>
               </div>
             </CardContent>
           </Card>
@@ -108,12 +112,12 @@ export default async function HomePage() {
             </CardHeader>
             <CardContent className="mt-auto p-6 pt-0 space-y-3">
               <div className="grid gap-2">
-                <Button variant="secondary" className="w-full font-bold border-zo-border-soft">
-                  <Link href="/login?intent=partner">Partner Login</Link>
-                </Button>
-                <Button variant="outline" className="w-full text-xs border-zo-border-soft">
-                  <Link href="/partner-with-us">Partner With Us</Link>
-                </Button>
+                <Link href="/login?intent=partner" className={cn(buttonVariants({ variant: 'secondary' }), 'w-full font-bold border-zo-border-soft')}>
+                  Partner Login
+                </Link>
+                <Link href="/partner-with-us" className={cn(buttonVariants({ variant: 'outline' }), 'w-full text-xs border-zo-border-soft')}>
+                  Partner With Us
+                </Link>
               </div>
             </CardContent>
           </Card>

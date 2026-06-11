@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { INTERNAL_ROLES, type Role } from '@/types'
+import { INTERNAL_ROLES, EXTERNAL_ROLES, type Role } from '@/types'
+
+const KNOWN_ROLES: Role[] = [...INTERNAL_ROLES, ...EXTERNAL_ROLES]
 
 const INTERNAL_EMAIL_DOMAIN = "@zeroorigins.in";
 
@@ -9,6 +11,18 @@ export async function proxy(request: NextRequest) {
 
   // Public routes — skip Supabase entirely
   if (pathname.startsWith('/request-build') || pathname.startsWith('/partner-with-us')) {
+    return NextResponse.next()
+  }
+
+  // Gateway and auth routes never need a user lookup — answering them without
+  // the Supabase round-trip keeps `/` and `/login` interactions instant.
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/auth/callback')
+  ) {
     return NextResponse.next()
   }
 
@@ -43,16 +57,6 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Root path handling — always allow gateway
-  if (pathname === '/') {
-    return response
-  }
-
-  // Auth routes handling
-  if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/forgot-password') || pathname.startsWith('/auth/callback')) {
-    return response
-  }
-
   // Protected routes handling
   if (!user) {
     const url = request.nextUrl.clone()
@@ -62,15 +66,25 @@ export async function proxy(request: NextRequest) {
 
   // Fetch role with safe default
   let role: Role = 'CUSTOMER'
+  let profileStatus = 'active'
   try {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, status')
       .eq('id', user.id)
       .maybeSingle() // Use maybeSingle to avoid error if missing
-    
+
     if (profile?.role) {
+      // Legacy/unknown roles (e.g. pre-simplification FOUNDER/SUPER_ADMIN) must
+      // never enter the portal redirect chain — they would ping-pong between
+      // the customer and partner portals forever (ERR_TOO_MANY_REDIRECTS).
+      if (!KNOWN_ROLES.includes(profile.role as Role)) {
+        return NextResponse.redirect(new URL('/login?error=invalid_role', request.url))
+      }
       role = profile.role as Role
+    }
+    if (profile?.status) {
+      profileStatus = profile.status
     }
   } catch (err) {
     console.error('Proxy profile fetch error:', err)
@@ -93,6 +107,11 @@ export async function proxy(request: NextRequest) {
     // B. Correct Domain but No Internal Role
     if (!hasInternalRole) {
       return NextResponse.redirect(new URL('/portal/customer/dashboard?message=pending_approval', request.url))
+    }
+
+    // C. Internal role but profile not active yet
+    if (profileStatus !== 'active') {
+      return NextResponse.redirect(new URL('/login?error=pending_approval', request.url))
     }
   }
 

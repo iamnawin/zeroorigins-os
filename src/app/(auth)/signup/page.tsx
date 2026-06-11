@@ -3,11 +3,13 @@
 import { useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
 import { INTERNAL_ROLES } from '@/types'
 import { isZeroOriginsEmail } from '@/lib/supabase/auth-helpers'
 
@@ -109,9 +111,9 @@ function SignupForm() {
                 Please click the link in your inbox to verify your ZeroOrigins account.
               </p>
             </div>
-            <Button className="w-full font-bold h-11">
-              <Link href="/login">Back to Login</Link>
-            </Button>
+            <Link href="/login" className={cn(buttonVariants(), 'w-full font-bold h-11')}>
+              Back to Login
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -135,21 +137,24 @@ function SignupForm() {
                 {error}
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Full Name</Label>
-              <Input id="name" placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Email</Label>
-              <Input id="email" type="email" placeholder={intent === 'internal' ? "name@zeroorigins.in" : "name@company.com"} value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
-            </div>
+            <fieldset disabled={loading} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Full Name</Label>
+                <Input id="name" placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Email</Label>
+                <Input id="email" type="email" placeholder={intent === 'internal' ? "name@zeroorigins.in" : "name@company.com"} value={email} onChange={e => setEmail(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-zo-muted text-xs uppercase tracking-widest font-bold">Password</Label>
+                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+              </div>
+            </fieldset>
           </CardContent>
           <CardFooter className="flex-col gap-3">
             <Button type="submit" className="w-full font-bold h-11" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? 'Creating account...' : 'Create Account'}
             </Button>
             <Link href={`/login${intent ? `?intent=${intent}` : ''}`} className="text-sm text-zo-muted hover:text-zo-purple transition-colors">

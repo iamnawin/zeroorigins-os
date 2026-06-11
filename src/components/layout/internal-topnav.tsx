@@ -34,6 +34,7 @@ const studioNav = [
 const salesNav = [
   { label: 'Leads', href: '/internal/leads' },
   { label: 'Partners', href: '/internal/partners' },
+  { label: 'Customers', href: '/internal/customers' },
 ]
 
 const workspaceNav = [

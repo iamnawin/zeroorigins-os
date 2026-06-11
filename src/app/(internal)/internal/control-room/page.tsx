@@ -5,7 +5,7 @@ import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-b
 import { cn } from '@/lib/utils'
 import {
   Lightbulb, FolderKanban, CheckSquare, Users, Handshake, Bot,
-  FileText, Building2, Plus, ArrowRight, Clock
+  FileText, Building2, Plus, ArrowRight, Clock, Workflow, ClipboardList
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -18,6 +18,8 @@ interface Row {
   company?: string | null
   created_at?: string
   due_date?: string | null
+  assigned_to?: string | null
+  automation_status?: string | null
 }
 
 interface AppRow {
@@ -36,6 +38,7 @@ function formatDate(value?: string | null): string {
 }
 
 const OPEN_TASK = (s: string) => !['done', 'cancelled'].includes(s)
+const OPEN_LEAD = (s: string) => !['lost', 'archived'].includes(s)
 
 export default async function ControlRoomPage() {
   const supabase = await createClient()
@@ -51,9 +54,9 @@ export default async function ControlRoomPage() {
     await Promise.all([
       supabase.from('ideas').select('id, status'),
       supabase.from('projects').select('id, title, status, created_at'),
-      supabase.from('tasks').select('id, title, status, due_date'),
-      supabase.from('leads').select('id, name, company, status, created_at'),
-      supabase.from('partners').select('id, name, company, status, created_at'),
+      supabase.from('tasks').select('id, title, status, due_date, assigned_to'),
+      supabase.from('leads').select('id, name, company, status, created_at, automation_status'),
+      supabase.from('partners').select('id, name, company, status, created_at, automation_status'),
       supabase.from('proposals').select('id, status'),
       supabase.from('customers').select('id, status'),
       supabase.from('ai_workspace_apps')
@@ -73,22 +76,22 @@ export default async function ControlRoomPage() {
 
   const count = (rows: Row[], status: string) => rows.filter(r => r.status === status).length
 
-  const modules: {
+  const kpis: {
     label: string
     icon: LucideIcon
     total: number
-    activeLabel?: string
+    subLabel: string
     description: string
     href: string
   }[] = [
-    { label: 'Ideas', icon: Lightbulb, total: ideas.length, activeLabel: `${count(ideas, 'under_review')} under review`, description: 'Capture, review, and convert ideas into projects.', href: '/internal/ideas' },
-    { label: 'Projects', icon: FolderKanban, total: projects.length, activeLabel: `${count(projects, 'active')} active`, description: 'Plan and deliver client and internal builds.', href: '/internal/projects' },
-    { label: 'Tasks', icon: CheckSquare, total: tasks.length, activeLabel: `${tasks.filter(t => OPEN_TASK(t.status)).length} open`, description: 'Track execution across every project.', href: '/internal/tasks' },
-    { label: 'Leads', icon: Users, total: leads.length, activeLabel: `${count(leads, 'new')} new`, description: 'Inbound and outbound sales pipeline.', href: '/internal/leads' },
-    { label: 'Partners', icon: Handshake, total: partners.length, activeLabel: `${count(partners, 'new_application')} new applications`, description: 'Referral and implementation partners.', href: '/internal/partners' },
-    { label: 'AI Workspace', icon: Bot, total: apps.length, activeLabel: `${count(apps as unknown as Row[], 'deployed')} deployed`, description: 'Apps, products, and experiments we build.', href: '/internal/ai-workspace' },
-    { label: 'Proposals', icon: FileText, total: proposals.length, activeLabel: `${count(proposals, 'sent')} sent`, description: 'Proposals sent to leads and customers.', href: '/internal/proposals' },
-    { label: 'Customers', icon: Building2, total: customers.length, activeLabel: `${count(customers, 'active')} active`, description: 'Active customer accounts.', href: '/internal/customers' },
+    { label: 'Leads', icon: Users, total: leads.filter(l => OPEN_LEAD(l.status)).length, subLabel: `${count(leads, 'new')} new`, description: 'Open sales pipeline', href: '/internal/leads' },
+    { label: 'Projects', icon: FolderKanban, total: count(projects, 'active'), subLabel: `${projects.length} total`, description: 'Active builds in delivery', href: '/internal/projects' },
+    { label: 'Tasks', icon: CheckSquare, total: tasks.filter(t => OPEN_TASK(t.status)).length, subLabel: `${count(tasks, 'in_progress')} in progress`, description: 'Pending execution items', href: '/internal/tasks' },
+    { label: 'Partners', icon: Handshake, total: count(partners, 'new_application'), subLabel: `${partners.length} total`, description: 'New partner requests', href: '/internal/partners' },
+    { label: 'Customers', icon: Building2, total: count(customers, 'active'), subLabel: `${customers.length} total`, description: 'Active customer accounts', href: '/internal/customers' },
+    { label: 'Ideas', icon: Lightbulb, total: ideas.length, subLabel: `${count(ideas, 'under_review')} under review`, description: 'Concepts in the funnel', href: '/internal/ideas' },
+    { label: 'AI Workspace', icon: Bot, total: apps.length, subLabel: `${count(apps as unknown as Row[], 'deployed')} deployed`, description: 'Apps and experiments', href: '/internal/ai-workspace' },
+    { label: 'Proposals', icon: FileText, total: proposals.length, subLabel: `${count(proposals, 'sent')} sent`, description: 'Sent to leads and customers', href: '/internal/proposals' },
   ]
 
   const quickActions: { label: string; href: string; icon: LucideIcon }[] = [
@@ -103,128 +106,212 @@ export default async function ControlRoomPage() {
   const byCreatedDesc = (a: Row, b: Row) => ((a.created_at ?? '') < (b.created_at ?? '') ? 1 : -1)
   const recentLeads = [...leads].sort(byCreatedDesc).slice(0, 5)
   const recentPartners = [...partners].sort(byCreatedDesc).slice(0, 5)
-  const recentProjects = [...projects].sort(byCreatedDesc).slice(0, 5)
+  const activeProjects = projects.filter(p => p.status === 'active').sort(byCreatedDesc).slice(0, 5)
   const tasksDueSoon = tasks
     .filter(t => t.due_date && OPEN_TASK(t.status))
     .sort((a, b) => ((a.due_date ?? '') < (b.due_date ?? '') ? -1 : 1))
     .slice(0, 5)
 
+  const leadsQueued = leads.filter(l => l.automation_status === 'not_started').length
+  const partnersQueued = partners.filter(p => p.automation_status === 'not_started').length
+
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'there'
-  const role = profile?.role ?? 'employee'
+  const role = (profile?.role ?? 'employee') as string
+  const isAdmin = role === 'admin'
+  const myTasks = tasks.filter(t => t.assigned_to === user?.id && OPEN_TASK(t.status)).slice(0, 5)
+
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata',
+  })
 
   return (
     <div className="space-y-8 selection:bg-zo-purple/20">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Control Room</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Welcome back, {displayName}</p>
+      {/* Hero / status band */}
+      <section className="relative overflow-hidden rounded-xl border border-border bg-card p-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse 50% 90% at 85% 0%, rgba(139, 92, 246, 0.12), transparent 65%)' }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(139,92,246,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.7) 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
+          }}
+        />
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-bold tracking-tight text-zo-chrome">
+                {isAdmin ? 'Control Room' : 'My Workspace'}
+              </h1>
+              <span className="inline-flex items-center rounded-full bg-zo-purple/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zo-purple dark:bg-zo-purple/15">
+                {role}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">Welcome back, {displayName}</p>
+            <div className="mt-3 flex items-center gap-3 text-[11px] text-zo-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                Workspace online
+              </span>
+              <span className="text-zo-dim">·</span>
+              <span>{today}</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/internal/leads/new" className={cn(buttonVariants(), 'font-semibold')}>
+              <Plus className="h-3.5 w-3.5" /> New Lead
+            </Link>
+            <Link href="/internal/projects/new" className={cn(buttonVariants({ variant: 'secondary' }), 'font-semibold')}>
+              <Plus className="h-3.5 w-3.5" /> New Project
+            </Link>
+            <Link href="/internal/tasks" className={cn(buttonVariants({ variant: 'secondary' }), 'font-semibold')}>
+              <CheckSquare className="h-3.5 w-3.5" /> View Tasks
+            </Link>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Module cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {modules.map(m => (
-          <Card key={m.label} className="group bg-card border-border transition-all hover:border-zo-purple/40">
-            <CardContent className="flex h-full flex-col p-5">
-              <div className="flex items-start justify-between">
-                <m.icon className="h-5 w-5 text-zo-purple opacity-80 transition-opacity group-hover:opacity-100" />
-                <span className="text-2xl font-bold text-zo-chrome">{m.total}</span>
-              </div>
-              <p className="mt-3 text-sm font-semibold text-zo-chrome">{m.label}</p>
-              {m.activeLabel && (
-                <p className="mt-0.5 text-[11px] font-medium text-zo-purple-2">{m.total} total · {m.activeLabel}</p>
-              )}
-              <p className="mt-2 flex-1 text-xs leading-relaxed text-zo-muted">{m.description}</p>
-              <Link
-                href={m.href}
-                className="mt-4 flex items-center text-[11px] font-bold uppercase tracking-wider text-zo-muted transition-colors hover:text-zo-purple"
-              >
-                Open {m.label} <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </CardContent>
-          </Card>
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {kpis.map(k => (
+          <Link
+            key={k.label}
+            href={k.href}
+            className="group rounded-xl border border-border bg-card p-4 transition-all hover:border-zo-purple/40 hover:shadow-lg hover:shadow-zo-purple/5 active:translate-y-px"
+          >
+            <div className="flex items-start justify-between">
+              <k.icon className="h-4 w-4 text-zo-purple opacity-80 transition-opacity group-hover:opacity-100" />
+              <span className="text-2xl font-bold tabular-nums text-zo-chrome">{k.total}</span>
+            </div>
+            <p className="mt-2.5 text-sm font-semibold text-zo-chrome">{k.label}</p>
+            <p className="mt-0.5 text-[11px] font-medium text-zo-purple-2">{k.subLabel}</p>
+            <p className="mt-1 hidden text-xs text-zo-muted sm:block">{k.description}</p>
+          </Link>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left: AI Workspace snapshot + recent projects/tasks */}
+        {/* Main column */}
         <div className="space-y-6 lg:col-span-2">
-          {/* AI Workspace snapshot */}
-          <Card className="bg-card border-border shadow-xl">
-            <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-4">
-              <div className="flex items-center gap-2">
-                <Bot className="h-4 w-4 text-zo-purple" />
-                <CardTitle className="text-sm font-bold uppercase tracking-wider">AI Workspace Snapshot</CardTitle>
-              </div>
-              <Link href="/internal/ai-workspace" className="flex items-center text-[10px] text-zo-muted hover:text-zo-purple">
-                View All <ArrowRight className="ml-1 h-3 w-3" />
-              </Link>
-            </CardHeader>
-            <CardContent className="pt-4">
-              {apps.length > 0 ? (
-                <div className="space-y-1">
-                  {apps.map(app => {
-                    const url = app.live_url || app.vercel_url || app.github_url
-                    return (
-                      <Link
-                        key={app.id}
-                        href={`/internal/ai-workspace/${app.id}`}
-                        className="group/app flex items-center justify-between gap-3 rounded p-3 transition-colors hover:bg-white/5"
-                      >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zo-purple group-hover/app:animate-pulse" />
-                          <span className="truncate text-sm font-medium text-zo-chrome">{app.name}</span>
-                          <ResourceStatusBadge status={app.status} />
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <span className="hidden truncate text-[10px] italic text-zo-dim md:block md:max-w-[180px]">
-                            {app.next_action || 'No next action'}
-                          </span>
-                          {url && <span className="text-[9px] font-bold uppercase tracking-tighter text-zo-purple-2">Link</span>}
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
+          {!isAdmin && (
+            <SectionCard title="My Tasks" icon={ClipboardList}>
+              {myTasks.length > 0 ? (
+                <RowList
+                  items={myTasks.map(t => ({ id: t.id, primary: t.title ?? 'Untitled', status: t.status, meta: t.due_date ? `Due ${formatDate(t.due_date)}` : 'No due date', href: `/internal/tasks/${t.id}` }))}
+                />
               ) : (
-                <div className="py-8 text-center">
-                  <p className="text-xs text-zo-muted">No AI Workspace apps registered yet.</p>
-                  <Link
-                    href="/internal/ai-workspace/new"
-                    className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'mt-4 inline-flex items-center')}
-                  >
-                    <Plus className="mr-1 h-3 w-3" /> Create AI Workspace module
-                  </Link>
-                </div>
+                <p className="py-6 text-center text-xs text-zo-muted">
+                  Assigned work will appear here once Admin assigns records.
+                </p>
               )}
-            </CardContent>
-          </Card>
+            </SectionCard>
+          )}
 
-          {/* Recent projects + tasks due soon */}
+          <SectionCard title="Recent Leads" icon={Users} viewAllHref="/internal/leads">
+            {recentLeads.length > 0 ? (
+              <RowList
+                items={recentLeads.map(l => ({ id: l.id, primary: l.name ?? 'Unknown', status: l.status, meta: l.company || formatDate(l.created_at), href: `/internal/leads/${l.id}` }))}
+              />
+            ) : (
+              <EmptyHint text="No leads yet." ctaLabel="Add your first lead" ctaHref="/internal/leads/new" />
+            )}
+          </SectionCard>
+
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <RecentList
-              title="Recent Projects"
-              icon={FolderKanban}
-              items={recentProjects.map(p => ({ id: p.id, primary: p.title ?? 'Untitled', status: p.status, meta: formatDate(p.created_at) }))}
-              emptyText="No projects yet."
-            />
-            <RecentList
-              title="Tasks Due Soon"
-              icon={Clock}
-              items={tasksDueSoon.map(t => ({ id: t.id, primary: t.title ?? 'Untitled', status: t.status, meta: formatDate(t.due_date) }))}
-              emptyText="No upcoming tasks."
-            />
+            <SectionCard title="Active Projects" icon={FolderKanban} viewAllHref="/internal/projects">
+              {activeProjects.length > 0 ? (
+                <RowList
+                  items={activeProjects.map(p => ({ id: p.id, primary: p.title ?? 'Untitled', status: p.status, meta: formatDate(p.created_at), href: `/internal/projects/${p.id}` }))}
+                />
+              ) : (
+                <EmptyHint text="No active projects yet. Create one from a won lead." ctaLabel="Create project" ctaHref="/internal/projects/new" />
+              )}
+            </SectionCard>
+            <SectionCard title="Tasks Due Soon" icon={Clock} viewAllHref="/internal/tasks">
+              {tasksDueSoon.length > 0 ? (
+                <RowList
+                  items={tasksDueSoon.map(t => ({ id: t.id, primary: t.title ?? 'Untitled', status: t.status, meta: formatDate(t.due_date), href: `/internal/tasks/${t.id}` }))}
+                />
+              ) : (
+                <p className="py-6 text-center text-xs text-zo-muted">No upcoming tasks.</p>
+              )}
+            </SectionCard>
           </div>
+
+          <SectionCard title="AI Workspace Snapshot" icon={Bot} viewAllHref="/internal/ai-workspace">
+            {apps.length > 0 ? (
+              <div className="space-y-1">
+                {apps.map(app => {
+                  const url = app.live_url || app.vercel_url || app.github_url
+                  return (
+                    <Link
+                      key={app.id}
+                      href={`/internal/ai-workspace/${app.id}`}
+                      className="group/app flex items-center justify-between gap-3 rounded p-3 transition-colors hover:bg-zo-purple/5 dark:hover:bg-white/5"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zo-purple" />
+                        <span className="truncate text-sm font-medium text-zo-chrome">{app.name}</span>
+                        <ResourceStatusBadge status={app.status} />
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="hidden truncate text-[10px] italic text-zo-dim md:block md:max-w-[180px]">
+                          {app.next_action || 'No next action'}
+                        </span>
+                        {url && <span className="text-[9px] font-bold uppercase tracking-tighter text-zo-purple-2">Link</span>}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            ) : (
+              <EmptyHint text="No AI Workspace apps registered yet." ctaLabel="Create AI Workspace module" ctaHref="/internal/ai-workspace/new" />
+            )}
+          </SectionCard>
         </div>
 
-        {/* Right: quick actions + recent leads + recent partners */}
+        {/* Side column */}
         <div className="space-y-6">
-          <Card className="bg-card border-border shadow-lg">
-            <CardHeader className="border-b border-border/50 pb-4">
-              <CardTitle className="text-sm font-bold uppercase tracking-wider">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 pt-4">
+          <SectionCard title="Automation Queue" icon={Workflow}>
+            {leadsQueued + partnersQueued > 0 ? (
+              <div className="space-y-1">
+                <Link href="/internal/leads" className="flex items-center justify-between gap-3 rounded p-2.5 transition-colors hover:bg-zo-purple/5 dark:hover:bg-white/5">
+                  <span className="text-sm text-zo-silver">Leads awaiting automation</span>
+                  <span className="text-sm font-bold tabular-nums text-zo-purple-2">{leadsQueued}</span>
+                </Link>
+                <Link href="/internal/partners" className="flex items-center justify-between gap-3 rounded p-2.5 transition-colors hover:bg-zo-purple/5 dark:hover:bg-white/5">
+                  <span className="text-sm text-zo-silver">Partner requests awaiting automation</span>
+                  <span className="text-sm font-bold tabular-nums text-zo-purple-2">{partnersQueued}</span>
+                </Link>
+                <p className="px-2.5 pt-2 text-[10px] leading-relaxed text-zo-dim">
+                  n8n workflows pick up records marked <span className="font-mono">not_started</span>.
+                </p>
+              </div>
+            ) : (
+              <p className="py-6 text-center text-xs text-zo-muted">No automation events yet.</p>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Recent Partner Requests" icon={Handshake} viewAllHref="/internal/partners">
+            {recentPartners.length > 0 ? (
+              <RowList
+                items={recentPartners.map(p => ({ id: p.id, primary: p.name ?? 'Unknown', status: p.status, meta: p.company || formatDate(p.created_at), href: `/internal/partners/${p.id}` }))}
+              />
+            ) : (
+              <p className="py-6 text-center text-xs text-zo-muted">No partner requests yet.</p>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Quick Actions" icon={Plus}>
+            <div className="space-y-2">
               {quickActions.map(a => (
                 <Link
                   key={a.label}
@@ -234,81 +321,81 @@ export default async function ControlRoomPage() {
                   <a.icon className="mr-3 h-3 w-3 text-zo-purple opacity-70 group-hover/qa:opacity-100" /> {a.label}
                 </Link>
               ))}
-            </CardContent>
-          </Card>
-
-          <RecentList
-            title="Recent Leads"
-            icon={Users}
-            items={recentLeads.map(l => ({ id: l.id, primary: l.name ?? 'Unknown', status: l.status, meta: l.company || formatDate(l.created_at), href: `/internal/leads/${l.id}` }))}
-            emptyText="No leads yet."
-          />
-
-          <RecentList
-            title="Recent Partner Applications"
-            icon={Handshake}
-            items={recentPartners.map(p => ({ id: p.id, primary: p.name ?? 'Unknown', status: p.status, meta: p.company || formatDate(p.created_at), href: `/internal/partners/${p.id}` }))}
-            emptyText="No partner applications yet."
-          />
+            </div>
+          </SectionCard>
         </div>
       </div>
     </div>
   )
 }
 
-interface RecentItem {
+function SectionCard({
+  title,
+  icon: Icon,
+  viewAllHref,
+  children,
+}: {
+  title: string
+  icon: LucideIcon
+  viewAllHref?: string
+  children: React.ReactNode
+}) {
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-4">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-zo-purple" />
+          <CardTitle className="text-sm font-bold uppercase tracking-wider">{title}</CardTitle>
+        </div>
+        {viewAllHref && (
+          <Link href={viewAllHref} className="flex items-center text-[10px] text-zo-muted transition-colors hover:text-zo-purple">
+            View All <ArrowRight className="ml-1 h-3 w-3" />
+          </Link>
+        )}
+      </CardHeader>
+      <CardContent className="pt-4">{children}</CardContent>
+    </Card>
+  )
+}
+
+interface RowItem {
   id: string
   primary: string
   status: string
   meta: string
-  href?: string
+  href: string
 }
 
-function RecentList({
-  title,
-  icon: Icon,
-  items,
-  emptyText,
-}: {
-  title: string
-  icon: LucideIcon
-  items: RecentItem[]
-  emptyText: string
-}) {
+function RowList({ items }: { items: RowItem[] }) {
   return (
-    <Card className="bg-card border-border">
-      <CardHeader className="flex flex-row items-center gap-2 border-b border-border/50 pb-4">
-        <Icon className="h-4 w-4 text-zo-purple" />
-        <CardTitle className="text-sm font-bold uppercase tracking-wider">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-4">
-        {items.length > 0 ? (
-          <div className="space-y-1">
-            {items.map(item => {
-              const inner = (
-                <>
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate text-sm font-medium text-zo-chrome">{item.primary}</span>
-                    <span className="truncate text-[10px] text-zo-dim">{item.meta}</span>
-                  </div>
-                  <ResourceStatusBadge status={item.status} />
-                </>
-              )
-              return item.href ? (
-                <Link key={item.id} href={item.href} className="flex items-center justify-between gap-3 rounded p-2.5 transition-colors hover:bg-white/5">
-                  {inner}
-                </Link>
-              ) : (
-                <div key={item.id} className="flex items-center justify-between gap-3 rounded p-2.5">
-                  {inner}
-                </div>
-              )
-            })}
+    <div className="space-y-1">
+      {items.map(item => (
+        <Link
+          key={item.id}
+          href={item.href}
+          className="flex items-center justify-between gap-3 rounded p-2.5 transition-colors hover:bg-zo-purple/5 dark:hover:bg-white/5"
+        >
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-medium text-zo-chrome">{item.primary}</span>
+            <span className="truncate text-[10px] text-zo-dim">{item.meta}</span>
           </div>
-        ) : (
-          <p className="py-6 text-center text-xs text-zo-muted">{emptyText}</p>
-        )}
-      </CardContent>
-    </Card>
+          <ResourceStatusBadge status={item.status} />
+        </Link>
+      ))}
+    </div>
+  )
+}
+
+function EmptyHint({ text, ctaLabel, ctaHref }: { text: string; ctaLabel: string; ctaHref: string }) {
+  return (
+    <div className="py-8 text-center">
+      <p className="text-xs text-zo-muted">{text}</p>
+      <Link
+        href={ctaHref}
+        className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'mt-4 inline-flex items-center')}
+      >
+        <Plus className="mr-1 h-3 w-3" /> {ctaLabel}
+      </Link>
+    </div>
   )
 }
