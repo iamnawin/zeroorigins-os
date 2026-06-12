@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CUSTOMER_STATUSES, type Customer } from '@/types'
+import { createCustomer, updateCustomer } from '@/lib/actions/internal-resources'
 
 interface Props {
   mode: 'create' | 'edit'
@@ -28,7 +28,6 @@ export default function CustomerForm({ mode, initialData }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClient()
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -38,20 +37,13 @@ export default function CustomerForm({ mode, initialData }: Props) {
     setLoading(true)
     setError('')
     try {
-      if (mode === 'create') {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { error: err } = await supabase.from('customers').insert({
-          ...form, status: 'active', owner_id: user?.id, created_by: user?.id,
-        })
-        if (err) throw err
-        router.push('/internal/customers')
-      } else {
-        const { error: err } = await supabase.from('customers')
-          .update({ ...form, status })
-          .eq('id', initialData!.id!)
-        if (err) throw err
-        router.push(`/internal/customers/${initialData!.id}`)
-      }
+      const result = mode === 'create'
+        ? await createCustomer(form)
+        : await updateCustomer(initialData!.id!, { ...form, status: status as Customer['status'] })
+
+      if (result.error) throw new Error(result.error)
+
+      router.push(mode === 'create' ? '/internal/customers' : `/internal/customers/${initialData!.id}`)
       router.refresh()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')

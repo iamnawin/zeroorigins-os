@@ -26,6 +26,8 @@ const navItems: NavItem[] = [
   { label: 'Projects', href: '/internal/projects', icon: FolderKanban, built: true },
   { label: 'Tasks', href: '/internal/tasks', icon: CheckSquare, built: true },
   { label: 'Leads', href: '/internal/leads', icon: Users, built: true },
+  { label: 'Deals', href: '/internal/deals', icon: DollarSign, built: true },
+  { label: 'Meetings', href: '/internal/meetings', icon: CheckSquare, built: true },
   { label: 'Partners', href: '/internal/partners', icon: Handshake, built: true },
   { label: 'AI Workspace', href: '/internal/ai-workspace', icon: Bot, built: true },
   { label: 'Proposals', href: '/internal/proposals', icon: FileText, built: true },

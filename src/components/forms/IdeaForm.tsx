@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { IDEA_STATUSES, type Idea } from '@/types'
+import { createIdea, updateIdea } from '@/lib/actions/internal-resources'
 
 const PRIORITIES = ['low', 'medium', 'high', 'critical']
 
@@ -25,28 +25,24 @@ export default function IdeaForm({ mode, initialData }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClient()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
     try {
-      if (mode === 'create') {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { error: err } = await supabase.from('ideas').insert({
-          title, description, priority, status: 'draft',
-          owner_id: user?.id, created_by: user?.id,
+      const result = mode === 'create'
+        ? await createIdea({ title, description, priority: priority as Idea['priority'] })
+        : await updateIdea(initialData!.id!, {
+          title,
+          description,
+          priority: priority as Idea['priority'],
+          status: status as Idea['status'],
         })
-        if (err) throw err
-        router.push('/internal/ideas')
-      } else {
-        const { error: err } = await supabase.from('ideas')
-          .update({ title, description, priority, status })
-          .eq('id', initialData!.id!)
-        if (err) throw err
-        router.push(`/internal/ideas/${initialData!.id}`)
-      }
+
+      if (result.error) throw new Error(result.error)
+
+      router.push(mode === 'create' ? '/internal/ideas' : `/internal/ideas/${initialData!.id}`)
       router.refresh()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')

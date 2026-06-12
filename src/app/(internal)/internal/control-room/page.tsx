@@ -1,195 +1,87 @@
-import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
-import { cn } from '@/lib/utils'
+import Link from 'next/link'
 import {
-  FolderKanban, CheckSquare, Users, Bot, Plus, ArrowRight
+  ArrowRight,
+  Bot,
+  CalendarDays,
+  CheckSquare,
+  DollarSign,
+  FileText,
+  Plus,
+  Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
+import type { Deal, Lead, Meeting, Proposal, Task } from '@/types'
 
-interface Row {
+type PipelineItem = {
   id: string
-  status: string
-  name?: string
-  title?: string
-  company?: string | null
-  created_at?: string
-  due_date?: string | null
-  assigned_to?: string | null
-  automation_status?: string | null
-}
-
-interface AppRow {
-  id: string
-  name: string
-  status: string
-  next_action?: string | null
-  live_url?: string | null
-  vercel_url?: string | null
-  github_url?: string | null
-}
-
-function formatDate(value?: string | null): string {
-  if (!value) return '—'
-  return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
-const OPEN_TASK = (s: string) => !['done', 'cancelled'].includes(s)
-const OPEN_LEAD = (s: string) => !['lost', 'archived'].includes(s)
-
-function KPICard({ 
-  icon: Icon, 
-  label, 
-  count, 
-  status, 
-  description, 
-  href,
-  accent = 'purple' 
-}: {
-  icon: LucideIcon
-  label: string
-  count: number
-  status: string
-  description: string
   href: string
-  accent?: 'purple' | 'blue' | 'green' | 'orange'
-}) {
-  const accentColors = {
-    purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/20 group-hover:border-purple-500/40',
-    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/20 group-hover:border-blue-500/40',
-    green: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/20 group-hover:border-emerald-500/40',
-    orange: 'from-amber-500/20 to-amber-600/10 border-amber-500/20 group-hover:border-amber-500/40'
-  }
+  title: string
+  meta: string
+  status: string
+  value?: string
+}
 
-  const iconColors = {
-    purple: 'text-purple-400 group-hover:text-purple-300',
-    blue: 'text-blue-400 group-hover:text-blue-300',
-    green: 'text-emerald-400 group-hover:text-emerald-300',
-    orange: 'text-amber-400 group-hover:text-amber-300'
-  }
+function formatDate(value?: string | null) {
+  return value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'
+}
 
+function formatDateTime(value?: string | null) {
+  return value ? new Date(value).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '-'
+}
+
+function money(value?: number | null) {
+  return value == null ? undefined : value.toLocaleString()
+}
+
+function WorkItem({ href, title, meta, status, value }: PipelineItem) {
   return (
-    <Link 
-      href={href}
-      className={cn(
-        "group relative overflow-hidden zo-surface-elevated hover:zo-glass zo-motion-safe block p-6 rounded-xl border",
-        accentColors[accent]
-      )}
-    >
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-5 group-hover:opacity-10 zo-motion-safe">
-        <div className="absolute top-4 right-4">
-          <Icon className="w-12 h-12 text-white" />
+    <Link href={href} className="block rounded-md border border-border bg-background/60 p-3 hover:border-zo-purple/40 transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{title}</p>
+          <p className="text-[11px] text-muted-foreground truncate">{meta}</p>
         </div>
+        <ResourceStatusBadge status={status} />
       </div>
-      
-      {/* Accent line */}
-      <div className={cn(
-        "absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-current to-transparent opacity-60 group-hover:opacity-100 zo-motion-safe",
-        iconColors[accent]
-      )} />
-
-      <div className="relative z-10 space-y-4">
-        {/* Icon and count */}
-        <div className="flex items-start justify-between">
-          <div className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center zo-motion-safe",
-            accent === 'purple' ? 'bg-purple-500/10 group-hover:bg-purple-500/15' :
-            accent === 'blue' ? 'bg-blue-500/10 group-hover:bg-blue-500/15' :
-            accent === 'green' ? 'bg-emerald-500/10 group-hover:bg-emerald-500/15' :
-            'bg-amber-500/10 group-hover:bg-amber-500/15'
-          )}>
-            <Icon className={cn("w-5 h-5 zo-motion-safe", iconColors[accent])} />
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-white tabular-nums">{count}</div>
-            <div className={cn("text-sm font-medium", iconColors[accent])}>{status}</div>
-          </div>
-        </div>
-
-        {/* Label and description */}
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold text-white">{label}</h3>
-          <p className="text-sm text-white/60 leading-relaxed">{description}</p>
-        </div>
-
-        {/* Hover indicator */}
-        <div className="flex items-center text-white/40 group-hover:text-white/60 zo-motion-safe">
-          <span className="text-xs font-medium">View details</span>
-          <ArrowRight className="ml-1 w-3 h-3 group-hover:translate-x-0.5 zo-motion-safe" />
-        </div>
-      </div>
+      {value && <p className="mt-2 text-xs font-medium text-zo-purple-2">{value}</p>}
     </Link>
   )
 }
 
-function EmptyState({ 
-  icon: Icon, 
-  title, 
-  description, 
-  actionLabel, 
-  actionHref 
-}: {
-  icon: LucideIcon
-  title: string
-  description: string
-  actionLabel?: string
-  actionHref?: string
-}) {
+function StageColumn({ title, items }: { title: string; items: PipelineItem[] }) {
   return (
-    <div className="py-12 text-center space-y-4">
-      <div className="w-12 h-12 mx-auto bg-white/5 rounded-xl flex items-center justify-center">
-        <Icon className="w-6 h-6 text-white/40" />
+    <div className="min-w-64 rounded-lg border border-border bg-card">
+      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{title}</p>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{items.length}</span>
       </div>
-      <div className="space-y-2">
-        <h3 className="font-medium text-white/80">{title}</h3>
-        <p className="text-sm text-white/50 max-w-sm mx-auto leading-relaxed">{description}</p>
+      <div className="space-y-2 p-2">
+        {items.length > 0 ? items.map(item => <WorkItem key={item.href} {...item} />) : (
+          <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">No records</div>
+        )}
       </div>
-      {actionLabel && actionHref && (
-        <Link 
-          href={actionHref}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-300 hover:text-purple-200 zo-motion-safe"
-        >
-          <Plus className="w-4 h-4" />
-          {actionLabel}
-        </Link>
-      )}
     </div>
   )
 }
 
-function RecentItem({ 
-  href, 
-  title, 
-  subtitle, 
-  status 
-}: {
-  href: string
-  title: string
-  subtitle: string
-  status: string
-}) {
+function SectionHeader({ icon: Icon, title, href }: { icon: React.ElementType; title: string; href: string }) {
   return (
-    <Link
-      href={href}
-      className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg zo-motion-safe group"
-    >
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-white/90 truncate">{title}</div>
-        <div className="text-xs text-white/50 truncate">{subtitle}</div>
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-zo-purple" />
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
-      <div className="flex items-center gap-3">
-        <ResourceStatusBadge status={status} />
-        <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white/60 group-hover:translate-x-0.5 zo-motion-safe" />
-      </div>
-    </Link>
+      <Link href={href} className="text-xs text-muted-foreground hover:text-zo-purple-2">View all</Link>
+    </div>
   )
 }
 
 export default async function ControlRoomPage() {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = await supabase
     .from('profiles')
@@ -197,251 +89,179 @@ export default async function ControlRoomPage() {
     .eq('id', user?.id || '')
     .single()
 
-  const [projectsRes, tasksRes, leadsRes, appsRes] =
-    await Promise.all([
-      supabase.from('projects').select('id, title, status, created_at'),
-      supabase.from('tasks').select('id, title, status, due_date, assigned_to'),
-      supabase.from('leads').select('id, name, company, status, created_at, automation_status'),
-      supabase.from('ai_workspace_apps')
-        .select('id, name, status, next_action, live_url, vercel_url, github_url')
-        .order('updated_at', { ascending: false })
-        .limit(8),
-    ])
+  const [
+    leadsRes,
+    dealsRes,
+    proposalsRes,
+    meetingsRes,
+    tasksRes,
+  ] = await Promise.all([
+    supabase.from('leads').select('*').not('status', 'in', '("lost","archived")').order('created_at', { ascending: false }).limit(50),
+    supabase.from('deals').select('*').not('stage', 'in', '("lost")').order('created_at', { ascending: false }).limit(50),
+    supabase.from('proposals').select('*').not('status', 'in', '("accepted","rejected","expired")').order('created_at', { ascending: false }).limit(50),
+    supabase.from('meetings').select('*').order('scheduled_at', { ascending: true }).limit(20),
+    supabase.from('tasks').select('*').not('status', 'in', '("done","cancelled")').order('created_at', { ascending: false }).limit(50),
+  ])
 
-  const projects = (projectsRes.data ?? []) as Row[]
-  const tasks = (tasksRes.data ?? []) as Row[]
-  const leads = (leadsRes.data ?? []) as Row[]
-  const apps = (appsRes.data ?? []) as AppRow[]
+  const leads = (leadsRes.data ?? []) as Lead[]
+  const deals = (dealsRes.data ?? []) as Deal[]
+  const proposals = (proposalsRes.data ?? []) as Proposal[]
+  const meetings = (meetingsRes.data ?? []) as Meeting[]
+  const tasks = (tasksRes.data ?? []) as Task[]
+  const now = new Date()
+  const todayEnd = new Date(now)
+  todayEnd.setHours(23, 59, 59, 999)
 
-  const count = (rows: Row[], status: string) => rows.filter(r => r.status === status).length
+  const newLeads = leads.filter(row => ['new', 'contacted', 'discovery_scheduled'].includes(row.status)).map(row => ({
+    id: row.id,
+    href: `/internal/leads/${row.id}`,
+    title: row.company || row.name,
+    meta: row.service_interest || row.email,
+    status: row.status,
+    value: row.budget_range,
+  }))
+
+  const qualifiedDeals = deals.filter(row => ['qualifying', 'proposal'].includes(row.stage)).map(row => ({
+    id: row.id,
+    href: `/internal/deals/${row.id}`,
+    title: row.name,
+    meta: row.next_step || formatDate(row.expected_close_date),
+    status: row.stage,
+    value: money(row.estimated_value),
+  }))
+
+  const sentProposals = proposals.filter(row => ['draft', 'internal_review', 'sent', 'viewed', 'revision_requested'].includes(row.status)).map(row => ({
+    id: row.id,
+    href: `/internal/proposals/${row.id}`,
+    title: row.title,
+    meta: row.service_type || formatDate(row.expires_at),
+    status: row.status,
+    value: money(row.amount),
+  }))
+
+  const closingDeals = deals.filter(row => ['negotiation', 'won', 'on_hold'].includes(row.stage)).map(row => ({
+    id: row.id,
+    href: `/internal/deals/${row.id}`,
+    title: row.name,
+    meta: row.next_step || formatDate(row.expected_close_date),
+    status: row.stage,
+    value: money(row.estimated_value),
+  }))
+
+  const todayMeetings = meetings.filter(row => new Date(row.scheduled_at) <= todayEnd && row.status === 'scheduled').slice(0, 5)
+  const overdueTasks = tasks.filter(row => row.due_date && new Date(`${row.due_date}T23:59:59`) < now).slice(0, 5)
+  const hotLeads = leads
+    .filter(row => (row.ai_score ?? 0) >= 70 || ['proposal_needed', 'proposal_sent', 'negotiation'].includes(row.status))
+    .slice(0, 5)
+  const assistItems = [
+    ...leads.filter(row => !row.ai_summary).slice(0, 3).map(row => ({ href: `/internal/leads/${row.id}`, label: `Add AI summary for ${row.company || row.name}` })),
+    ...deals.filter(row => !row.next_step).slice(0, 3).map(row => ({ href: `/internal/deals/${row.id}`, label: `Define next step for ${row.name}` })),
+    ...proposals.filter(row => row.status === 'sent' && !row.customer_visible_notes).slice(0, 3).map(row => ({ href: `/internal/proposals/${row.id}`, label: `Add customer-facing notes for ${row.title}` })),
+  ].slice(0, 6)
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'there'
-  const role = (profile?.role ?? 'employee') as string
-
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-  })
-
-  const byCreatedDesc = (a: Row, b: Row) => ((a.created_at ?? '') < (b.created_at ?? '') ? 1 : -1)
-  const recentLeads = [...leads].sort(byCreatedDesc).slice(0, 4)
-  const recentProjects = [...projects].sort(byCreatedDesc).slice(0, 4)
-  const recentApps = apps.slice(0, 4)
+  const stats: { label: string; count: number; icon: LucideIcon }[] = [
+    { label: 'Open Leads', count: leads.length, icon: Users },
+    { label: 'Open Deals', count: deals.length, icon: DollarSign },
+    { label: 'Proposals', count: proposals.length, icon: FileText },
+    { label: 'Meetings', count: todayMeetings.length, icon: CalendarDays },
+    { label: 'Open Tasks', count: tasks.length, icon: CheckSquare },
+  ]
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 p-6">
-      {/* Command Hero Panel */}
-      <div className="relative overflow-hidden zo-glass-elevated rounded-2xl border-white/10">
-        {/* Background pattern */}
-        <div className="absolute inset-0 zo-grid-pattern opacity-10" />
-        
-        <div className="relative z-10 p-8">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-            {/* Status Info */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <h1 className="text-4xl font-bold text-white">Control Room</h1>
-                <div className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full">
-                  <span className="text-xs font-bold uppercase tracking-wider text-purple-300">{role}</span>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <p className="text-xl text-white/80">Welcome back, {displayName}</p>
-                <div className="flex items-center gap-4 text-sm text-white/60">
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                      <div className="absolute inset-0 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                    </div>
-                    <span>Workspace online</span>
-                  </div>
-                  <span>•</span>
-                  <span>{today}</span>
-                </div>
-              </div>
-            </div>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-zo-purple-2">Pipeline Cockpit</p>
+          <h1 className="mt-1 text-2xl font-bold text-foreground">Welcome back, {displayName}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Run today from leads, deals, meetings, proposals, and follow-ups.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/internal/leads/new"><Button size="sm"><Plus className="h-4 w-4 mr-1" />Lead</Button></Link>
+          <Link href="/internal/deals/new"><Button size="sm" variant="outline"><DollarSign className="h-4 w-4 mr-1" />Deal</Button></Link>
+          <Link href="/internal/meetings/new"><Button size="sm" variant="outline"><CalendarDays className="h-4 w-4 mr-1" />Meeting</Button></Link>
+          <Link href="/internal/tasks/new"><Button size="sm" variant="outline"><CheckSquare className="h-4 w-4 mr-1" />Task</Button></Link>
+        </div>
+      </div>
 
-            {/* Quick Actions */}
-            <div className="flex flex-wrap gap-3">
-              <Link href="/internal/leads/new" className="zo-button-primary h-12 px-6 flex items-center gap-2 font-semibold text-white">
-                <Plus className="w-4 h-4" />
-                New Lead
-              </Link>
-              <Link href="/internal/projects/new" className="h-12 px-6 bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl flex items-center gap-2 font-semibold text-white zo-motion-safe">
-                <FolderKanban className="w-4 h-4" />
-                New Project
-              </Link>
-              <Link href="/internal/tasks" className="h-12 px-6 bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl flex items-center gap-2 font-semibold text-white zo-motion-safe">
-                <CheckSquare className="w-4 h-4" />
-                View Tasks
-              </Link>
-            </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        {stats.map(({ label, count, icon: Icon }) => (
+          <Card key={label} className="bg-card border-border">
+            <CardContent className="flex items-center justify-between p-4">
+              <div>
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-2xl font-bold text-foreground">{count}</p>
+              </div>
+              <Icon className="h-5 w-5 text-zo-purple" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        <SectionHeader icon={DollarSign} title="Sales Pipeline" href="/internal/deals?layout=board" />
+        <div className="overflow-x-auto pb-2">
+          <div className="flex gap-3 min-w-max">
+            <StageColumn title="New Leads" items={newLeads} />
+            <StageColumn title="Qualified" items={qualifiedDeals} />
+            <StageColumn title="Proposal" items={sentProposals} />
+            <StageColumn title="Closing" items={closingDeals} />
           </div>
         </div>
       </div>
 
-      {/* KPI Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KPICard
-          icon={Users}
-          label="Leads"
-          count={leads.filter(l => OPEN_LEAD(l.status)).length}
-          status={`${count(leads, 'new')} new`}
-          description="Open sales pipeline"
-          href="/internal/leads"
-          accent="purple"
-        />
-        <KPICard
-          icon={FolderKanban}
-          label="Projects"
-          count={count(projects, 'active')}
-          status={`${projects.length} total`}
-          description="Builds in delivery"
-          href="/internal/projects"
-          accent="blue"
-        />
-        <KPICard
-          icon={CheckSquare}
-          label="Tasks"
-          count={tasks.filter(t => OPEN_TASK(t.status)).length}
-          status={`${count(tasks, 'in_progress')} in progress`}
-          description="Execution queue"
-          href="/internal/tasks"
-          accent="green"
-        />
-        <KPICard
-          icon={Bot}
-          label="AI Workspace"
-          count={apps.length}
-          status={`${count(apps as unknown as Row[], 'deployed')} deployed`}
-          description="Apps and experiments"
-          href="/internal/ai-workspace"
-          accent="orange"
-        />
-      </div>
-
-      {/* Main Work Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Leads */}
-        <Card className="zo-glass border-white/10 col-span-1">
-          <CardHeader className="border-b border-white/10 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                  <Users className="w-4 h-4 text-purple-400" />
-                </div>
-                <CardTitle className="text-white">Recent Leads</CardTitle>
-              </div>
-              <Link href="/internal/leads" className="text-xs text-purple-300 hover:text-purple-200 zo-motion-safe">
-                View all →
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {recentLeads.length > 0 ? (
-              <div className="divide-y divide-white/5">
-                {recentLeads.map(lead => (
-                  <RecentItem
-                    key={lead.id}
-                    href={`/internal/leads/${lead.id}`}
-                    title={lead.name ?? 'Unknown'}
-                    subtitle={lead.company || formatDate(lead.created_at)}
-                    status={lead.status}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={Users}
-                title="No leads yet"
-                description="Capture your first build request or create one manually."
-                actionLabel="Add Lead"
-                actionHref="/internal/leads/new"
-              />
-            )}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className="bg-card border-border">
+          <CardHeader><SectionHeader icon={CalendarDays} title="Today" href="/internal/meetings" /></CardHeader>
+          <CardContent className="space-y-2">
+            {todayMeetings.map(row => (
+              <WorkItem key={row.id} id={row.id} href={`/internal/meetings/${row.id}`} title={row.title} meta={formatDateTime(row.scheduled_at)} status={row.status} />
+            ))}
+            {todayMeetings.length === 0 && <p className="text-sm text-muted-foreground">No meetings due today.</p>}
           </CardContent>
         </Card>
 
-        {/* Active Projects */}
-        <Card className="zo-glass border-white/10 col-span-1">
-          <CardHeader className="border-b border-white/10 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                  <FolderKanban className="w-4 h-4 text-blue-400" />
-                </div>
-                <CardTitle className="text-white">Recent Projects</CardTitle>
-              </div>
-              <Link href="/internal/projects" className="text-xs text-blue-300 hover:text-blue-200 zo-motion-safe">
-                View all →
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {recentProjects.length > 0 ? (
-              <div className="divide-y divide-white/5">
-                {recentProjects.map(project => (
-                  <RecentItem
-                    key={project.id}
-                    href={`/internal/projects/${project.id}`}
-                    title={project.title ?? 'Untitled'}
-                    subtitle={formatDate(project.created_at)}
-                    status={project.status}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={FolderKanban}
-                title="No active projects yet"
-                description="Create one from a won lead or start a new project."
-                actionLabel="Create Project"
-                actionHref="/internal/projects/new"
-              />
-            )}
+        <Card className="bg-card border-border">
+          <CardHeader><SectionHeader icon={CheckSquare} title="Overdue Follow-ups" href="/internal/tasks" /></CardHeader>
+          <CardContent className="space-y-2">
+            {overdueTasks.map(row => (
+              <WorkItem key={row.id} id={row.id} href={`/internal/tasks/${row.id}`} title={row.title} meta={`Due ${formatDate(row.due_date)}`} status={row.status} />
+            ))}
+            {overdueTasks.length === 0 && <p className="text-sm text-muted-foreground">No overdue tasks.</p>}
           </CardContent>
         </Card>
 
-        {/* AI Workspace */}
-        <Card className="zo-glass border-white/10 col-span-1">
-          <CardHeader className="border-b border-white/10 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-orange-400" />
-                </div>
-                <CardTitle className="text-white">AI Workspace</CardTitle>
-              </div>
-              <Link href="/internal/ai-workspace" className="text-xs text-orange-300 hover:text-orange-200 zo-motion-safe">
-                View all →
+        <Card className="bg-card border-border">
+          <CardHeader><SectionHeader icon={Bot} title="AI Assist" href="/internal/leads" /></CardHeader>
+          <CardContent className="space-y-2">
+            {assistItems.map(item => (
+              <Link key={item.href + item.label} href={item.href} className="flex items-center justify-between rounded-md border border-border p-3 text-sm hover:border-zo-purple/40">
+                <span className="line-clamp-1">{item.label}</span>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
               </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {recentApps.length > 0 ? (
-              <div className="divide-y divide-white/5">
-                {recentApps.map(app => (
-                  <RecentItem
-                    key={app.id}
-                    href={`/internal/ai-workspace/${app.id}`}
-                    title={app.name}
-                    subtitle={app.next_action || 'No next action'}
-                    status={app.status}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={Bot}
-                title="No apps yet"
-                description="Create your first AI workspace app to get started."
-                actionLabel="Add App"
-                actionHref="/internal/ai-workspace/new"
-              />
-            )}
+            ))}
+            {assistItems.length === 0 && <p className="text-sm text-muted-foreground">No AI assist gaps right now.</p>}
           </CardContent>
         </Card>
       </div>
+
+      <Card className="bg-card border-border">
+        <CardHeader><SectionHeader icon={Users} title="Priority Records" href="/internal/leads" /></CardHeader>
+        <CardContent className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+          {hotLeads.map(row => (
+            <WorkItem
+              key={row.id}
+              id={row.id}
+              href={`/internal/leads/${row.id}`}
+              title={row.company || row.name}
+              meta={row.ai_summary || row.service_interest || row.email}
+              status={row.status}
+              value={row.ai_score != null ? `AI score ${row.ai_score}` : row.budget_range}
+            />
+          ))}
+          {hotLeads.length === 0 && <p className="text-sm text-muted-foreground">No hot leads yet. Add leads or qualify existing records.</p>}
+        </CardContent>
+      </Card>
     </div>
   )
 }

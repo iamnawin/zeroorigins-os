@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
+import { CrmActionButton } from '@/components/internal/crm-action-button'
 import type { Proposal } from '@/types'
 
 function Field({ label, value }: { label: string; value?: string | null }) {
@@ -41,9 +42,14 @@ export default async function ProposalDetailPage({ params }: { params: Promise<{
         <Link href="/internal/proposals">
           <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
         </Link>
-        <Link href={`/internal/proposals/${id}/edit`}>
-          <Button size="sm" variant="outline">Edit</Button>
-        </Link>
+        <div className="flex gap-2">
+          {proposal.status !== 'accepted' && (
+            <CrmActionButton label="Mark Accepted" action="markProposalAccepted" resourceId={id} />
+          )}
+          <Link href={`/internal/proposals/${id}/edit`}>
+            <Button size="sm" variant="outline">Edit</Button>
+          </Link>
+        </div>
       </div>
       <Card className="bg-card border-border">
         <CardHeader>

@@ -47,6 +47,9 @@ export type AIFolderGroup = typeof AI_FOLDER_GROUPS[number]
 export const DEAL_STAGES = ['qualifying', 'proposal', 'negotiation', 'won', 'lost', 'on_hold'] as const
 export type DealStage = typeof DEAL_STAGES[number]
 
+export const MEETING_STATUSES = ['scheduled', 'completed', 'cancelled', 'no_show'] as const
+export type MeetingStatus = typeof MEETING_STATUSES[number]
+
 export type Visibility = 'internal' | 'customer_visible' | 'partner_visible'
 export type AssetVisibility = 'internal' | 'customer_visible' | 'partner_visible' | 'public'
 
@@ -227,6 +230,28 @@ export interface Deal {
   owner_id?: string
   next_step?: string
   notes?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Meeting {
+  id: string
+  title: string
+  entity_type: 'lead' | 'deal' | 'customer' | 'project' | 'partner' | 'internal'
+  entity_id?: string
+  lead_id?: string
+  deal_id?: string
+  customer_id?: string
+  project_id?: string
+  scheduled_at: string
+  duration_minutes: number
+  attendees?: string[]
+  agenda?: string
+  outcome?: string
+  next_action?: string
+  status: MeetingStatus
+  owner_id?: string
   created_by?: string
   created_at: string
   updated_at: string

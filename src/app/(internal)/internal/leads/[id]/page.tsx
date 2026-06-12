@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, FileText } from 'lucide-react'
+import { CrmActionButton } from '@/components/internal/crm-action-button'
 import type { Lead } from '@/types'
 
 function Field({ label, value }: { label: string; value?: string | number | null }) {
@@ -28,9 +29,23 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         <Link href="/internal/leads">
           <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
         </Link>
-        <Link href={`/internal/leads/${id}/edit`}>
-          <Button size="sm" variant="outline">Edit</Button>
-        </Link>
+        <div className="flex gap-2">
+          <CrmActionButton
+            label="Convert to Deal"
+            action="convertLeadToDeal"
+            resourceId={id}
+            redirectTo={dealId => `/internal/deals/${dealId}`}
+          />
+          <Link href={`/internal/meetings/new?lead_id=${id}`}>
+            <Button size="sm" variant="outline"><CalendarPlus className="w-4 h-4 mr-1" />Meeting</Button>
+          </Link>
+          <Link href={`/internal/proposals/new?lead=${id}`}>
+            <Button size="sm" variant="outline"><FileText className="w-4 h-4 mr-1" />Proposal</Button>
+          </Link>
+          <Link href={`/internal/leads/${id}/edit`}>
+            <Button size="sm">Edit</Button>
+          </Link>
+        </div>
       </div>
       <Card className="bg-card border-border">
         <CardHeader>

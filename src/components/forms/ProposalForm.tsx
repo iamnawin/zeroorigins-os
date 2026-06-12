@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,19 +8,22 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PROPOSAL_STATUSES, type Proposal } from '@/types'
+import { createProposal, updateProposal } from '@/lib/actions/internal-resources'
 
 interface Props {
   mode: 'create' | 'edit'
   initialData?: Partial<Proposal>
   prefillLeadId?: string
+  prefillDealId?: string
   prefillServiceType?: string
   prefillNotes?: string
 }
 
-export default function ProposalForm({ mode, initialData, prefillLeadId, prefillServiceType, prefillNotes }: Props) {
+export default function ProposalForm({ mode, initialData, prefillLeadId, prefillDealId, prefillServiceType, prefillNotes }: Props) {
   const [form, setForm] = useState({
     title: initialData?.title ?? '',
     lead_id: initialData?.lead_id ?? prefillLeadId ?? '',
+    deal_id: initialData?.deal_id ?? prefillDealId ?? '',
     service_type: initialData?.service_type ?? prefillServiceType ?? '',
     scope: initialData?.scope ?? '',
     amount: initialData?.amount?.toString() ?? '',
@@ -35,7 +37,6 @@ export default function ProposalForm({ mode, initialData, prefillLeadId, prefill
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClient()
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -46,28 +47,19 @@ export default function ProposalForm({ mode, initialData, prefillLeadId, prefill
     setError('')
     const payload = {
       ...form,
-      amount: form.amount ? parseFloat(form.amount) : null,
+      amount: form.amount || null,
       lead_id: form.lead_id || null,
       expires_at: form.expires_at || null,
-      status,
+      status: status as Proposal['status'],
     }
     try {
-      if (mode === 'create') {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { error: err } = await supabase.from('proposals').insert({
-          ...payload,
-          owner_id: user?.id,
-          created_by: user?.id,
-        })
-        if (err) throw err
-        router.push('/internal/proposals')
-      } else {
-        const { error: err } = await supabase.from('proposals')
-          .update(payload)
-          .eq('id', initialData!.id!)
-        if (err) throw err
-        router.push(`/internal/proposals/${initialData!.id}`)
-      }
+      const result = mode === 'create'
+        ? await createProposal(payload)
+        : await updateProposal(initialData!.id!, payload)
+
+      if (result.error) throw new Error(result.error)
+
+      router.push(mode === 'create' ? '/internal/proposals' : `/internal/proposals/${initialData!.id}`)
       router.refresh()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -125,6 +117,12 @@ export default function ProposalForm({ mode, initialData, prefillLeadId, prefill
               <div className="space-y-2">
                 <Label>Lead ID</Label>
                 <Input value={form.lead_id} onChange={set('lead_id')} placeholder="Lead UUID (optional)" />
+              </div>
+            )}
+            {(mode === 'edit' || form.deal_id) && (
+              <div className="space-y-2">
+                <Label>Deal ID</Label>
+                <Input value={form.deal_id} onChange={set('deal_id')} placeholder="Deal UUID (optional)" />
               </div>
             )}
             <div className="space-y-2">

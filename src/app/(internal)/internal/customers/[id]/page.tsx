@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, CalendarPlus } from 'lucide-react'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
+import { CrmActionButton } from '@/components/internal/crm-action-button'
 import type { Customer } from '@/types'
 
 function Field({ label, value }: { label: string; value?: string | null }) {
@@ -40,11 +41,22 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         <Link href="/internal/customers">
           <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
         </Link>
-        {isAdmin && (
-          <Link href={`/internal/customers/${id}/edit`}>
-            <Button size="sm" variant="outline">Edit</Button>
+        <div className="flex gap-2">
+          <CrmActionButton
+            label="Create Project"
+            action="createProjectFromCustomer"
+            resourceId={id}
+            redirectTo={projectId => `/internal/projects/${projectId}`}
+          />
+          <Link href={`/internal/meetings/new?customer_id=${id}`}>
+            <Button size="sm" variant="outline"><CalendarPlus className="w-4 h-4 mr-1" />Meeting</Button>
           </Link>
-        )}
+          {isAdmin && (
+            <Link href={`/internal/customers/${id}/edit`}>
+              <Button size="sm" variant="outline">Edit</Button>
+            </Link>
+          )}
+        </div>
       </div>
       <Card className="bg-card border-border">
         <CardHeader>
