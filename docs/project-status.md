@@ -1,5 +1,7 @@
 # ZeroOrigins OS - Project Status & Completed Work
 
+> 2026-06-13 update: the current priority is no longer visual polish. The approved direction is to turn ZeroOrigins OS into a practical internal CRM/source-of-truth for projects, documents, meetings, spending, team operations, and automation records. See `docs/superpowers/specs/2026-06-13-zeroorigins-crm-source-of-truth-design.md`.
+
 ## 🎯 **Project Overview**
 ZeroOrigins OS is an internal company operating system for managing ideas, projects, tasks, leads, partners, and AI workspace apps. The system has been upgraded from a basic UI to a premium AI operating system interface.
 

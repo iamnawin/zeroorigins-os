@@ -5,7 +5,42 @@
 > Pair it with `CLAUDE.md` (architecture + conventions), `AGENTS.md` (Next.js 16 warning), and `docs/ROADMAP.md` (forward plan).
 > **Keep this file updated at the end of every working session.**
 
-**Last updated:** 2026-06-08
+**Last updated:** 2026-06-13
+
+---
+
+## 0. Current Active Work: CRM Source Of Truth
+
+Active branch: `phase/crm-foundation-phase-1`
+
+The user approved a phased redesign of ZeroOrigins OS into a practical internal CRM/source-of-truth for a three-person internal team. The design is documented at:
+
+- `docs/superpowers/specs/2026-06-13-zeroorigins-crm-source-of-truth-design.md`
+- `docs/superpowers/plans/2026-06-13-crm-foundation-phase-1.md`
+
+Execution rule from user: complete phases individually, push each phase, and after the first three phases are complete, merge them into `main`.
+
+Current phase: **Phase 1: Foundation And Save Reliability**
+
+Phase 1 scope:
+- Extend migration/schema checks beyond migration `009`.
+- Add a CRM health check for `.env.local`, Supabase schema, and active internal profiles.
+- Keep documentation current so another model can resume without chat context.
+
+Next phases:
+- Phase 2: internal navigation and empty-state redesign.
+- Phase 3: real Documents/Knowledge source-of-truth module.
+
+Resume commands:
+
+```powershell
+git status --short --branch
+npm run test:crm-foundation
+npm run check:migrations
+npm run check:crm
+npm run lint
+npm run build
+```
 
 ---
 
