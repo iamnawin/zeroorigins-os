@@ -11,7 +11,7 @@
 
 ## 0. Current Active Work: CRM Source Of Truth
 
-Active branch: `phase/crm-ia-ai-visibility-phase-5`
+Active branch: `main`
 
 The user approved a phased redesign of ZeroOrigins OS into a practical internal CRM/source-of-truth for a three-person internal team. The design is documented at:
 
@@ -25,7 +25,7 @@ Execution rule from user: complete phases individually, push each phase, and aft
 
 Merge status: **Phases 1, 2, and 3 have been fast-forward merged into `main`.**
 
-Current phase: **Phase 5 in progress on `phase/crm-ia-ai-visibility-phase-5`: internal UI shell, Business Verticals, AI visibility, Automation, Calendar entry points, and Finance/Vendor usability.**
+Current phase: **Phase 5 merged to `main`: internal UI shell, Business Verticals, AI visibility, Automation, Calendar entry points, and Finance/Vendor usability.**
 
 Phase 5 plan:
 - `docs/superpowers/plans/2026-06-13-crm-ia-ai-visibility-phase-5.md`

@@ -10,7 +10,7 @@
 
 > Phase 4 status: Team Settings and first-party calendar filters are merged to `main`. The user applied `supabase/migrations/012_team_calendar_foundations.sql`; remote schema checks now pass.
 
-> Phase 5 status: branch `phase/crm-ia-ai-visibility-phase-5` adds the new internal UI shell, Business Verticals, AI capability-focused AI Workspace, global AI Assist drafts, Automation visibility, Meetings sync entry points, INR-first Finance/Vendor UX, and migration `013_business_verticals_ai_assist.sql`. Remote checks now pass for migration 013.
+> Phase 5 status: merged to `main`. It adds the new internal UI shell, Business Verticals, AI capability-focused AI Workspace, global AI Assist drafts, Automation visibility, Meetings sync entry points, INR-first Finance/Vendor UX, and migration `013_business_verticals_ai_assist.sql`. Remote checks now pass for migration 013.
 
 ## 🎯 **Project Overview**
 ZeroOrigins OS is an internal company operating system for managing ideas, projects, tasks, leads, partners, and AI workspace apps. The system has been upgraded from a basic UI to a premium AI operating system interface.
