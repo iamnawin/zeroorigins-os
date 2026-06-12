@@ -11,7 +11,7 @@
 
 ## 0. Current Active Work: CRM Source Of Truth
 
-Active branch: `phase/crm-knowledge-source-phase-3`
+Active branch: `main`
 
 The user approved a phased redesign of ZeroOrigins OS into a practical internal CRM/source-of-truth for a three-person internal team. The design is documented at:
 
@@ -22,7 +22,9 @@ The user approved a phased redesign of ZeroOrigins OS into a practical internal 
 
 Execution rule from user: complete phases individually, push each phase, and after the first three phases are complete, merge them into `main`.
 
-Current phase: **Phase 3: Documents And Knowledge Source Of Truth**
+Merge status: **Phases 1, 2, and 3 have been fast-forward merged into `main`.**
+
+Current phase: **Ready for Phase 4: Team And Calendar Foundations**
 
 Phase 1 scope:
 - Extend migration/schema checks beyond migration `009`.
@@ -65,7 +67,6 @@ Phase 3 shipped:
 - Control Room now shows a live Knowledge document count.
 
 Next phases:
-- Merge the stacked first three phase branches into `main` after final verification.
 - Phase 4: team and calendar foundations.
 
 Resume commands:
