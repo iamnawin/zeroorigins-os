@@ -20,7 +20,7 @@ The user approved a phased redesign of ZeroOrigins OS into a practical internal 
 
 Execution rule from user: complete phases individually, push each phase, and after the first three phases are complete, merge them into `main`.
 
-Current phase: **Phase 1: Foundation And Save Reliability**
+Current phase: **Phase 1: Foundation And Save Reliability** - unblocked and verified after remote Supabase migrations were applied.
 
 Phase 1 scope:
 - Extend migration/schema checks beyond migration `009`.
@@ -29,12 +29,19 @@ Phase 1 scope:
 
 Phase 1 finding:
 - `.env.local` has `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
+- `npm run check:migrations` now reports the remote schema is in sync with `supabase/migrations/`.
+- `npm run check:crm` now passes all 17 schema sentinels.
 - `npm run check:crm` found two active admin profiles: `hello@zeroorigins.in` and `naveent@zeroorigins.in`.
-- Remote Supabase is missing migration `010_meetings_crm` and migration `011_company_spending`.
-- This means meeting and finance/vendor saves will fail until these SQL files are applied:
+- The user applied these SQL files manually in Supabase from the `zerooriginsai@gmail.com` Supabase account:
   - `supabase/migrations/010_meetings_crm.sql`
   - `supabase/migrations/011_company_spending.sql`
-- This environment does not currently expose `supabase`, `psql`, or a database connection string, so the migrations could not be applied automatically from Codex.
+
+Latest Phase 1 verification, 2026-06-13:
+
+```powershell
+npm run check:migrations # pass
+npm run check:crm        # pass
+```
 
 Next phases:
 - Phase 2: internal navigation and empty-state redesign.
