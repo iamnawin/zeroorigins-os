@@ -37,6 +37,21 @@ function safeRead(path) {
   try { return readFileSync(path, 'utf8') } catch { return null }
 }
 
+function stripMarkdown(text) {
+  if (!text) return null
+  return text
+    .replace(/<[^>]+>/g, '')           // strip HTML tags
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // strip images
+    .replace(/\[[^\]]*\]\([^)]*\)/g, '$1') // links to text
+    .replace(/^#{1,6}\s+/gm, '')       // headings
+    .replace(/\*\*([^*]+)\*\*/g, '$1') // bold
+    .replace(/\*([^*]+)\*/g, '$1')     // italic
+    .replace(/`([^`]+)`/g, '$1')       // inline code
+    .replace(/```[\s\S]*?```/g, '')    // code blocks
+    .replace(/\n{3,}/g, '\n\n')        // excess newlines
+    .trim()
+}
+
 function safeJson(path) {
   const raw = safeRead(path)
   if (!raw) return null
@@ -46,7 +61,10 @@ function safeJson(path) {
 function getReadmeSummary(dir) {
   const readme = safeRead(join(dir, 'README.md'))
   if (!readme) return null
-  return readme.slice(0, 500).split('\n').slice(0, 10).join('\n').trim()
+  const clean = stripMarkdown(readme.slice(0, 800))
+  // Return first meaningful line (skip empty)
+  const lines = clean.split('\n').filter(l => l.trim().length > 10)
+  return lines.slice(0, 3).join(' ').slice(0, 200).trim() || null
 }
 
 function getGitRemote(dir) {
