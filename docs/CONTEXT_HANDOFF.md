@@ -11,16 +11,17 @@
 
 ## 0. Current Active Work: CRM Source Of Truth
 
-Active branch: `phase/crm-foundation-phase-1`
+Active branch: `phase/crm-internal-navigation-phase-2`
 
 The user approved a phased redesign of ZeroOrigins OS into a practical internal CRM/source-of-truth for a three-person internal team. The design is documented at:
 
 - `docs/superpowers/specs/2026-06-13-zeroorigins-crm-source-of-truth-design.md`
 - `docs/superpowers/plans/2026-06-13-crm-foundation-phase-1.md`
+- `docs/superpowers/plans/2026-06-13-crm-internal-navigation-phase-2.md`
 
 Execution rule from user: complete phases individually, push each phase, and after the first three phases are complete, merge them into `main`.
 
-Current phase: **Phase 1: Foundation And Save Reliability** - unblocked and verified after remote Supabase migrations were applied.
+Current phase: **Phase 2: Internal CRM Navigation And Empty States**
 
 Phase 1 scope:
 - Extend migration/schema checks beyond migration `009`.
@@ -43,15 +44,24 @@ npm run check:migrations # pass
 npm run check:crm        # pass
 ```
 
+Phase 2 shipped:
+- Shared internal navigation contract in `src/lib/internal-navigation.ts`.
+- Navigation contract test in `scripts/test-internal-navigation.mjs`.
+- Top navigation now prioritizes Control, Projects, Tasks, Meetings, Knowledge, Finance, AI Workspace, Leads, Deals, and Proposals.
+- Customers and Partners remain reachable but are visually deferred.
+- Control Room now surfaces Finance, Knowledge, AI Workspace, and Calendar as source-of-truth shortcuts.
+- Customer and Partner empty states now explain when to use those records instead of implying missing dummy data.
+
 Next phases:
-- Phase 2: internal navigation and empty-state redesign.
 - Phase 3: real Documents/Knowledge source-of-truth module.
+- Phase 4: team and calendar foundations.
 
 Resume commands:
 
 ```powershell
 git status --short --branch
 npm run test:crm-foundation
+npm run test:crm-navigation
 npm run check:migrations
 npm run check:crm
 npm run lint

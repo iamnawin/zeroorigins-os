@@ -4,6 +4,8 @@
 
 > Phase 1 backend status: the user applied `supabase/migrations/010_meetings_crm.sql` and `supabase/migrations/011_company_spending.sql` in Supabase from the `zerooriginsai@gmail.com` account. `npm run check:migrations` and `npm run check:crm` now pass against the remote project.
 
+> Phase 2 status: internal navigation now prioritizes daily operating work and source-of-truth surfaces. Finance and Knowledge are first-class navigation items, Customers and Partners are visually deferred until real records exist, and the Control Room exposes Finance, Knowledge, AI Workspace, and Calendar shortcuts.
+
 ## 🎯 **Project Overview**
 ZeroOrigins OS is an internal company operating system for managing ideas, projects, tasks, leads, partners, and AI workspace apps. The system has been upgraded from a basic UI to a premium AI operating system interface.
 
