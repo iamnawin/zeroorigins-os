@@ -2,6 +2,8 @@
 
 > 2026-06-13 update: the current priority is no longer visual polish. The approved direction is to turn ZeroOrigins OS into a practical internal CRM/source-of-truth for projects, documents, meetings, spending, team operations, and automation records. See `docs/superpowers/specs/2026-06-13-zeroorigins-crm-source-of-truth-design.md`.
 
+> Phase 1 finding: remote Supabase is missing `supabase/migrations/010_meetings_crm.sql` and `supabase/migrations/011_company_spending.sql`. Until those are applied, meeting and finance/vendor save flows cannot be trusted. Run `npm run check:crm` for the current backend readiness report.
+
 ## 🎯 **Project Overview**
 ZeroOrigins OS is an internal company operating system for managing ideas, projects, tasks, leads, partners, and AI workspace apps. The system has been upgraded from a basic UI to a premium AI operating system interface.
 

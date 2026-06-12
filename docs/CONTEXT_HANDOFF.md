@@ -27,6 +27,15 @@ Phase 1 scope:
 - Add a CRM health check for `.env.local`, Supabase schema, and active internal profiles.
 - Keep documentation current so another model can resume without chat context.
 
+Phase 1 finding:
+- `.env.local` has `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
+- `npm run check:crm` found two active admin profiles: `hello@zeroorigins.in` and `naveent@zeroorigins.in`.
+- Remote Supabase is missing migration `010_meetings_crm` and migration `011_company_spending`.
+- This means meeting and finance/vendor saves will fail until these SQL files are applied:
+  - `supabase/migrations/010_meetings_crm.sql`
+  - `supabase/migrations/011_company_spending.sql`
+- This environment does not currently expose `supabase`, `psql`, or a database connection string, so the migrations could not be applied automatically from Codex.
+
 Next phases:
 - Phase 2: internal navigation and empty-state redesign.
 - Phase 3: real Documents/Knowledge source-of-truth module.

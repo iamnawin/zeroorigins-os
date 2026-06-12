@@ -8,6 +8,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { SENTINELS } from './lib/migration-sentinels.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -32,18 +33,6 @@ if (!url || !key) {
   console.error('Requires NEXT_PUBLIC_SUPABASE_URL and an API key in .env.local')
   process.exit(1)
 }
-
-// One sentinel probe per migration: { migration, table, column }
-// column = null means "table exists" is the sentinel.
-const SENTINELS = [
-  { migration: '001_initial_schema', table: 'leads', column: 'id' },
-  { migration: '002_contact_and_automation_fields', table: 'leads', column: 'automation_status' },
-  { migration: '003_proposal_and_customer_fields', table: 'proposals', column: 'service_type' },
-  { migration: '003_ai_workspace_apps', table: 'ai_workspace_apps', column: 'id' },
-  { migration: '005_deals_and_pipeline_links', table: 'deals', column: 'id' },
-  { migration: '008_ai_workspace_sync_fields', table: 'ai_workspace_apps', column: 'folder_group' },
-  { migration: '009_auth_and_workspace_reliability', table: 'profiles', column: 'status' },
-]
 
 async function probe(table, column) {
   const res = await fetch(`${url}/rest/v1/${table}?select=${column}&limit=1`, {
