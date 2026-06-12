@@ -11,7 +11,7 @@
 
 ## 0. Current Active Work: CRM Source Of Truth
 
-Active branch: `main`
+Active branch: `phase/crm-team-calendar-phase-4`
 
 The user approved a phased redesign of ZeroOrigins OS into a practical internal CRM/source-of-truth for a three-person internal team. The design is documented at:
 
@@ -19,12 +19,27 @@ The user approved a phased redesign of ZeroOrigins OS into a practical internal 
 - `docs/superpowers/plans/2026-06-13-crm-foundation-phase-1.md`
 - `docs/superpowers/plans/2026-06-13-crm-internal-navigation-phase-2.md`
 - `docs/superpowers/plans/2026-06-13-crm-knowledge-source-phase-3.md`
+- `docs/superpowers/plans/2026-06-13-crm-team-calendar-phase-4.md`
 
 Execution rule from user: complete phases individually, push each phase, and after the first three phases are complete, merge them into `main`.
 
 Merge status: **Phases 1, 2, and 3 have been fast-forward merged into `main`.**
 
-Current phase: **Ready for Phase 4: Team And Calendar Foundations**
+Current phase: **Phase 4 implemented locally; remote Supabase migration 012 still needs to be applied**
+
+Phase 4 remote readiness:
+- Apply `supabase/migrations/012_team_calendar_foundations.sql` in the Supabase SQL editor for project `https://qfhmrsolktblzanubgag.supabase.co`.
+- Until migration `012` is applied, `npm run check:migrations` and `npm run check:crm` correctly fail on:
+  - `profiles.calendar_email`
+  - `profiles.calendar_provider`
+  - `profiles.calendar_sync_enabled`
+  - `profiles.calendar_sync_status`
+- After applying the SQL, rerun:
+
+```powershell
+npm run check:migrations
+npm run check:crm
+```
 
 Phase 1 scope:
 - Extend migration/schema checks beyond migration `009`.
@@ -66,8 +81,37 @@ Phase 3 shipped:
 - Knowledge supports title, content, category, tags, owner, created_by, and timestamps.
 - Control Room now shows a live Knowledge document count.
 
+Phase 4 shipped locally:
+- `profiles` gains first-party calendar identity metadata through migration `012_team_calendar_foundations.sql`.
+- Settings is now a backed Team Settings page instead of a placeholder.
+- Admins can update internal user full name, title, role, status, calendar email, provider, sync readiness, and sync status.
+- `updateTeamProfile` enforces admin-only access at the server action layer and prevents an admin from removing their own active admin access.
+- Meetings now support owner assignment in create/edit forms.
+- `/internal/meetings?calendar=team` shows the team calendar.
+- `/internal/meetings?calendar=my` filters meetings owned by the current user or containing the current user's email in attendees.
+- Meetings list now displays owner context.
+
+Latest Phase 4 local verification, 2026-06-13:
+
+```powershell
+npm run test:crm-team-calendar # pass
+npm run test:crm-knowledge      # pass
+npm run test:crm-navigation     # pass
+npm run test:crm-foundation     # pass
+npm run lint                    # pass with 2 pre-existing warnings
+npm run build                   # pass with pre-existing @screen CSS warning
+```
+
+Latest Phase 4 remote verification, 2026-06-13:
+
+```powershell
+npm run check:migrations # fails until migration 012 is applied in Supabase
+npm run check:crm        # fails until migration 012 is applied in Supabase
+```
+
 Next phases:
-- Phase 4: team and calendar foundations.
+- Finish Phase 4 remote readiness by applying migration `012` in Supabase.
+- Phase 5: finance operating console.
 
 Resume commands:
 
@@ -76,6 +120,7 @@ git status --short --branch
 npm run test:crm-foundation
 npm run test:crm-navigation
 npm run test:crm-knowledge
+npm run test:crm-team-calendar
 npm run check:migrations
 npm run check:crm
 npm run lint

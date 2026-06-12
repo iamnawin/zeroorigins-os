@@ -8,7 +8,8 @@ export default async function NewMeetingPage({
 }) {
   const params = await searchParams
   const supabase = await createClient()
-  const [{ data: leads }, { data: deals }, { data: customers }, { data: projects }] = await Promise.all([
+  const [{ data: owners }, { data: leads }, { data: deals }, { data: customers }, { data: projects }] = await Promise.all([
+    supabase.from('profiles').select('id, email, full_name').in('role', ['admin', 'employee']).eq('status', 'active').order('email', { ascending: true }),
     supabase.from('leads').select('id, name, company').order('created_at', { ascending: false }).limit(50),
     supabase.from('deals').select('id, name').order('created_at', { ascending: false }).limit(50),
     supabase.from('customers').select('id, name, company').order('created_at', { ascending: false }).limit(50),
@@ -24,6 +25,7 @@ export default async function NewMeetingPage({
         customer_id: params.customer_id,
         project_id: params.project_id,
       }}
+      owners={(owners ?? []).map(row => ({ id: row.id, label: row.full_name || row.email }))}
       leads={(leads ?? []).map(row => ({ id: row.id, label: row.company || row.name }))}
       deals={(deals ?? []).map(row => ({ id: row.id, label: row.name }))}
       customers={(customers ?? []).map(row => ({ id: row.id, label: row.company || row.name }))}

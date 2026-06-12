@@ -18,6 +18,7 @@ interface LinkOption {
 interface Props {
   mode: 'create' | 'edit'
   initialData?: Partial<Meeting>
+  owners?: LinkOption[]
   leads?: LinkOption[]
   deals?: LinkOption[]
   customers?: LinkOption[]
@@ -35,6 +36,7 @@ function toLocalDateTime(value?: string | null) {
 export default function MeetingForm({
   mode,
   initialData,
+  owners = [],
   leads = [],
   deals = [],
   customers = [],
@@ -53,6 +55,7 @@ export default function MeetingForm({
     agenda: initialData?.agenda ?? '',
     outcome: initialData?.outcome ?? '',
     next_action: initialData?.next_action ?? '',
+    owner_id: initialData?.owner_id ?? '',
   })
   const [status, setStatus] = useState<string>(initialData?.status ?? 'scheduled')
   const [loading, setLoading] = useState(false)
@@ -76,6 +79,7 @@ export default function MeetingForm({
         deal_id: form.deal_id || null,
         customer_id: form.customer_id || null,
         project_id: form.project_id || null,
+        owner_id: form.owner_id || null,
         status: status as Meeting['status'],
       }
       const result = mode === 'create'
@@ -112,6 +116,13 @@ export default function MeetingForm({
               <div className="space-y-2">
                 <Label>Duration Minutes</Label>
                 <Input type="number" min="1" value={form.duration_minutes} onChange={set('duration_minutes')} />
+              </div>
+              <div className="space-y-2">
+                <Label>Owner</Label>
+                <select value={form.owner_id} onChange={set('owner_id')} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+                  <option value="">Me</option>
+                  {owners.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label>Lead</Label>

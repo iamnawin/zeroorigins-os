@@ -6,6 +6,8 @@ import type {
   AIAppCategory,
   AIAppStatus,
   AIAppType,
+  CalendarProvider,
+  CalendarSyncStatus,
   CustomerStatus,
   DealStage,
   FinanceCategory,
@@ -15,9 +17,11 @@ import type {
   LeadStatus,
   MeetingStatus,
   PartnerStatus,
+  ProfileStatus,
   ProjectStatus,
   ProposalStatus,
   RecurrenceInterval,
+  Role,
   TaskStatus,
 } from '@/types'
 
@@ -111,6 +115,7 @@ export type MeetingFormInput = {
   outcome?: string
   next_action?: string
   status?: MeetingStatus
+  owner_id?: string | null
 }
 
 export type KnowledgeArticleFormInput = {
@@ -185,6 +190,17 @@ export type AppFormInput = {
   is_sellable_product: boolean
   is_internal_tool: boolean
   is_open_source: boolean
+}
+
+export type TeamProfileFormInput = {
+  full_name: string
+  title?: string
+  role: Extract<Role, 'admin' | 'employee'>
+  status: ProfileStatus
+  calendar_email?: string
+  calendar_provider: CalendarProvider
+  calendar_sync_enabled: boolean
+  calendar_sync_status: CalendarSyncStatus
 }
 
 export async function requireInternalUser(supabase: Supabase) {
@@ -588,7 +604,7 @@ export async function createMeeting(input: MeetingFormInput): Promise<ActionResu
       .insert({
         ...meetingPayload(input),
         status: input.status ?? 'scheduled',
-        owner_id: user.id,
+        owner_id: optionalText(input.owner_id) ?? user.id,
         created_by: user.id,
       })
       .select('id')
@@ -605,18 +621,60 @@ export async function createMeeting(input: MeetingFormInput): Promise<ActionResu
 export async function updateMeeting(id: string, input: MeetingFormInput): Promise<ActionResult> {
   try {
     const supabase = await createClient()
-    await requireInternalUser(supabase)
+    const user = await requireInternalUser(supabase)
     const { error } = await supabase
       .from('meetings')
       .update({
         ...meetingPayload(input),
         status: input.status ?? 'scheduled',
+        owner_id: optionalText(input.owner_id) ?? user.id,
       })
       .eq('id', id)
 
     if (error) throw error
     revalidateResource(['/internal/meetings', `/internal/meetings/${id}`])
     return { id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
+export async function updateTeamProfile(profileId: string, input: TeamProfileFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    const user = await requireInternalUser(supabase)
+    const { data: currentProfile, error: currentProfileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (currentProfileError) throw currentProfileError
+    if (currentProfile?.role !== 'admin') {
+      throw new Error('Only admins can update team profiles.')
+    }
+
+    if (profileId === user.id && (input.role !== 'admin' || input.status !== 'active')) {
+      throw new Error('You cannot remove your own admin access.')
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        full_name: requiredText(input.full_name, 'Full name'),
+        title: optionalText(input.title),
+        role: input.role,
+        status: input.status,
+        calendar_email: optionalText(input.calendar_email),
+        calendar_provider: input.calendar_provider,
+        calendar_sync_enabled: Boolean(input.calendar_sync_enabled),
+        calendar_sync_status: input.calendar_sync_status,
+      })
+      .eq('id', profileId)
+
+    if (error) throw error
+    revalidateResource(['/internal/settings', '/internal/meetings'])
+    return { id: profileId }
   } catch (error) {
     return toResult(error)
   }

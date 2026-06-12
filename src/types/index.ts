@@ -8,6 +8,15 @@ export type Role =
 export const INTERNAL_ROLES: Role[] = ['admin', 'employee']
 export const EXTERNAL_ROLES: Role[] = ['CUSTOMER', 'PARTNER', 'REFERRAL_PARTNER']
 
+export const PROFILE_STATUSES = ['active', 'pending', 'disabled'] as const
+export type ProfileStatus = typeof PROFILE_STATUSES[number]
+
+export const CALENDAR_PROVIDERS = ['none', 'google'] as const
+export type CalendarProvider = typeof CALENDAR_PROVIDERS[number]
+
+export const CALENDAR_SYNC_STATUSES = ['not_connected', 'ready', 'paused', 'error'] as const
+export type CalendarSyncStatus = typeof CALENDAR_SYNC_STATUSES[number]
+
 export const IDEA_STATUSES = ['draft', 'submitted', 'under_review', 'approved', 'rejected', 'on_hold', 'converted_to_project', 'archived'] as const
 export type IdeaStatus = typeof IDEA_STATUSES[number]
 
@@ -68,7 +77,11 @@ export interface Profile {
   full_name: string
   role: Role
   title?: string
-  status: 'active' | 'pending' | 'disabled'
+  status: ProfileStatus
+  calendar_email?: string
+  calendar_provider?: CalendarProvider
+  calendar_sync_enabled?: boolean
+  calendar_sync_status?: CalendarSyncStatus
   avatar_url?: string
   organization_id?: string
   created_at: string

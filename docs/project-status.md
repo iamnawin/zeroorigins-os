@@ -8,6 +8,8 @@
 
 > Phase 3 status: Knowledge is now a real internal document hub backed by `knowledge_articles`, with list/create/detail/edit routes and server actions for saving internal documents, decisions, SOPs, meeting notes, finance/vendor docs, automation notes, and product specs.
 
+> Phase 4 status: Team Settings and first-party calendar filters are implemented locally on `phase/crm-team-calendar-phase-4`. Apply `supabase/migrations/012_team_calendar_foundations.sql` in Supabase before expecting remote schema checks to pass.
+
 ## 🎯 **Project Overview**
 ZeroOrigins OS is an internal company operating system for managing ideas, projects, tasks, leads, partners, and AI workspace apps. The system has been upgraded from a basic UI to a premium AI operating system interface.
 

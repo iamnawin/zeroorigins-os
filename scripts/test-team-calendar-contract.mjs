@@ -27,6 +27,8 @@ test('team profile actions expose updateTeamProfile with calendar fields', () =>
   assert.match(source, /export async function updateTeamProfile/)
   assert.match(source, /calendar_email/)
   assert.match(source, /calendar_provider/)
+  assert.match(source, /Only admins can update team profiles/)
+  assert.match(source, /You cannot remove your own admin access/)
 })
 
 test('Settings is a backed team management page', () => {

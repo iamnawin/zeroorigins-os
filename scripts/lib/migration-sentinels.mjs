@@ -20,4 +20,8 @@ export const SENTINELS = [
   { migration: '011_company_spending', table: 'vendors', column: 'name' },
   { migration: '011_company_spending', table: 'finance_transactions', column: 'vendor_id' },
   { migration: '011_company_spending', table: 'finance_transactions', column: 'recurrence_interval' },
+  { migration: '012_team_calendar_foundations', table: 'profiles', column: 'calendar_email' },
+  { migration: '012_team_calendar_foundations', table: 'profiles', column: 'calendar_provider' },
+  { migration: '012_team_calendar_foundations', table: 'profiles', column: 'calendar_sync_enabled' },
+  { migration: '012_team_calendar_foundations', table: 'profiles', column: 'calendar_sync_status' },
 ]
