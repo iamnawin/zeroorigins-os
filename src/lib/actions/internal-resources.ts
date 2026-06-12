@@ -6,9 +6,12 @@ import type {
   AIAppCategory,
   AIAppStatus,
   AIAppType,
+  BusinessVerticalStatus,
+  BusinessVerticalType,
   CalendarProvider,
   CalendarSyncStatus,
   CustomerStatus,
+  CurrencyCode,
   DealStage,
   FinanceCategory,
   FinanceTransactionStatus,
@@ -23,6 +26,7 @@ import type {
   RecurrenceInterval,
   Role,
   TaskStatus,
+  VendorCategory,
 } from '@/types'
 
 type ActionResult = {
@@ -88,6 +92,7 @@ export type ProposalFormInput = {
   sent_at?: string | null
   expires_at?: string | null
   status?: ProposalStatus
+  related_vertical_id?: string | null
 }
 
 export type DealFormInput = {
@@ -116,6 +121,12 @@ export type MeetingFormInput = {
   next_action?: string
   status?: MeetingStatus
   owner_id?: string | null
+  related_vertical_id?: string | null
+  source?: 'manual' | 'google_calendar'
+  calendar_event_id?: string
+  meeting_link?: string
+  notes?: string
+  sync_status?: CalendarSyncStatus
 }
 
 export type KnowledgeArticleFormInput = {
@@ -129,8 +140,14 @@ export type VendorFormInput = {
   name: string
   website?: string
   contact_email?: string
-  category?: FinanceCategory | string
+  category?: VendorCategory | FinanceCategory | string
+  currency?: CurrencyCode | string
+  monthly_cost?: string | number | null
+  billing_cycle?: RecurrenceInterval
+  renewal_date?: string | null
+  owner?: string
   notes?: string
+  status?: 'active' | 'paused' | 'cancelled'
 }
 
 export type FinanceTransactionFormInput = {
@@ -143,6 +160,7 @@ export type FinanceTransactionFormInput = {
   project_id?: string | null
   customer_id?: string | null
   ai_workspace_app_id?: string | null
+  related_vertical_id?: string | null
   date?: string | null
   due_date?: string | null
   paid_at?: string | null
@@ -168,6 +186,20 @@ export type TaskFormInput = {
   description?: string
   project_id?: string | null
   status?: TaskStatus
+  related_vertical_id?: string | null
+}
+
+export type BusinessVerticalFormInput = {
+  name: string
+  slug?: string
+  type: BusinessVerticalType
+  status: BusinessVerticalStatus
+  description?: string
+  owner?: string
+  website?: string
+  logo_url?: string
+  brand_color?: string
+  notes?: string
 }
 
 export type AppFormInput = {
@@ -237,6 +269,13 @@ function requiredText(value: string, label: string) {
 function optionalText(value?: string | null) {
   const trimmed = value?.trim()
   return trimmed ? trimmed : null
+}
+
+function slugify(value: string) {
+  return requiredText(value, 'Name')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 function optionalNumber(value?: string | number | null) {
@@ -719,6 +758,45 @@ export async function updateKnowledgeArticle(id: string, input: KnowledgeArticle
   }
 }
 
+export async function createBusinessVertical(input: BusinessVerticalFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    const user = await requireInternalUser(supabase)
+    const { data, error } = await supabase
+      .from('business_verticals')
+      .insert({
+        ...businessVerticalPayload(input),
+        owner_id: user.id,
+        created_by: user.id,
+      })
+      .select('id')
+      .single()
+
+    if (error) throw error
+    revalidateResource(['/internal/business-verticals'])
+    return { id: data.id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
+export async function updateBusinessVertical(id: string, input: BusinessVerticalFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    await requireInternalUser(supabase)
+    const { error } = await supabase
+      .from('business_verticals')
+      .update(businessVerticalPayload(input))
+      .eq('id', id)
+
+    if (error) throw error
+    revalidateResource(['/internal/business-verticals', `/internal/business-verticals/${id}`])
+    return { id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
 export async function createVendor(input: VendorFormInput): Promise<ActionResult> {
   try {
     const supabase = await createClient()
@@ -730,7 +808,13 @@ export async function createVendor(input: VendorFormInput): Promise<ActionResult
         website: optionalText(input.website),
         contact_email: optionalText(input.contact_email),
         category: optionalText(input.category),
+        currency: optionalText(input.currency) ?? 'INR',
+        monthly_cost: optionalNumber(input.monthly_cost),
+        billing_cycle: input.billing_cycle ?? 'monthly',
+        renewal_date: optionalText(input.renewal_date),
+        owner: optionalText(input.owner),
         notes: optionalText(input.notes),
+        status: input.status ?? 'active',
         owner_id: user.id,
         created_by: user.id,
       })
@@ -756,7 +840,13 @@ export async function updateVendor(id: string, input: VendorFormInput): Promise<
         website: optionalText(input.website),
         contact_email: optionalText(input.contact_email),
         category: optionalText(input.category),
+        currency: optionalText(input.currency) ?? 'INR',
+        monthly_cost: optionalNumber(input.monthly_cost),
+        billing_cycle: input.billing_cycle ?? 'monthly',
+        renewal_date: optionalText(input.renewal_date),
+        owner: optionalText(input.owner),
         notes: optionalText(input.notes),
+        status: input.status ?? 'active',
       })
       .eq('id', id)
 
@@ -844,6 +934,7 @@ export async function createTask(input: TaskFormInput): Promise<ActionResult> {
         description: optionalText(input.description),
         project_id: optionalText(input.project_id),
         status: 'todo',
+        related_vertical_id: optionalText(input.related_vertical_id),
         owner_id: user.id,
         created_by: user.id,
       })
@@ -869,6 +960,7 @@ export async function updateTask(id: string, input: TaskFormInput): Promise<Acti
         description: optionalText(input.description),
         project_id: optionalText(input.project_id),
         status: input.status ?? 'todo',
+        related_vertical_id: optionalText(input.related_vertical_id),
       })
       .eq('id', id)
 
@@ -1031,6 +1123,7 @@ function proposalPayload(input: ProposalFormInput) {
     customer_visible_notes: optionalText(input.customer_visible_notes),
     sent_at: optionalText(input.sent_at),
     expires_at: optionalText(input.expires_at),
+    related_vertical_id: optionalText(input.related_vertical_id),
   }
 }
 
@@ -1049,6 +1142,12 @@ function meetingPayload(input: MeetingFormInput) {
     agenda: optionalText(input.agenda),
     outcome: optionalText(input.outcome),
     next_action: optionalText(input.next_action),
+    related_vertical_id: optionalText(input.related_vertical_id),
+    source: input.source ?? 'manual',
+    calendar_event_id: optionalText(input.calendar_event_id),
+    meeting_link: optionalText(input.meeting_link),
+    notes: optionalText(input.notes),
+    sync_status: input.sync_status ?? 'not_connected',
   }
 }
 
@@ -1065,13 +1164,14 @@ function financeTransactionPayload(input: FinanceTransactionFormInput) {
   return {
     description: requiredText(input.description, 'Description'),
     amount: optionalNumber(input.amount) ?? 0,
-    currency: optionalText(input.currency) ?? 'USD',
+    currency: optionalText(input.currency) ?? 'INR',
     category: optionalText(input.category),
     status: input.status ?? 'paid',
     vendor_id: optionalText(input.vendor_id),
     project_id: optionalText(input.project_id),
     customer_id: optionalText(input.customer_id),
     ai_workspace_app_id: optionalText(input.ai_workspace_app_id),
+    related_vertical_id: optionalText(input.related_vertical_id),
     date: optionalText(input.date),
     due_date: optionalText(input.due_date),
     paid_at: optionalText(input.paid_at),
@@ -1079,6 +1179,21 @@ function financeTransactionPayload(input: FinanceTransactionFormInput) {
     receipt_url: optionalText(input.receipt_url),
     recurrence_interval: input.recurrence_interval ?? 'none',
     next_due_date: optionalText(input.next_due_date),
+    notes: optionalText(input.notes),
+  }
+}
+
+function businessVerticalPayload(input: BusinessVerticalFormInput) {
+  return {
+    name: requiredText(input.name, 'Name'),
+    slug: optionalText(input.slug) ?? slugify(input.name),
+    type: input.type,
+    status: input.status,
+    description: optionalText(input.description),
+    owner: optionalText(input.owner),
+    website: optionalText(input.website),
+    logo_url: optionalText(input.logo_url),
+    brand_color: optionalText(input.brand_color),
     notes: optionalText(input.notes),
   }
 }

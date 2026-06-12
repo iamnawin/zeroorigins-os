@@ -17,6 +17,21 @@ export type CalendarProvider = typeof CALENDAR_PROVIDERS[number]
 export const CALENDAR_SYNC_STATUSES = ['not_connected', 'ready', 'paused', 'error'] as const
 export type CalendarSyncStatus = typeof CALENDAR_SYNC_STATUSES[number]
 
+export const BUSINESS_VERTICAL_TYPES = ['brand', 'product', 'education', 'media', 'internal', 'client_service', 'experiment'] as const
+export type BusinessVerticalType = typeof BUSINESS_VERTICAL_TYPES[number]
+
+export const BUSINESS_VERTICAL_STATUSES = ['idea', 'active', 'paused', 'archived'] as const
+export type BusinessVerticalStatus = typeof BUSINESS_VERTICAL_STATUSES[number]
+
+export const AI_ASSIST_INTENTS = ['create_task', 'schedule_meeting', 'draft_email', 'summarize_email', 'create_followup', 'create_proposal', 'classify_lead', 'summarize_day'] as const
+export type AiAssistIntent = typeof AI_ASSIST_INTENTS[number]
+
+export const AI_ASSIST_STATUSES = ['draft', 'confirmed', 'created', 'failed', 'cancelled'] as const
+export type AiAssistStatus = typeof AI_ASSIST_STATUSES[number]
+
+export const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP'] as const
+export type CurrencyCode = typeof CURRENCIES[number]
+
 export const IDEA_STATUSES = ['draft', 'submitted', 'under_review', 'approved', 'rejected', 'on_hold', 'converted_to_project', 'archived'] as const
 export type IdeaStatus = typeof IDEA_STATUSES[number]
 
@@ -64,6 +79,9 @@ export type FinanceTransactionStatus = typeof FINANCE_TRANSACTION_STATUSES[numbe
 
 export const FINANCE_CATEGORIES = ['hosting', 'ai_api', 'software', 'domain', 'contractor', 'marketing', 'operations', 'project_cost', 'tax', 'other'] as const
 export type FinanceCategory = typeof FINANCE_CATEGORIES[number]
+
+export const VENDOR_CATEGORIES = ['software', 'ai_tool', 'cloud_hosting', 'domain_website', 'marketing', 'design', 'legal_compliance', 'finance_tax', 'hardware', 'other'] as const
+export type VendorCategory = typeof VENDOR_CATEGORIES[number]
 
 export const RECURRENCE_INTERVALS = ['none', 'monthly', 'quarterly', 'yearly'] as const
 export type RecurrenceInterval = typeof RECURRENCE_INTERVALS[number]
@@ -120,6 +138,7 @@ export interface Project {
   owner_id: string
   created_by: string
   customer_id?: string
+  related_vertical_id?: string
   customer_visible_summary?: string
   start_date?: string
   target_date?: string
@@ -133,6 +152,7 @@ export interface Task {
   description?: string
   status: TaskStatus
   project_id?: string
+  related_vertical_id?: string
   assigned_to?: string
   owner_id: string
   created_by: string
@@ -167,6 +187,7 @@ export interface Lead {
   ai_score?: number
   qualification_notes?: string
   owner_id?: string
+  related_vertical_id?: string
   created_by?: string
   created_at: string
   updated_at: string
@@ -227,6 +248,7 @@ export interface Proposal {
   customer_id?: string
   project_id?: string
   deal_id?: string
+  related_vertical_id?: string
   amount?: number
   service_type?: string
   scope?: string
@@ -267,12 +289,20 @@ export interface Meeting {
   customer_id?: string
   project_id?: string
   scheduled_at: string
+  start_time?: string
+  end_time?: string
+  source?: 'manual' | 'google_calendar'
+  calendar_event_id?: string
   duration_minutes: number
   attendees?: string[]
+  meeting_link?: string
   agenda?: string
+  notes?: string
+  sync_status?: CalendarSyncStatus
   outcome?: string
   next_action?: string
   status: MeetingStatus
+  related_vertical_id?: string
   owner_id?: string
   created_by?: string
   created_at: string
@@ -308,8 +338,14 @@ export interface Vendor {
   name: string
   website?: string
   contact_email?: string
-  category?: FinanceCategory | string
+  category?: VendorCategory | FinanceCategory | string
+  currency?: CurrencyCode | string
+  monthly_cost?: number
+  billing_cycle?: RecurrenceInterval | string
+  renewal_date?: string
+  owner?: string
   notes?: string
+  status?: 'active' | 'paused' | 'cancelled'
   owner_id?: string
   created_by?: string
   created_at: string
@@ -329,6 +365,7 @@ export interface FinanceTransaction {
   project_id?: string
   customer_id?: string
   ai_workspace_app_id?: string
+  related_vertical_id?: string
   date?: string
   due_date?: string
   paid_at?: string
@@ -381,6 +418,40 @@ export interface AIWorkspaceApp {
   monetization_idea?: string
   last_checked_at?: string
   last_synced_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface BusinessVertical {
+  id: string
+  name: string
+  slug: string
+  type: BusinessVerticalType
+  status: BusinessVerticalStatus
+  description?: string
+  owner?: string
+  website?: string
+  logo_url?: string
+  brand_color?: string
+  notes?: string
+  owner_id?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface AiAssistRequest {
+  id: string
+  user_id?: string
+  intent: AiAssistIntent
+  input_text: string
+  ai_output_json: Record<string, unknown>
+  status: AiAssistStatus
+  related_vertical_id?: string
+  related_task_id?: string
+  related_meeting_id?: string
+  related_lead_id?: string
+  error_message?: string
   created_at: string
   updated_at: string
 }

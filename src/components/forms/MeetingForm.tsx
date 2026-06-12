@@ -53,6 +53,10 @@ export default function MeetingForm({
     duration_minutes: initialData?.duration_minutes?.toString() ?? '30',
     attendees: initialData?.attendees?.join(', ') ?? '',
     agenda: initialData?.agenda ?? '',
+    meeting_link: initialData?.meeting_link ?? '',
+    notes: initialData?.notes ?? '',
+    source: initialData?.source ?? 'manual',
+    sync_status: initialData?.sync_status ?? 'not_connected',
     outcome: initialData?.outcome ?? '',
     next_action: initialData?.next_action ?? '',
     owner_id: initialData?.owner_id ?? '',
@@ -80,6 +84,8 @@ export default function MeetingForm({
         customer_id: form.customer_id || null,
         project_id: form.project_id || null,
         owner_id: form.owner_id || null,
+        source: form.source as Meeting['source'],
+        sync_status: form.sync_status as Meeting['sync_status'],
         status: status as Meeting['status'],
       }
       const result = mode === 'create'
@@ -116,6 +122,22 @@ export default function MeetingForm({
               <div className="space-y-2">
                 <Label>Duration Minutes</Label>
                 <Input type="number" min="1" value={form.duration_minutes} onChange={set('duration_minutes')} />
+              </div>
+              <div className="space-y-2">
+                <Label>Source</Label>
+                <select value={form.source} onChange={set('source')} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+                  <option value="manual">manual</option>
+                  <option value="google_calendar">google calendar</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Sync Status</Label>
+                <select value={form.sync_status} onChange={set('sync_status')} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+                  <option value="not_connected">not connected</option>
+                  <option value="ready">ready</option>
+                  <option value="paused">paused</option>
+                  <option value="error">error</option>
+                </select>
               </div>
               <div className="space-y-2">
                 <Label>Owner</Label>
@@ -160,6 +182,14 @@ export default function MeetingForm({
             <div className="space-y-2">
               <Label>Agenda</Label>
               <Textarea value={form.agenda} onChange={set('agenda')} rows={3} />
+            </div>
+            <div className="space-y-2">
+              <Label>Meeting Link</Label>
+              <Input value={form.meeting_link} onChange={set('meeting_link')} placeholder="https://meet.google.com/..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea value={form.notes} onChange={set('notes')} rows={3} />
             </div>
             {mode === 'edit' && (
               <>

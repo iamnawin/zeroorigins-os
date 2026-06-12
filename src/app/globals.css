@@ -176,6 +176,13 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  select {
+    color-scheme: dark;
+  }
+  select option {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
   html {
     @apply font-sans selection:bg-zo-purple/20 selection:text-zo-purple-2;
   }

@@ -1,115 +1,35 @@
 import Link from 'next/link'
-import {
-  ArrowRight,
-  BookOpen,
-  Bot,
-  CalendarDays,
-  CheckSquare,
-  DollarSign,
-  FileText,
-  Plus,
-  Users,
-  WalletCards,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { Bot, CalendarDays, CheckSquare, CirclePlus, MailCheck, ReceiptText, Users, WalletCards, Workflow } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { AiAssistPanel } from '@/components/ai/AiAssistPanel'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
-import type { Deal, FinanceTransaction, Lead, Meeting, Proposal, Task } from '@/types'
+import type { AiAssistRequest, Deal, FinanceTransaction, Lead, Meeting, Proposal, Task } from '@/types'
 
-type PipelineItem = {
-  id: string
-  href: string
-  title: string
-  meta: string
-  status: string
-  value?: string
-}
+const defaultCurrency = 'INR'
 
-function formatDate(value?: string | null) {
-  return value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'
+function formatCurrency(value: number, currency = defaultCurrency) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value)
 }
 
 function formatDateTime(value?: string | null) {
-  return value ? new Date(value).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '-'
-}
-
-function money(value?: number | null) {
-  return value == null ? undefined : value.toLocaleString()
-}
-
-function currency(value: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
-}
-
-function WorkItem({ href, title, meta, status, value }: PipelineItem) {
-  return (
-    <Link href={href} className="block rounded-md border border-border bg-background/60 p-3 hover:border-zo-purple/40 transition-colors">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">{title}</p>
-          <p className="text-[11px] text-muted-foreground truncate">{meta}</p>
-        </div>
-        <ResourceStatusBadge status={status} />
-      </div>
-      {value && <p className="mt-2 text-xs font-medium text-zo-purple-2">{value}</p>}
-    </Link>
-  )
-}
-
-function StageColumn({ title, items }: { title: string; items: PipelineItem[] }) {
-  return (
-    <div className="min-w-64 rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{title}</p>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{items.length}</span>
-      </div>
-      <div className="space-y-2 p-2">
-        {items.length > 0 ? items.map(item => <WorkItem key={item.href} {...item} />) : (
-          <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">No records</div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function SectionHeader({ icon: Icon, title, href }: { icon: React.ElementType; title: string; href: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4 text-zo-purple" />
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-      </div>
-      <Link href={href} className="text-xs text-muted-foreground hover:text-zo-purple-2">View all</Link>
-    </div>
-  )
+  return value ? new Date(value).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '-'
 }
 
 export default async function ControlRoomPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, email, role')
-    .eq('id', user?.id || '')
-    .single()
+  const { data: profile } = await supabase.from('profiles').select('full_name, email').eq('id', user?.id || '').single()
 
-  const [
-    leadsRes,
-    dealsRes,
-    proposalsRes,
-    meetingsRes,
-    tasksRes,
-    financeRes,
-    knowledgeRes,
-  ] = await Promise.all([
-    supabase.from('leads').select('*').not('status', 'in', '("lost","archived")').order('created_at', { ascending: false }).limit(50),
-    supabase.from('deals').select('*').not('stage', 'in', '("lost")').order('created_at', { ascending: false }).limit(50),
-    supabase.from('proposals').select('*').not('status', 'in', '("accepted","rejected","expired")').order('created_at', { ascending: false }).limit(50),
+  const [leadsRes, dealsRes, proposalsRes, meetingsRes, tasksRes, financeRes, aiRes, knowledgeRes] = await Promise.all([
+    supabase.from('leads').select('*').not('status', 'in', '("lost","archived")').order('created_at', { ascending: false }).limit(20),
+    supabase.from('deals').select('*').not('stage', 'in', '("lost")').order('created_at', { ascending: false }).limit(20),
+    supabase.from('proposals').select('*').not('status', 'in', '("accepted","rejected","expired")').order('created_at', { ascending: false }).limit(20),
     supabase.from('meetings').select('*').order('scheduled_at', { ascending: true }).limit(20),
-    supabase.from('tasks').select('*').not('status', 'in', '("done","cancelled")').order('created_at', { ascending: false }).limit(50),
-    supabase.from('finance_transactions').select('*').eq('type', 'expense').order('date', { ascending: false }).limit(80),
+    supabase.from('tasks').select('*').not('status', 'in', '("done","cancelled")').order('created_at', { ascending: false }).limit(20),
+    supabase.from('finance_transactions').select('*').eq('type', 'expense').order('date', { ascending: false }).limit(50),
+    supabase.from('ai_assist_requests').select('*').order('created_at', { ascending: false }).limit(5),
     supabase.from('knowledge_articles').select('id', { count: 'exact', head: true }),
   ])
 
@@ -119,189 +39,139 @@ export default async function ControlRoomPage() {
   const meetings = (meetingsRes.data ?? []) as Meeting[]
   const tasks = (tasksRes.data ?? []) as Task[]
   const financeRows = (financeRes.data ?? []) as FinanceTransaction[]
+  const aiRequests = (aiRes.data ?? []) as AiAssistRequest[]
   const now = new Date()
-  const todayEnd = new Date(now)
-  todayEnd.setHours(23, 59, 59, 999)
+  const today = now.toISOString().slice(0, 10)
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
-  const today = now.toISOString().slice(0, 10)
 
-  const newLeads = leads.filter(row => ['new', 'contacted', 'discovery_scheduled'].includes(row.status)).map(row => ({
-    id: row.id,
-    href: `/internal/leads/${row.id}`,
-    title: row.company || row.name,
-    meta: row.service_interest || row.email,
-    status: row.status,
-    value: row.budget_range,
-  }))
-
-  const qualifiedDeals = deals.filter(row => ['qualifying', 'proposal'].includes(row.stage)).map(row => ({
-    id: row.id,
-    href: `/internal/deals/${row.id}`,
-    title: row.name,
-    meta: row.next_step || formatDate(row.expected_close_date),
-    status: row.stage,
-    value: money(row.estimated_value),
-  }))
-
-  const sentProposals = proposals.filter(row => ['draft', 'internal_review', 'sent', 'viewed', 'revision_requested'].includes(row.status)).map(row => ({
-    id: row.id,
-    href: `/internal/proposals/${row.id}`,
-    title: row.title,
-    meta: row.service_type || formatDate(row.expires_at),
-    status: row.status,
-    value: money(row.amount),
-  }))
-
-  const closingDeals = deals.filter(row => ['negotiation', 'won', 'on_hold'].includes(row.stage)).map(row => ({
-    id: row.id,
-    href: `/internal/deals/${row.id}`,
-    title: row.name,
-    meta: row.next_step || formatDate(row.expected_close_date),
-    status: row.stage,
-    value: money(row.estimated_value),
-  }))
-
-  const todayMeetings = meetings.filter(row => new Date(row.scheduled_at) <= todayEnd && row.status === 'scheduled').slice(0, 5)
-  const overdueTasks = tasks.filter(row => row.due_date && new Date(`${row.due_date}T23:59:59`) < now).slice(0, 5)
-  const hotLeads = leads
-    .filter(row => (row.ai_score ?? 0) >= 70 || ['proposal_needed', 'proposal_sent', 'negotiation'].includes(row.status))
-    .slice(0, 5)
+  const todayMeetings = meetings.filter(row => row.scheduled_at?.slice(0, 10) === today)
+  const overdueTasks = tasks.filter(row => row.due_date && row.due_date < today)
+  const upcomingRenewals = financeRows.filter(row => row.next_due_date && row.next_due_date >= today).slice(0, 3)
+  const newLeads = leads.filter(row => row.status === 'new').slice(0, 3)
   const monthSpend = financeRows
     .filter(row => row.date && row.date >= monthStart && row.date <= monthEnd && row.status !== 'cancelled')
     .reduce((sum, row) => sum + Number(row.amount ?? 0), 0)
-  const upcomingBills = financeRows.filter(row => row.status !== 'paid' && row.status !== 'cancelled' && row.due_date && row.due_date >= today)
-  const assistItems = [
-    ...leads.filter(row => !row.ai_summary).slice(0, 3).map(row => ({ href: `/internal/leads/${row.id}`, label: `Add AI summary for ${row.company || row.name}` })),
-    ...deals.filter(row => !row.next_step).slice(0, 3).map(row => ({ href: `/internal/deals/${row.id}`, label: `Define next step for ${row.name}` })),
-    ...proposals.filter(row => row.status === 'sent' && !row.customer_visible_notes).slice(0, 3).map(row => ({ href: `/internal/proposals/${row.id}`, label: `Add customer-facing notes for ${row.title}` })),
-  ].slice(0, 6)
-
+  const pendingPayments = financeRows.filter(row => ['planned', 'due', 'overdue'].includes(row.status)).length
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'there'
-  const stats: { label: string; count: number; icon: LucideIcon }[] = [
-    { label: 'Open Leads', count: leads.length, icon: Users },
-    { label: 'Open Deals', count: deals.length, icon: DollarSign },
-    { label: 'Proposals', count: proposals.length, icon: FileText },
-    { label: 'Meetings', count: todayMeetings.length, icon: CalendarDays },
-    { label: 'Open Tasks', count: tasks.length, icon: CheckSquare },
-  ]
-  const sourceLinks = [
-    { href: '/internal/finance', label: 'Finance', meta: `${currency(monthSpend)} this month`, icon: WalletCards },
-    { href: '/internal/knowledge', label: 'Knowledge', meta: `${knowledgeRes.count ?? 0} documents and decisions`, icon: BookOpen },
-    { href: '/internal/ai-workspace', label: 'AI Workspace', meta: 'Apps and internal tools', icon: Bot },
-    { href: '/internal/meetings', label: 'Calendar', meta: `${todayMeetings.length} today, ${upcomingBills.length} bills due`, icon: CalendarDays },
-  ]
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-zo-purple-2">Pipeline Cockpit</p>
-          <h1 className="mt-1 text-2xl font-bold text-foreground">Welcome back, {displayName}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Run today from leads, deals, meetings, proposals, and follow-ups.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/internal/leads/new"><Button size="sm"><Plus className="h-4 w-4 mr-1" />Lead</Button></Link>
-          <Link href="/internal/deals/new"><Button size="sm" variant="outline"><DollarSign className="h-4 w-4 mr-1" />Deal</Button></Link>
-          <Link href="/internal/meetings/new"><Button size="sm" variant="outline"><CalendarDays className="h-4 w-4 mr-1" />Meeting</Button></Link>
-          <Link href="/internal/tasks/new"><Button size="sm" variant="outline"><CheckSquare className="h-4 w-4 mr-1" />Task</Button></Link>
-        </div>
-      </div>
+      <section className="rounded-xl border border-border bg-card p-5">
+        <p className="text-xs font-bold uppercase tracking-wider text-zo-purple-2">Control Room</p>
+        <h1 className="mt-1 text-2xl font-bold">Welcome back, {displayName}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Start with today’s focus, then use Quick Actions or AI Assist to move work forward.</p>
+      </section>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        {stats.map(({ label, count, icon: Icon }) => (
-          <Card key={label} className="bg-card border-border">
-            <CardContent className="flex items-center justify-between p-4">
-              <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-2xl font-bold text-foreground">{count}</p>
-              </div>
-              <Icon className="h-5 w-5 text-zo-purple" />
+      <div className="grid gap-4 xl:grid-cols-[1fr_24rem]">
+        <section className="space-y-4">
+          <Card className="border-border bg-card">
+            <CardHeader><CardTitle className="text-base">Today&apos;s Focus</CardTitle></CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-2">
+              <FocusRow icon={MailCheck} label="Emails needing review" value="Open Email Router" href="/internal/automation?tab=email-router" />
+              <FocusRow icon={CheckSquare} label="Overdue tasks" value={`${overdueTasks.length} task${overdueTasks.length === 1 ? '' : 's'}`} href="/internal/tasks" />
+              <FocusRow icon={CalendarDays} label="Today's meetings" value={`${todayMeetings.length} meeting${todayMeetings.length === 1 ? '' : 's'}`} href="/internal/meetings?calendar=my" />
+              <FocusRow icon={ReceiptText} label="Upcoming renewals" value={`${upcomingRenewals.length} renewal${upcomingRenewals.length === 1 ? '' : 's'}`} href="/internal/finance" />
+              <FocusRow icon={Users} label="New leads" value={`${newLeads.length} lead${newLeads.length === 1 ? '' : 's'}`} href="/internal/leads" />
             </CardContent>
           </Card>
-        ))}
+
+          <Card className="border-border bg-card">
+            <CardHeader><CardTitle className="text-base">Quick Actions</CardTitle></CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <QuickAction href="/internal/leads/new" label="+ Lead" />
+              <QuickAction href="/internal/tasks/new" label="+ Task" />
+              <QuickAction href="/internal/meetings/new" label="+ Meeting" />
+              <QuickAction href="/internal/finance/vendors/new" label="+ Vendor" />
+              <QuickAction href="/internal/automation?tab=calendar-sync" label="Sync Calendar" />
+              <QuickAction href="/internal/automation?tab=email-router" label="Run Email Router" />
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardHeader><CardTitle className="text-base">Pipeline Snapshot</CardTitle></CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-4">
+              <Snapshot label="Open Leads" value={leads.length} />
+              <Snapshot label="Open Deals" value={deals.length} />
+              <Snapshot label="Proposals" value={proposals.length} />
+              <Snapshot label="Customers" value={0} />
+            </CardContent>
+          </Card>
+        </section>
+
+        <aside className="space-y-4">
+          <AiAssistPanel embedded />
+          <Card className="border-border bg-card">
+            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><WalletCards className="h-4 w-4 text-zo-purple" />Finance Snapshot</CardTitle></CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <Info label="This month spend" value={formatCurrency(monthSpend)} />
+              <Info label="Upcoming renewals" value={String(upcomingRenewals.length)} />
+              <Info label="Pending payments" value={String(pendingPayments)} />
+              <Info label="Default currency" value={defaultCurrency} />
+            </CardContent>
+          </Card>
+        </aside>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
-        {sourceLinks.map(({ href, label, meta, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors hover:border-zo-purple/40"
-          >
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">{label}</p>
-              <p className="mt-1 truncate text-xs text-muted-foreground">{meta}</p>
+      <Card className="border-border bg-card">
+        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Workflow className="h-4 w-4 text-zo-purple" />Automation Feed</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          {aiRequests.map(row => (
+            <div key={row.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-background/60 p-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{row.intent.replace(/_/g, ' ')}</p>
+                <p className="text-xs text-muted-foreground">{formatDateTime(row.created_at)}</p>
+              </div>
+              <ResourceStatusBadge status={row.status} />
             </div>
-            <Icon className="h-5 w-5 shrink-0 text-zo-purple" />
-          </Link>
-        ))}
-      </div>
-
-      <div className="space-y-3">
-        <SectionHeader icon={DollarSign} title="Sales Pipeline" href="/internal/deals?layout=board" />
-        <div className="overflow-x-auto pb-2">
-          <div className="flex gap-3 min-w-max">
-            <StageColumn title="New Leads" items={newLeads} />
-            <StageColumn title="Qualified" items={qualifiedDeals} />
-            <StageColumn title="Proposal" items={sentProposals} />
-            <StageColumn title="Closing" items={closingDeals} />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="bg-card border-border">
-          <CardHeader><SectionHeader icon={CalendarDays} title="Today" href="/internal/meetings" /></CardHeader>
-          <CardContent className="space-y-2">
-            {todayMeetings.map(row => (
-              <WorkItem key={row.id} id={row.id} href={`/internal/meetings/${row.id}`} title={row.title} meta={formatDateTime(row.scheduled_at)} status={row.status} />
-            ))}
-            {todayMeetings.length === 0 && <p className="text-sm text-muted-foreground">No meetings due today.</p>}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardHeader><SectionHeader icon={CheckSquare} title="Overdue Follow-ups" href="/internal/tasks" /></CardHeader>
-          <CardContent className="space-y-2">
-            {overdueTasks.map(row => (
-              <WorkItem key={row.id} id={row.id} href={`/internal/tasks/${row.id}`} title={row.title} meta={`Due ${formatDate(row.due_date)}`} status={row.status} />
-            ))}
-            {overdueTasks.length === 0 && <p className="text-sm text-muted-foreground">No overdue tasks.</p>}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardHeader><SectionHeader icon={Bot} title="AI Assist" href="/internal/leads" /></CardHeader>
-          <CardContent className="space-y-2">
-            {assistItems.map(item => (
-              <Link key={item.href + item.label} href={item.href} className="flex items-center justify-between rounded-md border border-border p-3 text-sm hover:border-zo-purple/40">
-                <span className="line-clamp-1">{item.label}</span>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </Link>
-            ))}
-            {assistItems.length === 0 && <p className="text-sm text-muted-foreground">No AI assist gaps right now.</p>}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="bg-card border-border">
-        <CardHeader><SectionHeader icon={Users} title="Priority Records" href="/internal/leads" /></CardHeader>
-        <CardContent className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
-          {hotLeads.map(row => (
-            <WorkItem
-              key={row.id}
-              id={row.id}
-              href={`/internal/leads/${row.id}`}
-              title={row.company || row.name}
-              meta={row.ai_summary || row.service_interest || row.email}
-              status={row.status}
-              value={row.ai_score != null ? `AI score ${row.ai_score}` : row.budget_range}
-            />
           ))}
-          {hotLeads.length === 0 && <p className="text-sm text-muted-foreground">No hot leads yet. Add leads or qualify existing records.</p>}
+          {aiRequests.length === 0 && (
+            <div className="rounded-md border border-dashed border-border p-5 text-center">
+              <Bot className="mx-auto h-5 w-5 text-zo-purple" />
+              <p className="mt-2 text-sm font-semibold">No automation events yet.</p>
+              <Link href="/internal/automation" className="mt-2 inline-flex text-sm text-zo-purple">Run Email Router Test</Link>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      <p className="text-xs text-muted-foreground">Knowledge source: {knowledgeRes.count ?? 0} documents and decisions.</p>
+    </div>
+  )
+}
+
+function FocusRow({ icon: Icon, label, value, href }: { icon: typeof CirclePlus; label: string; value: string; href: string }) {
+  return (
+    <Link href={href} className="flex items-center justify-between rounded-lg border border-border bg-background/60 p-3 hover:border-zo-purple/40">
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-zo-purple" />
+        <span className="text-sm text-muted-foreground">{label}</span>
+      </div>
+      <span className="text-sm font-semibold">{value}</span>
+    </Link>
+  )
+}
+
+function QuickAction({ href, label }: { href: string; label: string }) {
+  return (
+    <Link href={href}><Button size="sm" variant="outline">{label}</Button></Link>
+  )
+}
+
+function Snapshot({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-border bg-background/60 p-3">
+      <p className="text-2xl font-bold">{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  )
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-semibold">{value}</span>
     </div>
   )
 }

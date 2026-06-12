@@ -1,10 +1,12 @@
 import Link from 'next/link'
+import { CalendarPlus, CalendarSync } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { ResourcePageHeader } from '@/components/resource-kit/resource-page-header'
 import { ResourceEmptyState } from '@/components/resource-kit/resource-empty-state'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import { EntityTable, type TableColumn } from '@/components/resource-kit/entity-table'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import type { Meeting, Profile } from '@/types'
 
 const BASE = '/internal/meetings'
@@ -30,6 +32,7 @@ const TABLE_COLUMNS: TableColumn<MeetingRow>[] = [
   { key: 'title', label: 'Meeting', render: row => row.title },
   { key: 'scheduled_at', label: 'When', width: '150px', render: row => formatDateTime(row.scheduled_at) },
   { key: 'owner_id', label: 'Owner', width: '160px', render: row => row.ownerLabel },
+  { key: 'source', label: 'Source', width: '130px', render: row => <Badge variant="outline">{row.source === 'google_calendar' ? 'Google' : 'Manual'}</Badge> },
   { key: 'duration_minutes', label: 'Duration', width: '90px', render: row => `${row.duration_minutes}m` },
   { key: 'status', label: 'Status', width: '120px', render: row => <ResourceStatusBadge status={row.status} /> },
   { key: 'next_action', label: 'Next Action', render: row => <span className="line-clamp-1">{row.next_action || row.agenda || '-'}</span> },
@@ -66,7 +69,13 @@ export default async function MeetingsPage({
 
   return (
     <div className="space-y-5">
-      <ResourcePageHeader title="Meetings" description={`${filterLabel(calendar)} for discovery calls, proposal reviews, and delivery check-ins`} newHref={`${BASE}/new`} newLabel="New Meeting" />
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <ResourcePageHeader title="Meetings" description={`${filterLabel(calendar)} for discovery calls, proposal reviews, synced Google events, and delivery check-ins`} showNew={false} />
+        <div className="flex flex-wrap gap-2">
+          <Link href={`${BASE}/new`}><Button size="sm"><CalendarPlus className="mr-1 h-4 w-4" />Add Meeting</Button></Link>
+          <Link href="/internal/automation?tab=calendar-sync"><Button size="sm" variant="outline"><CalendarSync className="mr-1 h-4 w-4" />Sync Google Calendar</Button></Link>
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <Link href={filterHref('team')} className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted">
@@ -75,6 +84,8 @@ export default async function MeetingsPage({
         <Link href={filterHref('my')} className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted">
           My Calendar
         </Link>
+        <Badge variant="outline">Manual meetings</Badge>
+        <Badge variant="outline">Synced from Google</Badge>
         <Badge variant="outline">{rows.length} {rows.length === 1 ? 'meeting' : 'meetings'}</Badge>
       </div>
 

@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import type { FinanceTransaction, Vendor } from '@/types'
 
-function money(value: number, currency = 'USD') {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value)
+const defaultCurrency = 'INR'
+
+function money(value: number, currency = defaultCurrency) {
+  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', { style: 'currency', currency }).format(value)
 }
 
 function formatDate(value?: string | null) {
@@ -47,6 +49,10 @@ export default async function FinancePage() {
     .filter(row => row.status !== 'paid' && row.status !== 'cancelled' && row.due_date && row.due_date >= today)
     .slice(0, 6)
   const recurring = rows.filter(row => row.recurrence_interval && row.recurrence_interval !== 'none').slice(0, 6)
+  const activeSubscriptions = vendorRows.filter(row => row.status !== 'cancelled' && row.billing_cycle && row.billing_cycle !== 'none')
+  const vendorRenewals = vendorRows
+    .filter(row => row.status !== 'cancelled' && row.renewal_date && row.renewal_date >= today)
+    .slice(0, 6)
   const byCategory = Object.entries(monthRows.reduce<Record<string, number>>((acc, row) => {
     const key = row.category || 'other'
     acc[key] = (acc[key] ?? 0) + Number(row.amount ?? 0)
@@ -56,8 +62,8 @@ export default async function FinancePage() {
   const cards = [
     { label: 'This Month', value: money(monthSpend), icon: DollarSign },
     { label: 'AI/API Spend', value: money(aiSpend), icon: WalletCards },
-    { label: 'Upcoming Bills', value: String(upcoming.length), icon: CalendarClock },
-    { label: 'Overdue', value: String(overdue.length), icon: AlertTriangle },
+    { label: 'Upcoming Renewals', value: String(upcoming.length + vendorRenewals.length), icon: CalendarClock },
+    { label: 'Active Subscriptions', value: String(activeSubscriptions.length), icon: AlertTriangle },
   ]
 
   return (
@@ -66,7 +72,7 @@ export default async function FinancePage() {
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-zo-purple-2">Company Spending</p>
           <h1 className="mt-1 text-2xl font-bold text-foreground">Finance</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Track bills, subscriptions, AI API costs, contractors, and project expenses separately from revenue.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Track bills, subscriptions, AI API costs, contractors, project expenses, and revenue with {defaultCurrency} as the default currency.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/internal/finance/vendors/new"><Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />Vendor</Button></Link>
@@ -106,6 +112,15 @@ export default async function FinancePage() {
         <Card className="bg-card border-border">
           <CardHeader><CardTitle className="text-sm">Recurring Stack</CardTitle></CardHeader>
           <CardContent className="space-y-2">
+            {vendorRenewals.map(row => (
+              <div key={row.id} className="rounded-md border border-border bg-background/60 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="truncate text-sm font-medium">{row.name}</p>
+                  <Repeat className="h-3.5 w-3.5 text-zo-purple" />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{row.billing_cycle} · {money(Number(row.monthly_cost ?? 0), row.currency || defaultCurrency)} · renews {formatDate(row.renewal_date)}</p>
+              </div>
+            ))}
             {recurring.map(row => (
               <div key={row.id} className="rounded-md border border-border bg-background/60 p-3">
                 <div className="flex items-center justify-between gap-3">
@@ -115,7 +130,7 @@ export default async function FinancePage() {
                 <p className="mt-1 text-xs text-muted-foreground">{row.recurrence_interval} · next {formatDate(row.next_due_date || row.due_date)}</p>
               </div>
             ))}
-            {recurring.length === 0 && <p className="text-sm text-muted-foreground">No recurring bills yet.</p>}
+            {recurring.length === 0 && vendorRenewals.length === 0 && <p className="text-sm text-muted-foreground">No recurring bills yet.</p>}
           </CardContent>
         </Card>
       </div>
@@ -157,6 +172,7 @@ export default async function FinancePage() {
             <div className="border-t border-border pt-3">
               <p className="text-xs font-semibold text-foreground">Vendors</p>
               <p className="mt-1 text-xs text-muted-foreground">{vendorRows.length} tracked vendor{vendorRows.length === 1 ? '' : 's'}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Default currency: {defaultCurrency}</p>
             </div>
           </CardContent>
         </Card>

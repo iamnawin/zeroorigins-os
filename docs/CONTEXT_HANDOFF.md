@@ -11,7 +11,7 @@
 
 ## 0. Current Active Work: CRM Source Of Truth
 
-Active branch: `main`
+Active branch: `phase/crm-ia-ai-visibility-phase-5`
 
 The user approved a phased redesign of ZeroOrigins OS into a practical internal CRM/source-of-truth for a three-person internal team. The design is documented at:
 
@@ -25,7 +25,49 @@ Execution rule from user: complete phases individually, push each phase, and aft
 
 Merge status: **Phases 1, 2, and 3 have been fast-forward merged into `main`.**
 
-Current phase: **Phase 4 merged to main; ready for Phase 5: Finance Operating Console**
+Current phase: **Phase 5 in progress on `phase/crm-ia-ai-visibility-phase-5`: internal UI shell, Business Verticals, AI visibility, Automation, Calendar entry points, and Finance/Vendor usability.**
+
+Phase 5 plan:
+- `docs/superpowers/plans/2026-06-13-crm-ia-ai-visibility-phase-5.md`
+
+Phase 5 shipped in the working branch:
+- Desktop internal shell now uses left sidebar navigation plus action top bar (`Global search`, `Quick Add`, `Sync`, profile menu).
+- Navigation groups: Control Room, Pipeline, Work, Automation, Finance, Knowledge, AI Workspace, Settings.
+- New Business Verticals module:
+  - `/internal/business-verticals`
+  - `/internal/business-verticals/new`
+  - `/internal/business-verticals/[id]`
+  - `/internal/business-verticals/[id]/edit`
+- Seeded verticals in migration 013:
+  - AIWithNoBrain
+  - AIWithNoBrain Audio Labs
+  - IgnAIte
+  - EpicsToYou
+  - ZeroOrigins OS
+- AI Workspace now shows AI capabilities only: Email Intelligence, Task Assistant, Meeting Assistant, Proposal Assistant, Content Assistant, Prompt Lab, Automation Runs, Model Settings.
+- Global AI Assist drawer creates structured drafts and only creates records after confirmation.
+- New Automation visibility page: `/internal/automation`.
+- Control Room is simplified into Today's Focus, Quick Actions, Pipeline Snapshot, Automation Feed, and Finance Snapshot.
+- Meetings page now exposes Add Meeting and Sync Google Calendar entry points and shows manual vs Google source labels.
+- Finance/Vendor UI now defaults to INR, supports INR/USD/EUR/GBP, adds subscription/vendor fields, and fixes dark native select options.
+
+Phase 5 schema:
+- New migration: `supabase/migrations/013_business_verticals_ai_assist.sql`.
+- Adds `business_verticals` and `ai_assist_requests`.
+- Adds nullable `related_vertical_id` links to projects, tasks, leads, proposals, meetings, and finance transactions.
+- Adds meeting sync fields: `source`, `calendar_event_id`, `meeting_link`, `notes`, `sync_status`.
+- Adds vendor fields: `currency`, `monthly_cost`, `billing_cycle`, `renewal_date`, `owner`, `status`.
+- Remote Supabase migration 013 is applied and verified against project `https://qfhmrsolktblzanubgag.supabase.co`.
+
+Latest Phase 5 local verification, 2026-06-13:
+
+```powershell
+npm run test:crm-ia-ai # pass
+npm run lint           # pass with 2 pre-existing warnings
+npm run build          # pass with pre-existing @screen CSS warning
+npm run check:migrations # pass
+npm run check:crm        # pass
+```
 
 Phase 4 remote readiness:
 - The user applied `supabase/migrations/012_team_calendar_foundations.sql` in Supabase.

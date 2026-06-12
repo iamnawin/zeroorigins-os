@@ -24,4 +24,11 @@ export const SENTINELS = [
   { migration: '012_team_calendar_foundations', table: 'profiles', column: 'calendar_provider' },
   { migration: '012_team_calendar_foundations', table: 'profiles', column: 'calendar_sync_enabled' },
   { migration: '012_team_calendar_foundations', table: 'profiles', column: 'calendar_sync_status' },
+  { migration: '013_business_verticals_ai_assist', table: 'business_verticals', column: 'name' },
+  { migration: '013_business_verticals_ai_assist', table: 'business_verticals', column: 'slug' },
+  { migration: '013_business_verticals_ai_assist', table: 'business_verticals', column: 'type' },
+  { migration: '013_business_verticals_ai_assist', table: 'business_verticals', column: 'status' },
+  { migration: '013_business_verticals_ai_assist', table: 'ai_assist_requests', column: 'intent' },
+  { migration: '013_business_verticals_ai_assist', table: 'ai_assist_requests', column: 'ai_output_json' },
+  { migration: '013_business_verticals_ai_assist', table: 'ai_assist_requests', column: 'status' },
 ]

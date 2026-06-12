@@ -20,10 +20,12 @@ import {
   Handshake,
   LayoutDashboard,
   LogOut,
+  PanelsTopLeft,
   Settings,
   User,
   Users,
   WalletCards,
+  Workflow,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -51,9 +53,11 @@ const ICONS: Record<string, LucideIcon> = {
   FolderKanban,
   Handshake,
   LayoutDashboard,
+  PanelsTopLeft,
   Settings,
   Users,
   WalletCards,
+  Workflow,
 }
 
 function NavLink({ href, label, icon, compact = false }: { href: string; label: string; icon: string; compact?: boolean }) {
@@ -90,8 +94,8 @@ export function InternalTopNav({ email, fullName, role }: InternalTopNavProps) {
   const displayName = fullName || email?.split('@')[0] || 'Account'
   const isAdmin = role === 'admin'
   const groups = filterInternalNavGroups(role)
-  const mainGroups = groups.filter(group => group.id !== 'deferred' && group.id !== 'admin')
-  const deferredGroups = groups.filter(group => group.id === 'deferred' || group.id === 'admin')
+  const mainGroups = groups.filter(group => group.id !== 'admin')
+  const deferredGroups = groups.filter(group => group.id === 'admin')
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">

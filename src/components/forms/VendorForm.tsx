@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { FINANCE_CATEGORIES, type Vendor } from '@/types'
+import { CURRENCIES, RECURRENCE_INTERVALS, VENDOR_CATEGORIES, type RecurrenceInterval, type Vendor, type VendorCategory } from '@/types'
 import { createVendor, updateVendor } from '@/lib/actions/internal-resources'
 
 interface Props {
@@ -21,7 +21,13 @@ export default function VendorForm({ mode, initialData }: Props) {
     website: initialData?.website ?? '',
     contact_email: initialData?.contact_email ?? '',
     category: initialData?.category ?? 'software',
+    currency: initialData?.currency ?? 'INR',
+    monthly_cost: initialData?.monthly_cost?.toString() ?? '',
+    billing_cycle: initialData?.billing_cycle ?? 'monthly',
+    renewal_date: initialData?.renewal_date ?? '',
+    owner: initialData?.owner ?? '',
     notes: initialData?.notes ?? '',
+    status: initialData?.status ?? 'active',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -36,9 +42,14 @@ export default function VendorForm({ mode, initialData }: Props) {
     setError('')
 
     try {
+      const payload = {
+        ...form,
+        category: form.category as VendorCategory,
+        billing_cycle: form.billing_cycle as RecurrenceInterval,
+      }
       const result = mode === 'create'
-        ? await createVendor(form)
-        : await updateVendor(initialData!.id!, form)
+        ? await createVendor(payload)
+        : await updateVendor(initialData!.id!, payload)
 
       if (result.error) throw new Error(result.error)
 
@@ -74,9 +85,41 @@ export default function VendorForm({ mode, initialData }: Props) {
               <div className="space-y-2 md:col-span-2">
                 <Label>Category</Label>
                 <select value={form.category} onChange={set('category')} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
-                  {FINANCE_CATEGORIES.map(category => (
+                  {VENDOR_CATEGORIES.map(category => (
                     <option key={category} value={category}>{category.replace(/_/g, ' ')}</option>
                   ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Currency</Label>
+                <select value={form.currency} onChange={set('currency')} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+                  {CURRENCIES.map(currency => <option key={currency} value={currency}>{currency}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Monthly Cost</Label>
+                <Input value={form.monthly_cost} onChange={set('monthly_cost')} inputMode="decimal" placeholder="1500" />
+              </div>
+              <div className="space-y-2">
+                <Label>Billing Cycle</Label>
+                <select value={form.billing_cycle} onChange={set('billing_cycle')} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+                  {RECURRENCE_INTERVALS.map(interval => <option key={interval} value={interval}>{interval}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Renewal Date</Label>
+                <Input type="date" value={form.renewal_date} onChange={set('renewal_date')} />
+              </div>
+              <div className="space-y-2">
+                <Label>Owner</Label>
+                <Input value={form.owner} onChange={set('owner')} placeholder="Naveen" />
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <select value={form.status} onChange={set('status')} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+                  <option value="active">active</option>
+                  <option value="paused">paused</option>
+                  <option value="cancelled">cancelled</option>
                 </select>
               </div>
             </div>
