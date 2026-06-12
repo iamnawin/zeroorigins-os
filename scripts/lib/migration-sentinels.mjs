@@ -31,4 +31,10 @@ export const SENTINELS = [
   { migration: '013_business_verticals_ai_assist', table: 'ai_assist_requests', column: 'intent' },
   { migration: '013_business_verticals_ai_assist', table: 'ai_assist_requests', column: 'ai_output_json' },
   { migration: '013_business_verticals_ai_assist', table: 'ai_assist_requests', column: 'status' },
+  { migration: '014_zo_agent_ideas_applications', table: 'business_ideas', column: 'status' },
+  { migration: '014_zo_agent_ideas_applications', table: 'business_ideas', column: 'promoted_application_id' },
+  { migration: '014_zo_agent_ideas_applications', table: 'applications', column: 'stage' },
+  { migration: '014_zo_agent_ideas_applications', table: 'applications', column: 'repo_url' },
+  { migration: '014_zo_agent_ideas_applications', table: 'source_registry', column: 'source_type' },
+  { migration: '014_zo_agent_ideas_applications', table: 'ai_assist_requests', column: 'related_application_id' },
 ]

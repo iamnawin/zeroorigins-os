@@ -17,17 +17,63 @@ export type CalendarProvider = typeof CALENDAR_PROVIDERS[number]
 export const CALENDAR_SYNC_STATUSES = ['not_connected', 'ready', 'paused', 'error'] as const
 export type CalendarSyncStatus = typeof CALENDAR_SYNC_STATUSES[number]
 
-export const BUSINESS_VERTICAL_TYPES = ['brand', 'product', 'education', 'media', 'internal', 'client_service', 'experiment'] as const
+export const BUSINESS_VERTICAL_TYPES = ['brand', 'product', 'education', 'media', 'internal', 'client_service', 'experiment', 'lab', 'video', 'creative_tech', 'product_studio', 'service', 'other'] as const
 export type BusinessVerticalType = typeof BUSINESS_VERTICAL_TYPES[number]
 
 export const BUSINESS_VERTICAL_STATUSES = ['idea', 'active', 'paused', 'archived'] as const
 export type BusinessVerticalStatus = typeof BUSINESS_VERTICAL_STATUSES[number]
 
-export const AI_ASSIST_INTENTS = ['create_task', 'schedule_meeting', 'draft_email', 'summarize_email', 'create_followup', 'create_proposal', 'classify_lead', 'summarize_day'] as const
+export const AI_ASSIST_INTENTS = [
+  'create_task', 'schedule_meeting', 'draft_reply', 'summarize_email', 'create_followup',
+  'create_project', 'create_proposal', 'create_idea', 'promote_idea_to_application', 'create_application',
+  'query_emails', 'query_tasks', 'query_projects', 'query_ideas', 'query_applications', 'query_verticals',
+  'find_missing_sources', 'update_application_source', 'sync_repo_details', 'summarize_today', 'unknown',
+] as const
 export type AiAssistIntent = typeof AI_ASSIST_INTENTS[number]
 
 export const AI_ASSIST_STATUSES = ['draft', 'confirmed', 'created', 'failed', 'cancelled'] as const
 export type AiAssistStatus = typeof AI_ASSIST_STATUSES[number]
+
+export type ZoAgentMode = 'draft' | 'query' | 'summary' | 'action'
+
+export interface ZoAgentOutput {
+  intent: AiAssistIntent
+  mode: ZoAgentMode
+  title: string
+  summary: string
+  confidence: number
+  requires_confirmation: boolean
+  draft?: Record<string, unknown>
+  query?: Record<string, unknown>
+  next_actions?: string[]
+  warnings?: string[]
+}
+
+export interface ZoAgentQueryResult {
+  id: string
+  title: string
+  subtitle?: string
+  badge?: string
+  href?: string
+}
+
+export const BUSINESS_IDEA_STATUSES = ['raw', 'reviewing', 'validated', 'testing', 'tested', 'rejected', 'archived', 'promoted_to_application'] as const
+export type BusinessIdeaStatus = typeof BUSINESS_IDEA_STATUSES[number]
+
+export const BUSINESS_IDEA_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const
+export type BusinessIdeaPriority = typeof BUSINESS_IDEA_PRIORITIES[number]
+
+export const APPLICATION_STAGES = ['concept', 'prototype', 'testing', 'production_ready', 'live', 'paused', 'archived'] as const
+export type ApplicationStage = typeof APPLICATION_STAGES[number]
+
+export const APPLICATION_STATUSES = ['active', 'paused', 'archived'] as const
+export type ApplicationStatus = typeof APPLICATION_STATUSES[number]
+
+export const APPLICATION_TYPES = ['application', 'product', 'internal_system', 'automation', 'website', 'tool', 'service_product', 'other'] as const
+export type ApplicationType = typeof APPLICATION_TYPES[number]
+
+export const SOURCE_TYPES = ['ideas_root', 'repos_root', 'repo', 'local_folder', 'docs', 'deployment', 'website', 'figma', 'n8n', 'supabase', 'google_drive', 'other'] as const
+export type SourceType = typeof SOURCE_TYPES[number]
 
 export const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP'] as const
 export type CurrencyCode = typeof CURRENCIES[number]
@@ -448,10 +494,75 @@ export interface AiAssistRequest {
   ai_output_json: Record<string, unknown>
   status: AiAssistStatus
   related_vertical_id?: string
+  related_idea_id?: string
+  related_application_id?: string
   related_task_id?: string
   related_meeting_id?: string
   related_lead_id?: string
   error_message?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface BusinessIdea {
+  id: string
+  title: string
+  slug?: string
+  description?: string
+  vertical_id?: string
+  status: BusinessIdeaStatus
+  priority: BusinessIdeaPriority
+  source?: string
+  local_folder_path?: string
+  owner_id?: string
+  ai_summary?: string
+  next_action?: string
+  promoted_application_id?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Application {
+  id: string
+  name: string
+  slug?: string
+  description?: string
+  vertical_id?: string
+  stage: ApplicationStage
+  status: ApplicationStatus
+  type: ApplicationType
+  repo_url?: string
+  local_folder_path?: string
+  docs_url?: string
+  docs_folder_path?: string
+  website_url?: string
+  deployment_url?: string
+  database_url?: string
+  n8n_workflow_url?: string
+  figma_url?: string
+  owner_id?: string
+  tech_stack: string[]
+  build_status?: string
+  last_synced_at?: string
+  source_idea_id?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SourceRegistryEntry {
+  id: string
+  name: string
+  source_type: SourceType
+  local_path?: string
+  source_url?: string
+  related_vertical_id?: string
+  related_idea_id?: string
+  related_application_id?: string
+  status: 'active' | 'paused' | 'archived'
+  last_checked_at?: string
+  last_synced_at?: string
+  notes?: string
   created_at: string
   updated_at: string
 }

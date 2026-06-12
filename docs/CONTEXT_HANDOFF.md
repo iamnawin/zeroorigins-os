@@ -25,10 +25,33 @@ Execution rule from user: complete phases individually, push each phase, and aft
 
 Merge status: **Phases 1, 2, and 3 have been fast-forward merged into `main`.**
 
-Current phase: **Phase 5 merged to `main`: internal UI shell, Business Verticals, AI visibility, Automation, Calendar entry points, and Finance/Vendor usability.**
+Current phase: **Phase 6 complete on `main`: ZO_Agent UX fix, Ideas Vault (business_ideas), Application Registry, Source Registry, full intent-based AI assist.**
 
 Phase 5 plan:
 - `docs/superpowers/plans/2026-06-13-crm-ia-ai-visibility-phase-5.md`
+
+Phase 6 shipped:
+- Fixed broken build: `AiAssistPanel.tsx` imported renamed `AI_ASSIST_QUICK_ACTIONS` (now `ZO_AGENT_QUICK_ACTIONS`).
+- ZO_Agent UX overhaul:
+  - Panel renamed from "AI Assist" to "ZO_Agent" everywhere (drawer trigger, sheet title, embedded header).
+  - Primary button label now **changes dynamically** based on selected intent (e.g., "Generate Task Draft", "Capture Idea", "Search Applications", "Ask ZO_Agent").
+  - Quick action chips toggle off on re-click.
+  - Placeholder text updated to reference ZO_Agent and full intent set.
+  - Confirmation button now says "Confirm & Create Record".
+- New navigation items in sidebar: "Ideas Vault" and "Applications" (with Lightbulb and AppWindow icons).
+- **Ideas Vault page** (`/internal/ideas`): now queries `business_ideas` table. Shows ideas grouped by status (raw, reviewing, validated, testing, tested). Filters by priority and vertical. Card layout with status badge, priority badge, and linked-folder indicator.
+- **Application Registry page** (`/internal/applications`): card grid with filters (all, production_ready, live, prototype, missing_repo, missing_local, missing_docs, missing_deploy). Each card shows name, stage badge (color-coded), description, and source connection indicators (green/grey dots for Repo, Local, Docs, Deploy).
+- **Application detail page** (`/internal/applications/[id]`): tabbed layout with Overview, Repos & Folders (sources), Tasks, and ZO_Agent tabs. Sources tab shows all direct links (repo, local folder, docs, website, deployment, database, n8n, figma) plus source_registry entries for the application. ZO_Agent tab embeds the AiAssistPanel.
+- Schema (migration 014): `business_ideas`, `applications`, `source_registry` tables with full RLS. `ai_assist_requests` widened for full intent set. Seeded PlotDNA, OrgTrace, ZeroOrigins OS as applications. Seeded source roots for Ideas and Repos workspaces.
+- Full ZO_Agent server action layer (`src/lib/actions/ai-assist.ts`): 20+ intents, structured output normalization, query execution (tasks, projects, ideas, applications, verticals, missing sources, summarize today), and confirmable draft creation (tasks, meetings, proposals, projects, ideas, applications, promote idea→app, update source).
+
+Phase 6 local verification, 2026-06-13:
+
+```powershell
+npm run build          # pass (exit code 0) with pre-existing @screen CSS warning only
+```
+
+Phase 6 migration: `supabase/migrations/014_zo_agent_ideas_applications.sql` — **user must apply manually in Supabase SQL Editor before these features work at runtime.**
 
 Phase 5 shipped in the working branch:
 - Desktop internal shell now uses left sidebar navigation plus action top bar (`Global search`, `Quick Add`, `Sync`, profile menu).

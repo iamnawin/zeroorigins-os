@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
+  AppWindow,
   BookOpen,
   Bot,
   Building2,
@@ -14,6 +15,7 @@ import {
   FolderKanban,
   Handshake,
   LayoutDashboard,
+  Lightbulb,
   PanelsTopLeft,
   Settings,
   Users,
@@ -26,6 +28,7 @@ import { filterInternalNavGroups } from '@/lib/internal-navigation'
 import type { Role } from '@/types'
 
 const ICONS: Record<string, LucideIcon> = {
+  AppWindow,
   BookOpen,
   Bot,
   Building2,
@@ -36,6 +39,7 @@ const ICONS: Record<string, LucideIcon> = {
   FolderKanban,
   Handshake,
   LayoutDashboard,
+  Lightbulb,
   PanelsTopLeft,
   Settings,
   Users,
