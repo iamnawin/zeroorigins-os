@@ -6,6 +6,8 @@
 
 > Phase 2 status: internal navigation now prioritizes daily operating work and source-of-truth surfaces. Finance and Knowledge are first-class navigation items, Customers and Partners are visually deferred until real records exist, and the Control Room exposes Finance, Knowledge, AI Workspace, and Calendar shortcuts.
 
+> Phase 3 status: Knowledge is now a real internal document hub backed by `knowledge_articles`, with list/create/detail/edit routes and server actions for saving internal documents, decisions, SOPs, meeting notes, finance/vendor docs, automation notes, and product specs.
+
 ## 🎯 **Project Overview**
 ZeroOrigins OS is an internal company operating system for managing ideas, projects, tasks, leads, partners, and AI workspace apps. The system has been upgraded from a basic UI to a premium AI operating system interface.
 

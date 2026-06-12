@@ -11,17 +11,18 @@
 
 ## 0. Current Active Work: CRM Source Of Truth
 
-Active branch: `phase/crm-internal-navigation-phase-2`
+Active branch: `phase/crm-knowledge-source-phase-3`
 
 The user approved a phased redesign of ZeroOrigins OS into a practical internal CRM/source-of-truth for a three-person internal team. The design is documented at:
 
 - `docs/superpowers/specs/2026-06-13-zeroorigins-crm-source-of-truth-design.md`
 - `docs/superpowers/plans/2026-06-13-crm-foundation-phase-1.md`
 - `docs/superpowers/plans/2026-06-13-crm-internal-navigation-phase-2.md`
+- `docs/superpowers/plans/2026-06-13-crm-knowledge-source-phase-3.md`
 
 Execution rule from user: complete phases individually, push each phase, and after the first three phases are complete, merge them into `main`.
 
-Current phase: **Phase 2: Internal CRM Navigation And Empty States**
+Current phase: **Phase 3: Documents And Knowledge Source Of Truth**
 
 Phase 1 scope:
 - Extend migration/schema checks beyond migration `009`.
@@ -52,8 +53,19 @@ Phase 2 shipped:
 - Control Room now surfaces Finance, Knowledge, AI Workspace, and Calendar as source-of-truth shortcuts.
 - Customer and Partner empty states now explain when to use those records instead of implying missing dummy data.
 
+Phase 3 shipped:
+- `knowledge_articles` is now covered by migration/CRM health sentinels.
+- Knowledge server actions exist: `createKnowledgeArticle` and `updateKnowledgeArticle`.
+- Knowledge routes now exist:
+  - `/internal/knowledge`
+  - `/internal/knowledge/new`
+  - `/internal/knowledge/[id]`
+  - `/internal/knowledge/[id]/edit`
+- Knowledge supports title, content, category, tags, owner, created_by, and timestamps.
+- Control Room now shows a live Knowledge document count.
+
 Next phases:
-- Phase 3: real Documents/Knowledge source-of-truth module.
+- Merge the stacked first three phase branches into `main` after final verification.
 - Phase 4: team and calendar foundations.
 
 Resume commands:
@@ -62,6 +74,7 @@ Resume commands:
 git status --short --branch
 npm run test:crm-foundation
 npm run test:crm-navigation
+npm run test:crm-knowledge
 npm run check:migrations
 npm run check:crm
 npm run lint
