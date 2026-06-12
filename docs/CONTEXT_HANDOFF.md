@@ -11,7 +11,7 @@
 
 ## 0. Current Active Work: CRM Source Of Truth
 
-Active branch: `phase/crm-team-calendar-phase-4`
+Active branch: `main`
 
 The user approved a phased redesign of ZeroOrigins OS into a practical internal CRM/source-of-truth for a three-person internal team. The design is documented at:
 
@@ -25,20 +25,15 @@ Execution rule from user: complete phases individually, push each phase, and aft
 
 Merge status: **Phases 1, 2, and 3 have been fast-forward merged into `main`.**
 
-Current phase: **Phase 4 implemented locally; remote Supabase migration 012 still needs to be applied**
+Current phase: **Phase 4 merged to main; ready for Phase 5: Finance Operating Console**
 
 Phase 4 remote readiness:
-- Apply `supabase/migrations/012_team_calendar_foundations.sql` in the Supabase SQL editor for project `https://qfhmrsolktblzanubgag.supabase.co`.
-- Until migration `012` is applied, `npm run check:migrations` and `npm run check:crm` correctly fail on:
-  - `profiles.calendar_email`
-  - `profiles.calendar_provider`
-  - `profiles.calendar_sync_enabled`
-  - `profiles.calendar_sync_status`
-- After applying the SQL, rerun:
+- The user applied `supabase/migrations/012_team_calendar_foundations.sql` in Supabase.
+- Remote schema checks now pass against project `https://qfhmrsolktblzanubgag.supabase.co`:
 
 ```powershell
-npm run check:migrations
-npm run check:crm
+npm run check:migrations # pass
+npm run check:crm        # pass
 ```
 
 Phase 1 scope:
@@ -102,15 +97,14 @@ npm run lint                    # pass with 2 pre-existing warnings
 npm run build                   # pass with pre-existing @screen CSS warning
 ```
 
-Latest Phase 4 remote verification, 2026-06-13:
+Latest Phase 4 remote verification after SQL apply, 2026-06-13:
 
 ```powershell
-npm run check:migrations # fails until migration 012 is applied in Supabase
-npm run check:crm        # fails until migration 012 is applied in Supabase
+npm run check:migrations # pass
+npm run check:crm        # pass
 ```
 
 Next phases:
-- Finish Phase 4 remote readiness by applying migration `012` in Supabase.
 - Phase 5: finance operating console.
 
 Resume commands:
