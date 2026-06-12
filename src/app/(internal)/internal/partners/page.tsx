@@ -36,7 +36,16 @@ export default async function PartnersPage({ searchParams }: { searchParams: Pro
             </Card>
           </Link>
         ))}
-        {(!partners || partners.length === 0) && <ResourceEmptyState showAll={showAll} basePath={BASE} />}
+        {(!partners || partners.length === 0) && (
+          <ResourceEmptyState
+            showAll={showAll}
+            basePath={BASE}
+            title="No active partner relationships yet"
+            description="Use partners only when there is a real referral, vendor, or collaboration record to track. Daily work should stay in projects, meetings, finance, and knowledge."
+            actionHref={`${BASE}/new`}
+            actionLabel="Add partner record"
+          />
+        )}
       </div>
     </div>
   )

@@ -6,7 +6,26 @@ import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/lib/actions/auth'
 import type { Role } from '@/types'
-import { ChevronDown, LogOut, User, Settings, DollarSign } from 'lucide-react'
+import { filterInternalNavGroups } from '@/lib/internal-navigation'
+import {
+  BookOpen,
+  Bot,
+  Building2,
+  CalendarDays,
+  CheckSquare,
+  ChevronDown,
+  DollarSign,
+  FileText,
+  FolderKanban,
+  Handshake,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  User,
+  Users,
+  WalletCards,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,54 +40,58 @@ interface InternalTopNavProps {
   role?: Role
 }
 
-const primaryNav = [
-  { label: 'Dashboard', href: '/internal/control-room' },
-]
+const ICONS: Record<string, LucideIcon> = {
+  BookOpen,
+  Bot,
+  Building2,
+  CalendarDays,
+  CheckSquare,
+  DollarSign,
+  FileText,
+  FolderKanban,
+  Handshake,
+  LayoutDashboard,
+  Settings,
+  Users,
+  WalletCards,
+}
 
-const studioNav = [
-  { label: 'Ideas', href: '/internal/ideas' },
-  { label: 'Projects', href: '/internal/projects' },
-  { label: 'Tasks', href: '/internal/tasks' },
-]
-
-const salesNav = [
-  { label: 'Leads', href: '/internal/leads' },
-  { label: 'Deals', href: '/internal/deals' },
-  { label: 'Meetings', href: '/internal/meetings' },
-  { label: 'Partners', href: '/internal/partners' },
-  { label: 'Customers', href: '/internal/customers' },
-]
-
-const workspaceNav = [
-  { label: 'AI Workspace', href: '/internal/ai-workspace' },
-]
-
-function NavLink({ href, label }: { href: string; label: string }) {
+function NavLink({ href, label, icon, compact = false }: { href: string; label: string; icon: string; compact?: boolean }) {
   const pathname = usePathname()
   const isActive = pathname === href || pathname.startsWith(href + '/')
+  const Icon = ICONS[icon] || LayoutDashboard
   
   return (
     <Link
       href={href}
       className={cn(
-        "px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0",
+        "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0",
         isActive 
           ? "bg-accent text-accent-foreground shadow-sm" 
-          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted",
+        compact && "px-2 text-[11px]"
       )}
     >
+      <Icon className="h-3.5 w-3.5" />
       {label}
     </Link>
   )
 }
 
-function Divider() {
-  return <span className="w-px h-4 bg-border mx-0.5 shrink-0" />
+function Divider({ muted = false }: { muted?: boolean }) {
+  return <span className={cn("w-px h-4 bg-border mx-0.5 shrink-0", muted && "opacity-50")} />
+}
+
+function GroupLabel({ label }: { label: string }) {
+  return <span className="hidden xl:inline text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">{label}</span>
 }
 
 export function InternalTopNav({ email, fullName, role }: InternalTopNavProps) {
   const displayName = fullName || email?.split('@')[0] || 'Account'
   const isAdmin = role === 'admin'
+  const groups = filterInternalNavGroups(role)
+  const mainGroups = groups.filter(group => group.id !== 'deferred' && group.id !== 'admin')
+  const deferredGroups = groups.filter(group => group.id === 'deferred' || group.id === 'admin')
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -85,14 +108,22 @@ export function InternalTopNav({ email, fullName, role }: InternalTopNavProps) {
         </Link>
 
         {/* Nav */}
-        <nav className="flex items-center gap-0.5 flex-1 justify-center overflow-x-auto no-scrollbar">
-          {primaryNav.map(item => <NavLink key={item.href} {...item} />)}
-          <Divider />
-          {studioNav.map(item => <NavLink key={item.href} {...item} />)}
-          <Divider />
-          {salesNav.map(item => <NavLink key={item.href} {...item} />)}
-          <Divider />
-          {workspaceNav.map(item => <NavLink key={item.href} {...item} />)}
+        <nav className="flex items-center gap-1 flex-1 justify-center overflow-x-auto no-scrollbar">
+          {mainGroups.map((group, index) => (
+            <div key={group.id} className="flex items-center gap-1">
+              {index > 0 && <Divider />}
+              <GroupLabel label={group.label} />
+              {group.items.map(item => <NavLink key={item.href} {...item} />)}
+            </div>
+          ))}
+          {deferredGroups.length > 0 && (
+            <>
+              <Divider muted />
+              {deferredGroups.flatMap(group => group.items).map(item => (
+                <NavLink key={item.href} {...item} compact />
+              ))}
+            </>
+          )}
         </nav>
 
         {/* User menu */}

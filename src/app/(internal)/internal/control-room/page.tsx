@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import {
   ArrowRight,
+  BookOpen,
   Bot,
   CalendarDays,
   CheckSquare,
@@ -8,13 +9,14 @@ import {
   FileText,
   Plus,
   Users,
+  WalletCards,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
-import type { Deal, Lead, Meeting, Proposal, Task } from '@/types'
+import type { Deal, FinanceTransaction, Lead, Meeting, Proposal, Task } from '@/types'
 
 type PipelineItem = {
   id: string
@@ -35,6 +37,10 @@ function formatDateTime(value?: string | null) {
 
 function money(value?: number | null) {
   return value == null ? undefined : value.toLocaleString()
+}
+
+function currency(value: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
 }
 
 function WorkItem({ href, title, meta, status, value }: PipelineItem) {
@@ -95,12 +101,14 @@ export default async function ControlRoomPage() {
     proposalsRes,
     meetingsRes,
     tasksRes,
+    financeRes,
   ] = await Promise.all([
     supabase.from('leads').select('*').not('status', 'in', '("lost","archived")').order('created_at', { ascending: false }).limit(50),
     supabase.from('deals').select('*').not('stage', 'in', '("lost")').order('created_at', { ascending: false }).limit(50),
     supabase.from('proposals').select('*').not('status', 'in', '("accepted","rejected","expired")').order('created_at', { ascending: false }).limit(50),
     supabase.from('meetings').select('*').order('scheduled_at', { ascending: true }).limit(20),
     supabase.from('tasks').select('*').not('status', 'in', '("done","cancelled")').order('created_at', { ascending: false }).limit(50),
+    supabase.from('finance_transactions').select('*').eq('type', 'expense').order('date', { ascending: false }).limit(80),
   ])
 
   const leads = (leadsRes.data ?? []) as Lead[]
@@ -108,9 +116,13 @@ export default async function ControlRoomPage() {
   const proposals = (proposalsRes.data ?? []) as Proposal[]
   const meetings = (meetingsRes.data ?? []) as Meeting[]
   const tasks = (tasksRes.data ?? []) as Task[]
+  const financeRows = (financeRes.data ?? []) as FinanceTransaction[]
   const now = new Date()
   const todayEnd = new Date(now)
   todayEnd.setHours(23, 59, 59, 999)
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
+  const today = now.toISOString().slice(0, 10)
 
   const newLeads = leads.filter(row => ['new', 'contacted', 'discovery_scheduled'].includes(row.status)).map(row => ({
     id: row.id,
@@ -153,6 +165,10 @@ export default async function ControlRoomPage() {
   const hotLeads = leads
     .filter(row => (row.ai_score ?? 0) >= 70 || ['proposal_needed', 'proposal_sent', 'negotiation'].includes(row.status))
     .slice(0, 5)
+  const monthSpend = financeRows
+    .filter(row => row.date && row.date >= monthStart && row.date <= monthEnd && row.status !== 'cancelled')
+    .reduce((sum, row) => sum + Number(row.amount ?? 0), 0)
+  const upcomingBills = financeRows.filter(row => row.status !== 'paid' && row.status !== 'cancelled' && row.due_date && row.due_date >= today)
   const assistItems = [
     ...leads.filter(row => !row.ai_summary).slice(0, 3).map(row => ({ href: `/internal/leads/${row.id}`, label: `Add AI summary for ${row.company || row.name}` })),
     ...deals.filter(row => !row.next_step).slice(0, 3).map(row => ({ href: `/internal/deals/${row.id}`, label: `Define next step for ${row.name}` })),
@@ -166,6 +182,12 @@ export default async function ControlRoomPage() {
     { label: 'Proposals', count: proposals.length, icon: FileText },
     { label: 'Meetings', count: todayMeetings.length, icon: CalendarDays },
     { label: 'Open Tasks', count: tasks.length, icon: CheckSquare },
+  ]
+  const sourceLinks = [
+    { href: '/internal/finance', label: 'Finance', meta: `${currency(monthSpend)} this month`, icon: WalletCards },
+    { href: '/internal/knowledge', label: 'Knowledge', meta: 'Documents and decisions', icon: BookOpen },
+    { href: '/internal/ai-workspace', label: 'AI Workspace', meta: 'Apps and internal tools', icon: Bot },
+    { href: '/internal/meetings', label: 'Calendar', meta: `${todayMeetings.length} today, ${upcomingBills.length} bills due`, icon: CalendarDays },
   ]
 
   return (
@@ -195,6 +217,22 @@ export default async function ControlRoomPage() {
               <Icon className="h-5 w-5 text-zo-purple" />
             </CardContent>
           </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        {sourceLinks.map(({ href, label, meta, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors hover:border-zo-purple/40"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">{label}</p>
+              <p className="mt-1 truncate text-xs text-muted-foreground">{meta}</p>
+            </div>
+            <Icon className="h-5 w-5 shrink-0 text-zo-purple" />
+          </Link>
         ))}
       </div>
 

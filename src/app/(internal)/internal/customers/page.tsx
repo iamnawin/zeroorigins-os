@@ -43,7 +43,14 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
       />
       <ResourceViewTabs basePath={BASE} showAll={showAll} />
       {rows.length === 0 ? (
-        <ResourceEmptyState showAll={showAll} basePath={BASE} />
+        <ResourceEmptyState
+          showAll={showAll}
+          basePath={BASE}
+          title="No customer accounts yet"
+          description="Keep this clean until a lead or deal actually converts. Customer records should become the account history after real work starts, not placeholder CRM data."
+          actionHref="/internal/leads"
+          actionLabel="Review leads"
+        />
       ) : (
         <EntityTable rows={rows} columns={TABLE_COLUMNS} getHref={r => `${BASE}/${r.id}`} />
       )}
