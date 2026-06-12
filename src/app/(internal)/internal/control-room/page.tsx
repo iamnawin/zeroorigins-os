@@ -102,6 +102,7 @@ export default async function ControlRoomPage() {
     meetingsRes,
     tasksRes,
     financeRes,
+    knowledgeRes,
   ] = await Promise.all([
     supabase.from('leads').select('*').not('status', 'in', '("lost","archived")').order('created_at', { ascending: false }).limit(50),
     supabase.from('deals').select('*').not('stage', 'in', '("lost")').order('created_at', { ascending: false }).limit(50),
@@ -109,6 +110,7 @@ export default async function ControlRoomPage() {
     supabase.from('meetings').select('*').order('scheduled_at', { ascending: true }).limit(20),
     supabase.from('tasks').select('*').not('status', 'in', '("done","cancelled")').order('created_at', { ascending: false }).limit(50),
     supabase.from('finance_transactions').select('*').eq('type', 'expense').order('date', { ascending: false }).limit(80),
+    supabase.from('knowledge_articles').select('id', { count: 'exact', head: true }),
   ])
 
   const leads = (leadsRes.data ?? []) as Lead[]
@@ -185,7 +187,7 @@ export default async function ControlRoomPage() {
   ]
   const sourceLinks = [
     { href: '/internal/finance', label: 'Finance', meta: `${currency(monthSpend)} this month`, icon: WalletCards },
-    { href: '/internal/knowledge', label: 'Knowledge', meta: 'Documents and decisions', icon: BookOpen },
+    { href: '/internal/knowledge', label: 'Knowledge', meta: `${knowledgeRes.count ?? 0} documents and decisions`, icon: BookOpen },
     { href: '/internal/ai-workspace', label: 'AI Workspace', meta: 'Apps and internal tools', icon: Bot },
     { href: '/internal/meetings', label: 'Calendar', meta: `${todayMeetings.length} today, ${upcomingBills.length} bills due`, icon: CalendarDays },
   ]
