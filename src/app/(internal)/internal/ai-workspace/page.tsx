@@ -3,6 +3,7 @@ import { ResourcePageHeader } from '@/components/resource-kit/resource-page-head
 import { ResourceEmptyState } from '@/components/resource-kit/resource-empty-state'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { AiConnectionTester } from '@/components/ai/AiConnectionTester'
 import { Badge } from '@/components/ui/badge'
 import { Globe, Code2, AlertTriangle, CheckCircle2, Rocket, Lightbulb, Box, ArrowRight, Search, FolderOpen } from 'lucide-react'
 import Link from 'next/link'
@@ -56,6 +57,8 @@ export default async function AIWorkspacePage({ searchParams }: PageProps) {
         newHref="/internal/ai-workspace/new"
         newLabel="Add App"
       />
+
+      <AiConnectionTester />
 
       {/* Search */}
       <form className="flex gap-3">

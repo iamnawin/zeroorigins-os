@@ -179,7 +179,7 @@ export type AppFormInput = {
   is_open_source: boolean
 }
 
-async function requireInternalUser(supabase: Supabase) {
+export async function requireInternalUser(supabase: Supabase) {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) {
     throw new Error('You must be signed in to save internal workspace data.')

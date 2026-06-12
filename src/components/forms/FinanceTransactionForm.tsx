@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Bot, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -14,6 +15,7 @@ import {
   type FinanceTransaction,
 } from '@/types'
 import { createFinanceTransaction, updateFinanceTransaction } from '@/lib/actions/internal-resources'
+import { generateFinanceAiAssist } from '@/lib/actions/ai-assist'
 
 interface LinkOption {
   id: string
@@ -57,6 +59,7 @@ export default function FinanceTransactionForm({
     notes: initialData?.notes ?? '',
   })
   const [loading, setLoading] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
 
@@ -83,6 +86,33 @@ export default function FinanceTransactionForm({
     }
   }
 
+  async function handleAiAssist() {
+    setAiLoading(true)
+    setError('')
+    const vendor = vendors.find(row => row.id === form.vendor_id)?.label
+    const result = await generateFinanceAiAssist({
+      description: form.description,
+      amount: form.amount,
+      vendor,
+      notes: form.notes,
+    })
+
+    if (result.error) {
+      setError(result.error)
+      setAiLoading(false)
+      return
+    }
+
+    setForm(value => ({
+      ...value,
+      category: result.data?.category ?? value.category,
+      status: result.data?.status ?? value.status,
+      recurrence_interval: result.data?.recurrence_interval ?? value.recurrence_interval,
+      notes: result.data?.notes || value.notes,
+    }))
+    setAiLoading(false)
+  }
+
   return (
     <div className="max-w-3xl">
       <Card className="bg-card border-border">
@@ -94,6 +124,12 @@ export default function FinanceTransactionForm({
             <div className="space-y-2">
               <Label>Description</Label>
               <Input value={form.description} onChange={set('description')} required placeholder="Vercel hosting, Together AI credits..." />
+            </div>
+            <div className="flex justify-end">
+              <Button type="button" size="sm" variant="outline" onClick={handleAiAssist} disabled={aiLoading || !form.description.trim()}>
+                {aiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                AI Categorize
+              </Button>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">

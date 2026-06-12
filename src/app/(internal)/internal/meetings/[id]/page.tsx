@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowLeft, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { MeetingAiPanel } from '@/components/ai/MeetingAiPanel'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import type { Meeting } from '@/types'
 
@@ -70,6 +71,7 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
           {meeting.next_action && <p className="rounded-md border border-border bg-muted/20 p-3"><span className="font-medium">Next action:</span> {meeting.next_action}</p>}
         </CardContent>
       </Card>
+      <MeetingAiPanel meetingId={meeting.id} />
     </div>
   )
 }
