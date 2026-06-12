@@ -7,3 +7,5 @@ out/
 dist/
 build/
 *.tsbuildinfo
+
+zeroorigins-source-inventory.json

@@ -563,6 +563,7 @@ export interface SourceRegistryEntry {
   last_checked_at?: string
   last_synced_at?: string
   notes?: string
+  metadata_json?: Record<string, unknown>
   created_at: string
   updated_at: string
 }

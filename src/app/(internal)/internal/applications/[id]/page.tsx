@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { AppWindow, Bot, ExternalLink, FolderOpen } from 'lucide-react'
+import { AppWindow, Bot, ExternalLink, File, Folder, FolderOpen } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { AiAssistPanel } from '@/components/ai/AiAssistPanel'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,8 +8,10 @@ import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-b
 import { Badge } from '@/components/ui/badge'
 import type { Application, SourceRegistryEntry } from '@/types'
 
-const TABS = ['overview', 'sources', 'tasks', 'agent'] as const
+const TABS = ['overview', 'explorer', 'sources', 'tasks', 'agent'] as const
 type Tab = typeof TABS[number]
+
+type TreeNode = { name: string; type: 'file' | 'folder'; path: string; extension?: string; children?: TreeNode[] }
 
 export default async function ApplicationDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const { id } = await params
@@ -33,9 +35,14 @@ export default async function ApplicationDetailPage({ params, searchParams }: { 
 
   const sourceEntries = (sources ?? []) as SourceRegistryEntry[]
 
+  // Extract source_tree from the local_folder source_registry entry
+  const localSource = sourceEntries.find(s => s.source_type === 'local_folder')
+  const sourceTree: TreeNode[] = (localSource?.metadata_json as { source_tree?: TreeNode[] })?.source_tree ?? []
+
+  const tabLabels: Record<Tab, string> = { overview: 'Overview', explorer: 'Source Explorer', sources: 'Repos & Folders', tasks: 'Tasks', agent: 'ZO_Agent' }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-center gap-2">
           <AppWindow className="h-5 w-5 text-zo-purple" />
@@ -51,15 +58,14 @@ export default async function ApplicationDetailPage({ params, searchParams }: { 
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 overflow-x-auto border-b border-border">
         {TABS.map(t => (
-          <Link key={t} href={`/internal/applications/${id}?tab=${t}`} className={`px-4 py-2 text-sm capitalize transition-colors ${tab === t ? 'border-b-2 border-zo-purple text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'}`}>{t === 'sources' ? 'Repos & Folders' : t === 'agent' ? 'ZO_Agent' : t}</Link>
+          <Link key={t} href={`/internal/applications/${id}?tab=${t}`} className={`whitespace-nowrap px-4 py-2 text-sm transition-colors ${tab === t ? 'border-b-2 border-zo-purple text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'}`}>{tabLabels[t]}</Link>
         ))}
       </div>
 
-      {/* Tab content */}
       {tab === 'overview' && <OverviewTab app={app} />}
+      {tab === 'explorer' && <SourceExplorerTab appName={app.name} tree={sourceTree} />}
       {tab === 'sources' && <SourcesTab app={app} sources={sourceEntries} />}
       {tab === 'tasks' && <TasksPlaceholder />}
       {tab === 'agent' && <AgentTab />}
@@ -85,6 +91,45 @@ function OverviewTab({ app }: { app: Application }) {
         {fields.every(f => !f.value) && <p className="text-muted-foreground md:col-span-2">No additional details yet.</p>}
       </CardContent>
     </Card>
+  )
+}
+
+function SourceExplorerTab({ appName, tree }: { appName: string; tree: TreeNode[] }) {
+  if (tree.length === 0) {
+    return (
+      <Card className="border-border bg-card">
+        <CardContent className="py-8 text-center">
+          <p className="text-sm text-muted-foreground">No folder structure available. Run <code className="rounded bg-muted px-1 py-0.5 text-xs">npm run scan:workspace</code> then <code className="rounded bg-muted px-1 py-0.5 text-xs">npm run import:workspace</code> to populate.</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="border-border bg-card">
+      <CardHeader><CardTitle className="text-sm">{appName}</CardTitle></CardHeader>
+      <CardContent>
+        <div className="rounded-md border border-border bg-background p-3 font-mono text-xs">
+          <TreeView nodes={tree} depth={0} />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function TreeView({ nodes, depth }: { nodes: TreeNode[]; depth: number }) {
+  return (
+    <ul className={depth > 0 ? 'ml-4 border-l border-border/50 pl-2' : ''}>
+      {nodes.map(node => (
+        <li key={node.path} className="py-0.5">
+          <div className="inline-flex items-center gap-1.5">
+            {node.type === 'folder' ? <Folder className="h-3.5 w-3.5 text-zo-purple/70" /> : <File className="h-3.5 w-3.5 text-muted-foreground" />}
+            <span className={node.type === 'folder' ? 'text-foreground' : 'text-muted-foreground'}>{node.name}</span>
+          </div>
+          {node.children && node.children.length > 0 && <TreeView nodes={node.children} depth={depth + 1} />}
+        </li>
+      ))}
+    </ul>
   )
 }
 

@@ -69,8 +69,11 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
               <div className="flex flex-wrap gap-1.5">
                 <SourceIndicator label="Repo" connected={!!app.repo_url} />
                 <SourceIndicator label="Local" connected={!!app.local_folder_path} />
-                <SourceIndicator label="Docs" connected={!!app.docs_url} />
+                <SourceIndicator label="Docs" connected={!!(app.docs_url || app.docs_folder_path)} />
                 <SourceIndicator label="Deploy" connected={!!app.deployment_url} />
+                <SourceIndicator label="DB" connected={!!app.database_url} />
+                <SourceIndicator label="n8n" connected={!!app.n8n_workflow_url} />
+                <SourceIndicator label="Site" connected={!!app.website_url} />
               </div>
               {app.last_synced_at && <p className="mt-2 text-[10px] text-muted-foreground">Synced {new Date(app.last_synced_at).toLocaleDateString()}</p>}
             </Link>
