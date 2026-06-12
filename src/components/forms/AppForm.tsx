@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,12 +11,13 @@ import {
   AI_APP_STATUSES,
   AI_APP_CATEGORIES,
   AI_APP_TYPES,
-  AIWorkspaceApp,
-  AIAppStatus,
-  AIAppCategory,
-  AIAppType
+  type AIWorkspaceApp,
+  type AIAppStatus,
+  type AIAppCategory,
+  type AIAppType
 } from '@/types'
 import { Loader2 } from 'lucide-react'
+import { createApp, updateApp } from '@/lib/actions/internal-resources'
 
 interface AppFormProps {
   initialData?: AIWorkspaceApp
@@ -25,6 +25,7 @@ interface AppFormProps {
 
 export function AppForm({ initialData }: AppFormProps) {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [name, setName] = useState(initialData?.name || '')
   const [description, setDescription] = useState(initialData?.description || '')
   const [status, setStatus] = useState<AIAppStatus>(initialData?.status || 'idea')
@@ -47,11 +48,11 @@ export function AppForm({ initialData }: AppFormProps) {
   const [isOpenSource, setIsOpenSource] = useState<boolean>(initialData?.is_open_source || false)
 
   const router = useRouter()
-  const supabase = createClient()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
+    setError('')
 
     const payload = {
       name,
@@ -73,28 +74,19 @@ export function AppForm({ initialData }: AppFormProps) {
       is_sellable_product: isSellableProduct,
       is_internal_tool: isInternalTool,
       is_open_source: isOpenSource,
-      updated_at: new Date().toISOString(),
     }
 
     try {
-      if (initialData?.id) {
-        const { error } = await supabase
-          .from('ai_workspace_apps')
-          .update(payload)
-          .eq('id', initialData.id)
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('ai_workspace_apps')
-          .insert([payload])
-        if (error) throw error
-      }
+      const result = initialData?.id
+        ? await updateApp(initialData.id, payload)
+        : await createApp(payload)
+
+      if (result.error) throw new Error(result.error)
 
       router.push('/internal/ai-workspace')
       router.refresh()
     } catch (error) {
-      console.error('Error saving app:', error)
-      alert('Failed to save. Check console for details.')
+      setError(error instanceof Error ? error.message : 'Failed to save.')
     } finally {
       setLoading(false)
     }
@@ -409,6 +401,7 @@ export function AppForm({ initialData }: AppFormProps) {
 
             {/* Form Actions */}
             <div className="flex flex-col sm:flex-row justify-end gap-4 pt-8 border-t border-white/10">
+              {error && <p className="sm:mr-auto text-sm text-red-400">{error}</p>}
               <Button 
                 type="button" 
                 variant="outline" 

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LEAD_STATUSES, type Lead } from '@/types'
+import { createLead, updateLead } from '@/lib/actions/internal-resources'
 
 interface Props {
   mode: 'create' | 'edit'
@@ -29,7 +29,6 @@ export default function LeadForm({ mode, initialData }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClient()
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -39,18 +38,15 @@ export default function LeadForm({ mode, initialData }: Props) {
     setLoading(true)
     setError('')
     try {
+      const result = mode === 'create'
+        ? await createLead(form)
+        : await updateLead(initialData!.id!, { ...form, status: status as Lead['status'] })
+
+      if (result.error) throw new Error(result.error)
+
       if (mode === 'create') {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { error: err } = await supabase.from('leads').insert({
-          ...form, status: 'new', owner_id: user?.id, created_by: user?.id,
-        })
-        if (err) throw err
         router.push('/internal/leads')
       } else {
-        const { error: err } = await supabase.from('leads')
-          .update({ ...form, status })
-          .eq('id', initialData!.id!)
-        if (err) throw err
         router.push(`/internal/leads/${initialData!.id}`)
       }
       router.refresh()

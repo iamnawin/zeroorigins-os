@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TASK_STATUSES, type Task } from '@/types'
+import { createTask, updateTask } from '@/lib/actions/internal-resources'
 
 interface Props {
   mode: 'create' | 'edit'
@@ -37,19 +38,21 @@ export default function TaskForm({ mode, initialData }: Props) {
     setLoading(true)
     setError('')
     try {
+      const payload = {
+        title,
+        description,
+        project_id: projectId || null,
+        status: status as Task['status'],
+      }
+      const result = mode === 'create'
+        ? await createTask(payload)
+        : await updateTask(initialData!.id!, payload)
+
+      if (result.error) throw new Error(result.error)
+
       if (mode === 'create') {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { error: err } = await supabase.from('tasks').insert({
-          title, description, project_id: projectId || null,
-          status: 'todo', owner_id: user?.id, created_by: user?.id,
-        })
-        if (err) throw err
         router.push('/internal/tasks')
       } else {
-        const { error: err } = await supabase.from('tasks')
-          .update({ title, description, project_id: projectId || null, status })
-          .eq('id', initialData!.id!)
-        if (err) throw err
         router.push(`/internal/tasks/${initialData!.id}`)
       }
       router.refresh()

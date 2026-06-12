@@ -16,8 +16,11 @@ try {
   for (const line of envContent.split('\n')) {
     const [key, ...valueParts] = line.split('=')
     if (key && valueParts.length) {
-      const value = valueParts.join('=').replace(/^["']|["']$/g, '')
-      process.env[key.trim()] = value.trim()
+      const normalizedKey = key.trim()
+      if (process.env[normalizedKey] === undefined) {
+        const value = valueParts.join('=').replace(/^["']|["']$/g, '')
+        process.env[normalizedKey] = value.trim()
+      }
     }
   }
 } catch {

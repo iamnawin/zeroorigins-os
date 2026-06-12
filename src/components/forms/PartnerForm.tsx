@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PARTNER_STATUSES, type Partner } from '@/types'
+import { createPartner, updatePartner } from '@/lib/actions/internal-resources'
 
 interface Props {
   mode: 'create' | 'edit'
@@ -28,7 +28,6 @@ export default function PartnerForm({ mode, initialData }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClient()
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -38,18 +37,15 @@ export default function PartnerForm({ mode, initialData }: Props) {
     setLoading(true)
     setError('')
     try {
+      const result = mode === 'create'
+        ? await createPartner(form)
+        : await updatePartner(initialData!.id!, { ...form, status: status as Partner['status'] })
+
+      if (result.error) throw new Error(result.error)
+
       if (mode === 'create') {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { error: err } = await supabase.from('partners').insert({
-          ...form, status: 'new_application', owner_id: user?.id, created_by: user?.id,
-        })
-        if (err) throw err
         router.push('/internal/partners')
       } else {
-        const { error: err } = await supabase.from('partners')
-          .update({ ...form, status })
-          .eq('id', initialData!.id!)
-        if (err) throw err
         router.push(`/internal/partners/${initialData!.id}`)
       }
       router.refresh()

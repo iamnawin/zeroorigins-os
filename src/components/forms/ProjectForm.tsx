@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PROJECT_STATUSES, type Project } from '@/types'
+import { createProject, updateProject } from '@/lib/actions/internal-resources'
 
 const PRIORITIES = ['low', 'medium', 'high', 'critical']
 
@@ -27,26 +27,29 @@ export default function ProjectForm({ mode, initialData }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClient()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
     try {
+      const payload = {
+        title,
+        description,
+        priority: priority as Project['priority'],
+        status: status as Project['status'],
+        start_date: startDate || null,
+        target_date: targetDate || null,
+      }
+      const result = mode === 'create'
+        ? await createProject(payload)
+        : await updateProject(initialData!.id!, payload)
+
+      if (result.error) throw new Error(result.error)
+
       if (mode === 'create') {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { error: err } = await supabase.from('projects').insert({
-          title, description, priority, status: 'draft',
-          owner_id: user?.id, created_by: user?.id,
-        })
-        if (err) throw err
         router.push('/internal/projects')
       } else {
-        const { error: err } = await supabase.from('projects')
-          .update({ title, description, priority, status, start_date: startDate || null, target_date: targetDate || null })
-          .eq('id', initialData!.id!)
-        if (err) throw err
         router.push(`/internal/projects/${initialData!.id}`)
       }
       router.refresh()
