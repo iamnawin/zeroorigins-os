@@ -11,6 +11,7 @@ import type {
   FinanceCategory,
   FinanceTransactionStatus,
   IdeaStatus,
+  KnowledgeCategory,
   LeadStatus,
   MeetingStatus,
   PartnerStatus,
@@ -110,6 +111,13 @@ export type MeetingFormInput = {
   outcome?: string
   next_action?: string
   status?: MeetingStatus
+}
+
+export type KnowledgeArticleFormInput = {
+  title: string
+  content?: string
+  category?: KnowledgeCategory | string
+  tags?: string[] | string
 }
 
 export type VendorFormInput = {
@@ -614,6 +622,45 @@ export async function updateMeeting(id: string, input: MeetingFormInput): Promis
   }
 }
 
+export async function createKnowledgeArticle(input: KnowledgeArticleFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    const user = await requireInternalUser(supabase)
+    const { data, error } = await supabase
+      .from('knowledge_articles')
+      .insert({
+        ...knowledgeArticlePayload(input),
+        owner_id: user.id,
+        created_by: user.id,
+      })
+      .select('id')
+      .single()
+
+    if (error) throw error
+    revalidateResource(['/internal/knowledge'])
+    return { id: data.id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
+export async function updateKnowledgeArticle(id: string, input: KnowledgeArticleFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    await requireInternalUser(supabase)
+    const { error } = await supabase
+      .from('knowledge_articles')
+      .update(knowledgeArticlePayload(input))
+      .eq('id', id)
+
+    if (error) throw error
+    revalidateResource(['/internal/knowledge', `/internal/knowledge/${id}`])
+    return { id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
 export async function createVendor(input: VendorFormInput): Promise<ActionResult> {
   try {
     const supabase = await createClient()
@@ -944,6 +991,15 @@ function meetingPayload(input: MeetingFormInput) {
     agenda: optionalText(input.agenda),
     outcome: optionalText(input.outcome),
     next_action: optionalText(input.next_action),
+  }
+}
+
+function knowledgeArticlePayload(input: KnowledgeArticleFormInput) {
+  return {
+    title: requiredText(input.title, 'Title'),
+    content: optionalText(input.content),
+    category: optionalText(input.category),
+    tags: optionalTextArray(input.tags),
   }
 }
 

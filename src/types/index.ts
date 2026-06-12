@@ -266,6 +266,30 @@ export interface Meeting {
   updated_at: string
 }
 
+export const KNOWLEDGE_CATEGORIES = [
+  'project_document',
+  'client_requirement',
+  'meeting_note',
+  'decision',
+  'sop_playbook',
+  'finance_vendor_document',
+  'automation_note',
+  'product_spec',
+] as const
+export type KnowledgeCategory = typeof KNOWLEDGE_CATEGORIES[number]
+
+export interface KnowledgeArticle {
+  id: string
+  title: string
+  content?: string
+  category?: KnowledgeCategory | string
+  tags?: string[]
+  owner_id?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Vendor {
   id: string
   name: string

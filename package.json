@@ -11,7 +11,8 @@
     "check:migrations": "node scripts/check-migrations.mjs",
     "check:crm": "node scripts/check-crm-health.mjs",
     "test:crm-foundation": "node scripts/test-migration-sentinels.mjs",
-    "test:crm-navigation": "node scripts/test-internal-navigation.mjs"
+    "test:crm-navigation": "node scripts/test-internal-navigation.mjs",
+    "test:crm-knowledge": "node scripts/test-knowledge-contract.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

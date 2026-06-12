@@ -1,6 +1,10 @@
 export const SENTINELS = [
   { migration: '001_initial_schema', table: 'leads', column: 'id' },
   { migration: '001_initial_schema', table: 'profiles', column: 'role' },
+  { migration: '001_initial_schema', table: 'knowledge_articles', column: 'title' },
+  { migration: '001_initial_schema', table: 'knowledge_articles', column: 'content' },
+  { migration: '001_initial_schema', table: 'knowledge_articles', column: 'category' },
+  { migration: '001_initial_schema', table: 'knowledge_articles', column: 'tags' },
   { migration: '002_contact_and_automation_fields', table: 'leads', column: 'automation_status' },
   { migration: '002_contact_and_automation_fields', table: 'partners', column: 'n8n_workflow_id' },
   { migration: '003_proposal_and_customer_fields', table: 'proposals', column: 'service_type' },
