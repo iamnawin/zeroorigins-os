@@ -16,6 +16,8 @@ const forms = [
   'src/components/forms/ProposalForm.tsx',
   'src/components/forms/DealForm.tsx',
   'src/components/forms/MeetingForm.tsx',
+  'src/components/forms/VendorForm.tsx',
+  'src/components/forms/FinanceTransactionForm.tsx',
 ]
 
 test('internal resource forms mutate through server actions', () => {
@@ -30,6 +32,8 @@ test('internal resource forms mutate through server actions', () => {
     'proposals',
     'deals',
     'meetings',
+    'vendors',
+    'finance_transactions',
   ].join('|')
 
   for (const relativePath of forms) {
@@ -66,6 +70,7 @@ test('internal resource server actions revalidate dashboard and collection pages
     '/internal/proposals',
     '/internal/deals',
     '/internal/meetings',
+    '/internal/finance',
   ]) {
     assert.match(source, new RegExp(`['"\`]${page.replaceAll('/', '\\/')}['"\`]`))
   }
@@ -88,12 +93,36 @@ test('internal resource server actions expose CRM workflow operations', () => {
     'updateDeal',
     'createMeeting',
     'updateMeeting',
+    'createVendor',
+    'updateVendor',
+    'createFinanceTransaction',
+    'updateFinanceTransaction',
     'convertLeadToDeal',
     'markProposalAccepted',
     'createProjectFromCustomer',
   ]) {
     assert.match(source, new RegExp(`export async function ${action}\\b`))
   }
+})
+
+test('company spending has internal finance routes and database migration', () => {
+  for (const relativePath of [
+    'src/app/(internal)/internal/finance/page.tsx',
+    'src/app/(internal)/internal/finance/expenses/new/page.tsx',
+    'src/app/(internal)/internal/finance/vendors/new/page.tsx',
+    'supabase/migrations/011_company_spending.sql',
+  ]) {
+    assert.ok(fs.existsSync(path.join(repoRoot, relativePath)), `${relativePath} should exist`)
+  }
+
+  const migration = fs.readFileSync(path.join(repoRoot, 'supabase/migrations/011_company_spending.sql'), 'utf8')
+  assert.match(migration, /create table if not exists vendors/)
+  assert.match(migration, /alter table finance_transactions/)
+  assert.match(migration, /vendor_id uuid references vendors/)
+  assert.match(migration, /status text/)
+  assert.match(migration, /recurrence_interval text/)
+  assert.match(migration, /invoice_url text/)
+  assert.match(migration, /Internal can manage vendors/)
 })
 
 test('deals and meetings have internal CRM routes and database migration', () => {

@@ -8,12 +8,15 @@ import type {
   AIAppType,
   CustomerStatus,
   DealStage,
+  FinanceCategory,
+  FinanceTransactionStatus,
   IdeaStatus,
   LeadStatus,
   MeetingStatus,
   PartnerStatus,
   ProjectStatus,
   ProposalStatus,
+  RecurrenceInterval,
   TaskStatus,
 } from '@/types'
 
@@ -107,6 +110,34 @@ export type MeetingFormInput = {
   outcome?: string
   next_action?: string
   status?: MeetingStatus
+}
+
+export type VendorFormInput = {
+  name: string
+  website?: string
+  contact_email?: string
+  category?: FinanceCategory | string
+  notes?: string
+}
+
+export type FinanceTransactionFormInput = {
+  description: string
+  amount: string | number | null
+  currency?: string
+  category?: FinanceCategory | string
+  status?: FinanceTransactionStatus
+  vendor_id?: string | null
+  project_id?: string | null
+  customer_id?: string | null
+  ai_workspace_app_id?: string | null
+  date?: string | null
+  due_date?: string | null
+  paid_at?: string | null
+  invoice_url?: string
+  receipt_url?: string
+  recurrence_interval?: RecurrenceInterval
+  next_due_date?: string | null
+  notes?: string
 }
 
 export type ProjectFormInput = {
@@ -583,6 +614,95 @@ export async function updateMeeting(id: string, input: MeetingFormInput): Promis
   }
 }
 
+export async function createVendor(input: VendorFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    const user = await requireInternalUser(supabase)
+    const { data, error } = await supabase
+      .from('vendors')
+      .insert({
+        name: requiredText(input.name, 'Vendor name'),
+        website: optionalText(input.website),
+        contact_email: optionalText(input.contact_email),
+        category: optionalText(input.category),
+        notes: optionalText(input.notes),
+        owner_id: user.id,
+        created_by: user.id,
+      })
+      .select('id')
+      .single()
+
+    if (error) throw error
+    revalidateResource(['/internal/finance'])
+    return { id: data.id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
+export async function updateVendor(id: string, input: VendorFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    await requireInternalUser(supabase)
+    const { error } = await supabase
+      .from('vendors')
+      .update({
+        name: requiredText(input.name, 'Vendor name'),
+        website: optionalText(input.website),
+        contact_email: optionalText(input.contact_email),
+        category: optionalText(input.category),
+        notes: optionalText(input.notes),
+      })
+      .eq('id', id)
+
+    if (error) throw error
+    revalidateResource(['/internal/finance'])
+    return { id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
+export async function createFinanceTransaction(input: FinanceTransactionFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    const user = await requireInternalUser(supabase)
+    const { data, error } = await supabase
+      .from('finance_transactions')
+      .insert({
+        ...financeTransactionPayload(input),
+        type: 'expense',
+        owner_id: user.id,
+        created_by: user.id,
+      })
+      .select('id')
+      .single()
+
+    if (error) throw error
+    revalidateResource(['/internal/finance'])
+    return { id: data.id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
+export async function updateFinanceTransaction(id: string, input: FinanceTransactionFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    await requireInternalUser(supabase)
+    const { error } = await supabase
+      .from('finance_transactions')
+      .update(financeTransactionPayload(input))
+      .eq('id', id)
+
+    if (error) throw error
+    revalidateResource(['/internal/finance'])
+    return { id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
 export async function updateProject(id: string, input: ProjectFormInput): Promise<ActionResult> {
   try {
     const supabase = await createClient()
@@ -824,6 +944,28 @@ function meetingPayload(input: MeetingFormInput) {
     agenda: optionalText(input.agenda),
     outcome: optionalText(input.outcome),
     next_action: optionalText(input.next_action),
+  }
+}
+
+function financeTransactionPayload(input: FinanceTransactionFormInput) {
+  return {
+    description: requiredText(input.description, 'Description'),
+    amount: optionalNumber(input.amount) ?? 0,
+    currency: optionalText(input.currency) ?? 'USD',
+    category: optionalText(input.category),
+    status: input.status ?? 'paid',
+    vendor_id: optionalText(input.vendor_id),
+    project_id: optionalText(input.project_id),
+    customer_id: optionalText(input.customer_id),
+    ai_workspace_app_id: optionalText(input.ai_workspace_app_id),
+    date: optionalText(input.date),
+    due_date: optionalText(input.due_date),
+    paid_at: optionalText(input.paid_at),
+    invoice_url: optionalText(input.invoice_url),
+    receipt_url: optionalText(input.receipt_url),
+    recurrence_interval: input.recurrence_interval ?? 'none',
+    next_due_date: optionalText(input.next_due_date),
+    notes: optionalText(input.notes),
   }
 }
 

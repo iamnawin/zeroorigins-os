@@ -50,6 +50,15 @@ export type DealStage = typeof DEAL_STAGES[number]
 export const MEETING_STATUSES = ['scheduled', 'completed', 'cancelled', 'no_show'] as const
 export type MeetingStatus = typeof MEETING_STATUSES[number]
 
+export const FINANCE_TRANSACTION_STATUSES = ['planned', 'due', 'paid', 'overdue', 'cancelled'] as const
+export type FinanceTransactionStatus = typeof FINANCE_TRANSACTION_STATUSES[number]
+
+export const FINANCE_CATEGORIES = ['hosting', 'ai_api', 'software', 'domain', 'contractor', 'marketing', 'operations', 'project_cost', 'tax', 'other'] as const
+export type FinanceCategory = typeof FINANCE_CATEGORIES[number]
+
+export const RECURRENCE_INTERVALS = ['none', 'monthly', 'quarterly', 'yearly'] as const
+export type RecurrenceInterval = typeof RECURRENCE_INTERVALS[number]
+
 export type Visibility = 'internal' | 'customer_visible' | 'partner_visible'
 export type AssetVisibility = 'internal' | 'customer_visible' | 'partner_visible' | 'public'
 
@@ -251,6 +260,46 @@ export interface Meeting {
   outcome?: string
   next_action?: string
   status: MeetingStatus
+  owner_id?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Vendor {
+  id: string
+  name: string
+  website?: string
+  contact_email?: string
+  category?: FinanceCategory | string
+  notes?: string
+  owner_id?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface FinanceTransaction {
+  id: string
+  type: 'income' | 'expense'
+  amount: number
+  currency: string
+  description?: string
+  category?: FinanceCategory | string
+  status: FinanceTransactionStatus
+  vendor_id?: string
+  vendor?: Vendor
+  project_id?: string
+  customer_id?: string
+  ai_workspace_app_id?: string
+  date?: string
+  due_date?: string
+  paid_at?: string
+  invoice_url?: string
+  receipt_url?: string
+  recurrence_interval?: RecurrenceInterval
+  next_due_date?: string
+  notes?: string
   owner_id?: string
   created_by?: string
   created_at: string

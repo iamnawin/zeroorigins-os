@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
   { label: 'Customers', href: '/internal/customers', icon: Building2, built: true },
   { label: 'Assets', href: '/internal/assets', icon: HardDrive, built: false },
   { label: 'Content Studio', href: '/internal/content-studio', icon: Palette, built: false },
-  { label: 'Finance', href: '/internal/finance', icon: DollarSign, built: false, roles: ['admin'] },
+  { label: 'Finance', href: '/internal/finance', icon: DollarSign, built: true, roles: ['admin'] },
   { label: 'Knowledge', href: '/internal/knowledge', icon: BookOpen, built: false },
   { label: 'Settings', href: '/internal/settings', icon: Settings, built: false, roles: ['admin'] },
 ]
