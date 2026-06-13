@@ -17,7 +17,8 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="dark min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="dark min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(139,92,246,0.18),transparent_60%)]" />
       {/* Subtle grid pattern */}
       <div className="absolute inset-0 zo-grid-pattern opacity-20" />
       
