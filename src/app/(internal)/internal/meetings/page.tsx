@@ -8,6 +8,7 @@ import { EntityTable, type TableColumn } from '@/components/resource-kit/entity-
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Meeting, Profile } from '@/types'
+import { SyncCalendarButton } from '@/components/calendar/sync-calendar-button'
 
 const BASE = '/internal/meetings'
 const TEAM_CALENDAR_HREF = '/internal/meetings?calendar=team'
@@ -73,7 +74,8 @@ export default async function MeetingsPage({
         <ResourcePageHeader title="Meetings" description={`${filterLabel(calendar)} for discovery calls, proposal reviews, synced Google events, and delivery check-ins`} showNew={false} />
         <div className="flex flex-wrap gap-2">
           <Link href={`${BASE}/new`}><Button size="sm"><CalendarPlus className="mr-1 h-4 w-4" />Add Meeting</Button></Link>
-          <Link href="/internal/automation?tab=calendar-sync"><Button size="sm" variant="outline"><CalendarSync className="mr-1 h-4 w-4" />Sync Google Calendar</Button></Link>
+          <Link href="/api/auth/google"><Button size="sm" variant="outline"><CalendarSync className="mr-1 h-4 w-4" />Connect Google</Button></Link>
+          <SyncCalendarButton />
         </div>
       </div>
 
