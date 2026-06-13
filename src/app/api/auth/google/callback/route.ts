@@ -36,11 +36,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Upsert tokens
+  const { data: existingToken } = await supabase
+    .from('google_tokens')
+    .select('refresh_token')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  const refreshToken = tokens.refresh_token ?? existingToken?.refresh_token
+  if (!refreshToken) {
+    return NextResponse.redirect(new URL('/internal/meetings?error=no_refresh_token', request.url))
+  }
+
   const { error } = await supabase.from('google_tokens').upsert({
     user_id: user.id,
     access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
+    refresh_token: refreshToken,
     expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
     scope: tokens.scope,
   }, { onConflict: 'user_id' })
@@ -48,6 +58,16 @@ export async function GET(request: NextRequest) {
   if (error) {
     return NextResponse.redirect(new URL('/internal/meetings?error=save_failed', request.url))
   }
+
+  await supabase
+    .from('profiles')
+    .update({
+      calendar_email: user.email,
+      calendar_provider: 'google',
+      calendar_sync_enabled: true,
+      calendar_sync_status: 'ready',
+    })
+    .eq('id', user.id)
 
   return NextResponse.redirect(new URL('/internal/meetings?connected=true', request.url))
 }

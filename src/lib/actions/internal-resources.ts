@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createGoogleCalendarEvent } from '@/lib/google/calendar'
 import type {
   AIAppCategory,
   AIAppStatus,
@@ -638,10 +639,27 @@ export async function createMeeting(input: MeetingFormInput): Promise<ActionResu
   try {
     const supabase = await createClient()
     const user = await requireInternalUser(supabase)
+    const payload = meetingPayload(input)
+    if (payload.source === 'google_calendar') {
+      const googleEvent = await createGoogleCalendarEvent(supabase, user.id, {
+        title: payload.title,
+        scheduled_at: payload.scheduled_at,
+        duration_minutes: payload.duration_minutes,
+        attendees: payload.attendees,
+        agenda: payload.agenda,
+        notes: payload.notes,
+        meeting_link: payload.meeting_link,
+      })
+
+      payload.calendar_event_id = googleEvent.calendarEventId
+      payload.meeting_link = googleEvent.meetingLink
+      payload.sync_status = 'ready'
+    }
+
     const { data, error } = await supabase
       .from('meetings')
       .insert({
-        ...meetingPayload(input),
+        ...payload,
         status: input.status ?? 'scheduled',
         owner_id: optionalText(input.owner_id) ?? user.id,
         created_by: user.id,

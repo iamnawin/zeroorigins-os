@@ -79,31 +79,53 @@ export async function POST() {
     const endTime = event.end?.dateTime || event.end?.date
     if (!startTime) continue
 
+    const start = new Date(startTime)
+    const end = endTime ? new Date(endTime) : null
+    const durationMinutes = end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())
+      ? Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000))
+      : 30
+
     const meetingData = {
       title: event.summary,
-      description: event.description || null,
       scheduled_at: startTime,
-      ends_at: endTime || null,
+      duration_minutes: durationMinutes,
+      attendees: (event.attendees ?? [])
+        .map((attendee: { email?: string }) => attendee.email)
+        .filter(Boolean),
+      agenda: event.description || null,
       meeting_link: event.hangoutLink || event.location || null,
-      source: 'google' as const,
+      source: 'google_calendar' as const,
       calendar_event_id: event.id,
-      sync_status: 'synced' as const,
+      sync_status: 'ready' as const,
       status: 'scheduled',
       owner_id: user.id,
     }
 
-    // Upsert by calendar_event_id
-    const { data: existing } = await supabase
+    const { data: existing, error: lookupError } = await supabase
       .from('meetings')
       .select('id')
       .eq('calendar_event_id', event.id)
-      .single()
+      .eq('owner_id', user.id)
+      .maybeSingle()
+
+    if (lookupError) {
+      return NextResponse.json({ error: 'Failed to check existing calendar event', details: lookupError.message }, { status: 500 })
+    }
 
     if (existing) {
-      await supabase.from('meetings').update(meetingData).eq('id', existing.id)
+      const { error } = await supabase.from('meetings').update(meetingData).eq('id', existing.id)
+      if (error) {
+        return NextResponse.json({ error: 'Failed to update synced meeting', details: error.message }, { status: 500 })
+      }
       updated++
     } else {
-      await supabase.from('meetings').insert(meetingData)
+      const { error } = await supabase.from('meetings').insert({
+        ...meetingData,
+        created_by: user.id,
+      })
+      if (error) {
+        return NextResponse.json({ error: 'Failed to save synced meeting', details: error.message }, { status: 500 })
+      }
       created++
     }
   }
