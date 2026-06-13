@@ -8,23 +8,31 @@ import type { AiAssistRequest, Meeting } from '@/types'
 
 export default async function AutomationPage() {
   const supabase = await createClient()
-  const [{ data: aiRequests }, { data: meetings }] = await Promise.all([
+  const [{ data: aiRequests }, { data: meetings }, { data: applications }, { data: ideas }, { data: sources }] = await Promise.all([
     supabase.from('ai_assist_requests').select('*').order('created_at', { ascending: false }).limit(8),
     supabase.from('meetings').select('*').order('scheduled_at', { ascending: false }).limit(8),
+    supabase.from('applications').select('id, last_synced_at, status').order('last_synced_at', { ascending: false, nullsFirst: false }).limit(250),
+    supabase.from('business_ideas').select('id, source, updated_at').limit(250),
+    supabase.from('source_registry').select('id, last_synced_at, status').order('last_synced_at', { ascending: false, nullsFirst: false }).limit(250),
   ])
   const requests = (aiRequests ?? []) as AiAssistRequest[]
   const syncedMeetings = ((meetings ?? []) as Meeting[]).filter(row => row.source === 'google_calendar')
   const failedRequests = requests.filter(row => row.status === 'failed')
+  const workspaceStats = getWorkspaceSyncStats(
+    (applications ?? []) as { last_synced_at?: string | null; status?: string | null }[],
+    (ideas ?? []) as { source?: string | null }[],
+    (sources ?? []) as { last_synced_at?: string | null; status?: string | null }[],
+  )
 
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-5">
         <p className="text-xs font-bold uppercase tracking-wider text-zo-purple-2">Automation</p>
         <h1 className="mt-1 text-2xl font-bold">Automation visibility</h1>
-        <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Email Router, Telegram alerts, Calendar Sync, AI Assist activity, and failures that need review.</p>
+        <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Email Router, Telegram alerts, Calendar Sync, local workspace source sync, AI Assist activity, and failures that need review.</p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-4">
         <AutomationCard
           title="Email Router"
           icon={MailCheck}
@@ -45,9 +53,27 @@ export default async function AutomationPage() {
           title="Calendar Sync"
           icon={CalendarSync}
           status={syncedMeetings.length > 0 ? 'ready' : 'not_connected'}
-          lines={['Google Calendar: connect from Settings', `Recent synced meetings: ${syncedMeetings.length}`, 'Sync now: manual trigger placeholder']}
+          lines={['Google Calendar: connect from Settings', `Recent synced meetings: ${syncedMeetings.length}`, 'Manual button: Meetings -> Sync Now']}
           action="Sync Google Calendar"
           href="/internal/meetings?calendar=team"
+        />
+        <AutomationCard
+          title="Workspace Source Sync"
+          icon={Workflow}
+          status={workspaceStats.neverSyncedApps > 0 ? 'paused' : 'ready'}
+          lines={[
+            'Mode: Manual local scan',
+            'Schedule: No scheduler configured',
+            `Last app sync: ${workspaceStats.lastAppSync}`,
+            `Last source sync: ${workspaceStats.lastSourceSync}`,
+            `Applications tracked: ${workspaceStats.totalApps}`,
+            `Ideas tracked: ${workspaceStats.totalIdeas}`,
+            `Never-synced apps: ${workspaceStats.neverSyncedApps}`,
+            'Run: npm run scan:workspace',
+            'Then: npm run import:workspace',
+          ]}
+          action="View Application Registry"
+          href="/internal/applications"
         />
       </div>
 
@@ -87,6 +113,35 @@ export default async function AutomationPage() {
       </div>
     </div>
   )
+}
+
+function getWorkspaceSyncStats(
+  applications: { last_synced_at?: string | null; status?: string | null }[],
+  ideas: { source?: string | null }[],
+  sources: { last_synced_at?: string | null; status?: string | null }[],
+) {
+  const activeApps = applications.filter(row => row.status !== 'archived')
+  const activeSources = sources.filter(row => row.status !== 'archived')
+
+  return {
+    totalApps: activeApps.length,
+    totalIdeas: ideas.length,
+    neverSyncedApps: activeApps.filter(row => !row.last_synced_at).length,
+    localIdeas: ideas.filter(row => row.source === 'local_folder').length,
+    lastAppSync: formatSyncTime(latestTimestamp(activeApps.map(row => row.last_synced_at))),
+    lastSourceSync: formatSyncTime(latestTimestamp(activeSources.map(row => row.last_synced_at))),
+  }
+}
+
+function latestTimestamp(values: Array<string | null | undefined>) {
+  return values
+    .filter((value): value is string => Boolean(value))
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+}
+
+function formatSyncTime(value?: string) {
+  if (!value) return 'Never'
+  return new Date(value).toLocaleString()
 }
 
 function AutomationCard({ title, icon: Icon, status, lines, action, href }: { title: string; icon: typeof Workflow; status: string; lines: string[]; action: string; href: string }) {
