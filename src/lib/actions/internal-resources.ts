@@ -1170,6 +1170,51 @@ export async function createProjectFromCustomer(customerId: string, title?: stri
   }
 }
 
+export async function archiveApplication(id: string): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    await requireInternalUser(supabase)
+    const { error } = await supabase
+      .from('applications')
+      .update({
+        status: 'archived',
+        stage: 'archived',
+      })
+      .eq('id', id)
+
+    if (error) throw error
+    revalidateResource(['/internal/applications', `/internal/applications/${id}`])
+    return { id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
+export async function deleteApplication(id: string): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    await requireInternalUser(supabase)
+
+    const { error: sourceError } = await supabase
+      .from('source_registry')
+      .delete()
+      .eq('related_application_id', id)
+
+    if (sourceError) throw sourceError
+
+    const { error } = await supabase
+      .from('applications')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+    revalidateResource(['/internal/applications', `/internal/applications/${id}`])
+    return { id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
 function proposalPayload(input: ProposalFormInput) {
   return {
     title: requiredText(input.title, 'Title'),

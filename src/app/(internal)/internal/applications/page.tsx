@@ -23,13 +23,15 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
   const supabase = await createClient()
   let query = supabase.from('applications').select('*').order('name')
 
-  if (filter === 'production_ready') query = query.eq('stage', 'production_ready')
-  else if (filter === 'live') query = query.eq('stage', 'live')
-  else if (filter === 'prototype') query = query.eq('stage', 'prototype')
-  else if (filter === 'missing_repo') query = query.is('repo_url', null)
-  else if (filter === 'missing_local') query = query.is('local_folder_path', null)
-  else if (filter === 'missing_docs') query = query.is('docs_url', null)
-  else if (filter === 'missing_deploy') query = query.is('deployment_url', null)
+  if (filter === 'archived') query = query.eq('status', 'archived')
+  else if (filter === 'production_ready') query = query.eq('stage', 'production_ready').neq('status', 'archived')
+  else if (filter === 'live') query = query.eq('stage', 'live').neq('status', 'archived')
+  else if (filter === 'prototype') query = query.eq('stage', 'prototype').neq('status', 'archived')
+  else if (filter === 'missing_repo') query = query.is('repo_url', null).neq('status', 'archived')
+  else if (filter === 'missing_local') query = query.is('local_folder_path', null).neq('status', 'archived')
+  else if (filter === 'missing_docs') query = query.is('docs_url', null).neq('status', 'archived')
+  else if (filter === 'missing_deploy') query = query.is('deployment_url', null).neq('status', 'archived')
+  else query = query.neq('status', 'archived')
 
   const { data } = await query
   const rows = (data ?? []) as Application[]
@@ -43,6 +45,7 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
     { key: 'missing_local', label: 'Missing Local Folder' },
     { key: 'missing_docs', label: 'Missing Docs' },
     { key: 'missing_deploy', label: 'Missing Deployment' },
+    { key: 'archived', label: 'Archived' },
   ]
 
   return (

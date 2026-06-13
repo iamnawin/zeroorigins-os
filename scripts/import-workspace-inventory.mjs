@@ -75,12 +75,13 @@ async function main() {
   // Upsert applications
   for (const app of inventory.applications) {
     try {
+      const existing = await supabase('applications', 'GET', null, `?slug=eq.${app.slug}&select=id,status,stage`)
       const record = {
         name: app.name,
         slug: app.slug,
         description: app.description,
-        stage: app.stage || 'prototype',
-        status: app.status || 'active',
+        stage: existing[0]?.status === 'archived' ? 'archived' : (app.stage || 'prototype'),
+        status: existing[0]?.status === 'archived' ? 'archived' : (app.status || 'active'),
         type: app.type || 'application',
         local_folder_path: app.local_folder_path,
         repo_url: app.repo_url || null,
@@ -89,7 +90,6 @@ async function main() {
         last_synced_at: new Date().toISOString(),
       }
 
-      const existing = await supabase('applications', 'GET', null, `?slug=eq.${app.slug}&select=id`)
       if (existing.length > 0) {
         await supabase('applications', 'PATCH', record, `?id=eq.${existing[0].id}`)
         stats.apps_updated++

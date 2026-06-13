@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { AppWindow, Bot, ExternalLink, File, Folder, FolderOpen } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { AiAssistPanel } from '@/components/ai/AiAssistPanel'
+import { ApplicationDangerActions } from '@/components/internal/application-danger-actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import { Badge } from '@/components/ui/badge'
@@ -44,12 +45,17 @@ export default async function ApplicationDetailPage({ params, searchParams }: { 
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-5">
-        <div className="flex items-center gap-2">
-          <AppWindow className="h-5 w-5 text-zo-purple" />
-          <p className="text-xs font-bold uppercase tracking-wider text-zo-purple-2">Application</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <AppWindow className="h-5 w-5 text-zo-purple" />
+              <p className="text-xs font-bold uppercase tracking-wider text-zo-purple-2">Application</p>
+            </div>
+            <h1 className="mt-2 text-2xl font-bold">{app.name}</h1>
+            {app.description && <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{app.description}</p>}
+          </div>
+          <ApplicationDangerActions applicationId={app.id} applicationName={app.name} archived={app.status === 'archived'} />
         </div>
-        <h1 className="mt-2 text-2xl font-bold">{app.name}</h1>
-        {app.description && <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{app.description}</p>}
         <div className="mt-3 flex flex-wrap gap-2">
           <Badge variant="outline" className="text-[10px]">{app.stage.replace(/_/g, ' ')}</Badge>
           <ResourceStatusBadge status={app.status} />

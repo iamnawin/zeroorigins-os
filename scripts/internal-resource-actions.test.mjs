@@ -100,9 +100,45 @@ test('internal resource server actions expose CRM workflow operations', () => {
     'convertLeadToDeal',
     'markProposalAccepted',
     'createProjectFromCustomer',
+    'archiveApplication',
+    'deleteApplication',
   ]) {
     assert.match(source, new RegExp(`export async function ${action}\\b`))
   }
+})
+
+test('application registry exposes safe archive and delete operations', () => {
+  const actions = fs.readFileSync(
+    path.join(repoRoot, 'src/lib/actions/internal-resources.ts'),
+    'utf8',
+  )
+  const detailPage = fs.readFileSync(
+    path.join(repoRoot, 'src/app/(internal)/internal/applications/[id]/page.tsx'),
+    'utf8',
+  )
+  const dangerActions = fs.readFileSync(
+    path.join(repoRoot, 'src/components/internal/application-danger-actions.tsx'),
+    'utf8',
+  )
+
+  assert.match(actions, /archiveApplication[\s\S]*\.from\('applications'\)[\s\S]*\.update\(\{[\s\S]*status: 'archived'[\s\S]*stage: 'archived'/)
+  assert.match(actions, /deleteApplication[\s\S]*\.from\('source_registry'\)[\s\S]*\.delete\(\)[\s\S]*related_application_id/)
+  assert.match(actions, /deleteApplication[\s\S]*\.from\('applications'\)[\s\S]*\.delete\(\)/)
+  assert.match(detailPage, /ApplicationDangerActions/)
+  assert.match(dangerActions, /Archive application/)
+  assert.match(dangerActions, /Delete permanently/)
+})
+
+test('workspace import does not unarchive archived applications', () => {
+  const source = fs.readFileSync(
+    path.join(repoRoot, 'scripts/import-workspace-inventory.mjs'),
+    'utf8',
+  )
+
+  assert.match(source, /select=id,status,stage/)
+  assert.match(source, /existing\[0\]\?\.status === 'archived'/)
+  assert.match(source, /status: existing\[0\]\?\.status === 'archived' \? 'archived'/)
+  assert.match(source, /stage: existing\[0\]\?\.status === 'archived' \? 'archived'/)
 })
 
 test('company spending has internal finance routes and database migration', () => {
