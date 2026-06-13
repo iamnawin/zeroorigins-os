@@ -53,6 +53,65 @@ npm run build          # pass (exit code 0) with pre-existing @screen CSS warnin
 
 Phase 6 migration: `supabase/migrations/014_zo_agent_ideas_applications.sql` — **user must apply manually in Supabase SQL Editor before these features work at runtime.**
 
+---
+
+## Phase 6.5: Source Sync + Google Calendar (2026-06-13)
+
+### Local Workspace Source Sync
+
+Implemented a local scanner/importer pipeline since the deployed web app cannot access Windows folders directly.
+
+**Scripts:**
+- `npm run scan:workspace` — scans `D:\AI-Workspace\Ideas` (→ Ideas Vault) and `D:\AI-Workspace\Repos` (→ Application Registry). Captures folder tree (3 levels), README summary (markdown-stripped), package.json metadata, git remote/branch, tech stack inference, and detected files. Outputs `zeroorigins-source-inventory.json`.
+- `npm run import:workspace` — reads the JSON and upserts into Supabase (`business_ideas`, `applications`, `source_registry`). Uses `SUPABASE_SERVICE_ROLE_KEY` from `.env.local`. Stores `source_tree` and `detected_files` in `source_registry.metadata_json`.
+
+**Scanner classification:**
+- `OrgTrace` → `production_ready`
+- `PLOTDNA-AI` → `production_ready`
+- `zeroorigins-os` → `live`, type `internal_system`
+- All others → `prototype`
+
+**Scan results (from real disk):**
+- 5 ideas: drivour, PRATAK, QureWell, ServiceOps Pulse, Structra-AI-Architect-Studio
+- 9 applications: applyo-platform, deskkeeper, orgblueprint-app, OrgTrace, Perfect-Store-Scorecard, PLOTDNA-AI, portfolio-V3, zeroorigins, zeroorigins-os
+
+**UI updates:**
+- Application Registry cards: 7 source indicators (Repo, Local, Docs, Deploy, DB, n8n, Site) with green/grey connected dots.
+- Application detail page: new **Source Explorer** tab renders recursive folder tree from `source_registry.metadata_json.source_tree`.
+- Ideas Vault detail page: rewritten to use `business_ideas` table with tabs (Overview, Source Explorer, ZO_Agent).
+- `SourceRegistryEntry` type: added `metadata_json` field.
+
+**Schema change applied manually:** `ALTER TABLE source_registry ADD COLUMN IF NOT EXISTS metadata_json jsonb;`
+
+### Google Calendar OAuth + Sync
+
+**Migration 015:** `supabase/migrations/015_google_calendar_tokens.sql` — creates `google_tokens` table (user_id unique, access_token, refresh_token, expires_at, scope) with RLS.
+
+**API routes:**
+- `GET /api/auth/google` — redirects to Google OAuth consent screen (calendar.readonly scope, offline access).
+- `GET /api/auth/google/callback` — exchanges authorization code for tokens, upserts into `google_tokens`, redirects to `/internal/meetings`.
+- `POST /api/calendar/sync` — refreshes token if expired, fetches next 30 days of events from Google Calendar API, upserts into `meetings` table by `calendar_event_id`. Returns `{ created, updated, total }`.
+
+**Meetings page:** "Connect Google" button (→ OAuth flow) + "Sync Now" button (client component that POSTs to sync endpoint, shows result, reloads page).
+
+**Environment variables required:**
+```
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+```
+
+For Vercel production, set `GOOGLE_REDIRECT_URI` to `https://your-vercel-domain.vercel.app/api/auth/google/callback` and add that URI to Google Cloud OAuth credentials.
+
+**User must apply migration 015 in Supabase SQL Editor.**
+
+**Verification:**
+```powershell
+npm run build  # pass (exit code 0)
+```
+
+---
+
 Phase 5 shipped in the working branch:
 - Desktop internal shell now uses left sidebar navigation plus action top bar (`Global search`, `Quick Add`, `Sync`, profile menu).
 - Navigation groups: Control Room, Pipeline, Work, Automation, Finance, Knowledge, AI Workspace, Settings.
