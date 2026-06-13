@@ -32,11 +32,22 @@ test('internal page chrome can wrap and stay inside mobile viewport', () => {
   const layout = read('src/app/(internal)/layout.tsx')
 
   assert.match(header, /min-h-14/)
-  assert.match(header, /flex-wrap/)
-  assert.match(header, /overflow-x-auto/)
+  assert.match(header, /Menu/)
+  assert.match(header, /SheetContent/)
+  assert.match(header, /filterInternalNavGroups/)
+  assert.match(header, /lg:hidden/)
+  assert.doesNotMatch(header, /overflow-x-auto/)
   assert.match(pageHeader, /flex flex-col gap-3/)
   assert.match(pageHeader, /sm:flex-row/)
   assert.match(layout, /overflow-x-hidden/)
+})
+
+test('meetings table can switch to readable cards on mobile', () => {
+  const table = read('src/components/resource-kit/entity-table.tsx')
+
+  assert.match(table, /md:hidden/)
+  assert.match(table, /hidden[\s\S]*md:block/)
+  assert.match(table, /grid grid-cols-2/)
 })
 
 test('gateway uses mobile-first spacing and typography', () => {

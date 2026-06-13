@@ -1,10 +1,40 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { CalendarSync, ChevronDown, CirclePlus, LogOut, Search, User, Zap } from 'lucide-react'
+import {
+  AppWindow,
+  BookOpen,
+  Bot,
+  Building2,
+  CalendarDays,
+  CalendarSync,
+  CheckSquare,
+  ChevronDown,
+  CirclePlus,
+  DollarSign,
+  FileText,
+  FolderKanban,
+  Handshake,
+  LayoutDashboard,
+  Lightbulb,
+  LogOut,
+  Menu,
+  PanelsTopLeft,
+  Search,
+  Settings,
+  User,
+  Users,
+  WalletCards,
+  Workflow,
+  Zap,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { signOut } from '@/lib/actions/auth'
+import { cn } from '@/lib/utils'
+import { filterInternalNavGroups } from '@/lib/internal-navigation'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +42,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import type { Role } from '@/types'
 
 interface InternalHeaderProps {
@@ -30,13 +69,74 @@ const quickAddLinks = [
   { href: '/internal/knowledge/new', label: 'Knowledge Note' },
 ]
 
+const ICONS: Record<string, LucideIcon> = {
+  AppWindow,
+  BookOpen,
+  Bot,
+  Building2,
+  CalendarDays,
+  CheckSquare,
+  DollarSign,
+  FileText,
+  FolderKanban,
+  Handshake,
+  LayoutDashboard,
+  Lightbulb,
+  PanelsTopLeft,
+  Settings,
+  Users,
+  WalletCards,
+  Workflow,
+}
+
 export function InternalHeader({ email, fullName, role }: InternalHeaderProps) {
   const [query, setQuery] = useState('')
+  const pathname = usePathname()
   const displayName = fullName || email?.split('@')[0] || 'Account'
+  const groups = filterInternalNavGroups(role)
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
-      <div className="flex min-h-14 flex-wrap items-center gap-2 overflow-x-auto px-3 py-2 sm:gap-3 sm:px-4 lg:px-6">
+      <div className="flex min-h-14 items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 lg:px-6">
+        <Sheet>
+          <SheetTrigger className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium text-foreground lg:hidden">
+            <Menu className="h-4 w-4" />
+            Menu
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[min(88vw,22rem)] gap-0 overflow-y-auto p-0">
+            <SheetHeader className="border-b border-border p-4 text-left">
+              <SheetTitle>ZeroOrigins OS</SheetTitle>
+              <SheetDescription>Workspace navigation</SheetDescription>
+            </SheetHeader>
+            <nav className="space-y-5 px-3 py-4">
+              {groups.map(group => (
+                <section key={group.id} className="space-y-1">
+                  <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{group.label}</p>
+                  {group.items.map(item => {
+                    const Icon = ICONS[item.icon] || LayoutDashboard
+                    const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                    return (
+                      <SheetClose key={item.href} render={<Link href={item.href} />}>
+                        <span
+                          className={cn(
+                            'flex items-center gap-2 rounded-md px-2.5 py-2.5 text-sm transition-colors',
+                            active
+                              ? 'bg-zo-purple/15 text-zo-purple-2'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </span>
+                      </SheetClose>
+                    )
+                  })}
+                </section>
+              ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
+
         <label className="relative hidden min-w-0 flex-1 md:block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -61,14 +161,14 @@ export function InternalHeader({ email, fullName, role }: InternalHeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Link href="/internal/automation?tab=calendar-sync">
+        <Link href="/internal/automation?tab=calendar-sync" className="ml-auto sm:ml-0">
           <Button size="sm" variant="outline" className="shrink-0">
             <CalendarSync className="mr-1 h-4 w-4" />
             Sync
           </Button>
         </Link>
 
-        <Link href="/internal/automation">
+        <Link href="/internal/automation" className="hidden sm:block">
           <Button size="sm" variant="outline" className="shrink-0">
             <Zap className="mr-1 h-4 w-4" />
             <span className="hidden sm:inline">Automation</span>
