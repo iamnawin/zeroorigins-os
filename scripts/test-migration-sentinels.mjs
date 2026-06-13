@@ -17,6 +17,8 @@ for (const migration of [
   '009_auth_and_workspace_reliability',
   '010_meetings_crm',
   '011_company_spending',
+  '012_team_calendar_foundations',
+  '013_business_verticals_ai_assist',
 ]) {
   assert.ok(byMigration.has(migration), `Missing sentinel coverage for ${migration}`)
 }
@@ -29,6 +31,11 @@ for (const column of [
   'profiles.status',
   'deals.stage',
   'customers.phone',
+  'meetings.source',
+  'meetings.calendar_event_id',
+  'meetings.meeting_link',
+  'meetings.notes',
+  'meetings.sync_status',
 ]) {
   assert.ok(
     SENTINELS.some(sentinel => `${sentinel.table}.${sentinel.column}` === column),

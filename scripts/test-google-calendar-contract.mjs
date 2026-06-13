@@ -15,6 +15,7 @@ function exists(relativePath) {
 
 test('Google Calendar sync writes only columns and values accepted by meetings schema', () => {
   const route = read('src/app/api/calendar/sync/route.ts')
+  const button = read('src/components/calendar/sync-calendar-button.tsx')
 
   assert.match(route, /source:\s*'google_calendar'/)
   assert.doesNotMatch(route, /source:\s*'google'/)
@@ -23,6 +24,9 @@ test('Google Calendar sync writes only columns and values accepted by meetings s
   assert.doesNotMatch(route, /\bends_at\b/)
   assert.doesNotMatch(route, /\bdescription:\s*event\.description/)
   assert.match(route, /agenda:\s*event\.description/)
+  assert.doesNotMatch(route, /\.maybeSingle\(\)/)
+  assert.match(route, /\.limit\(1\)/)
+  assert.match(button, /data\.details/)
 })
 
 test('Google Calendar OAuth requests event write access and records profile readiness', () => {

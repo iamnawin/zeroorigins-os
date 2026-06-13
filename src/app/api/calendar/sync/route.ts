@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+type SupabaseErrorLike = {
+  code?: string
+  message?: string
+  details?: string
+  hint?: string
+}
+
 export async function POST() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -101,26 +108,48 @@ export async function POST() {
       owner_id: user.id,
     }
 
-    const { data: existing, error: lookupError } = await supabase
+    let syncColumnsAvailable = true
+    const lookupResult = await supabase
       .from('meetings')
       .select('id')
       .eq('calendar_event_id', event.id)
       .eq('owner_id', user.id)
-      .maybeSingle()
+      .limit(1)
+    let existingRows = lookupResult.data
+    const lookupError = lookupResult.error
 
     if (lookupError) {
-      return NextResponse.json({ error: 'Failed to check existing calendar event', details: lookupError.message }, { status: 500 })
+      if (!isMissingMeetingSyncColumnError(lookupError)) {
+        return NextResponse.json({ error: 'Failed to check existing calendar event', details: lookupError.message }, { status: 500 })
+      }
+
+      syncColumnsAvailable = false
+      const fallback = await supabase
+        .from('meetings')
+        .select('id')
+        .eq('title', meetingData.title)
+        .eq('scheduled_at', meetingData.scheduled_at)
+        .eq('owner_id', user.id)
+        .limit(1)
+
+      if (fallback.error) {
+        return NextResponse.json({ error: 'Failed to check existing calendar event', details: fallback.error.message }, { status: 500 })
+      }
+      existingRows = fallback.data
     }
 
+    const existing = existingRows?.[0]
+    const rowData = syncColumnsAvailable ? meetingData : legacyMeetingData(meetingData)
+
     if (existing) {
-      const { error } = await supabase.from('meetings').update(meetingData).eq('id', existing.id)
+      const { error } = await supabase.from('meetings').update(rowData).eq('id', existing.id)
       if (error) {
         return NextResponse.json({ error: 'Failed to update synced meeting', details: error.message }, { status: 500 })
       }
       updated++
     } else {
       const { error } = await supabase.from('meetings').insert({
-        ...meetingData,
+        ...rowData,
         created_by: user.id,
       })
       if (error) {
@@ -131,4 +160,43 @@ export async function POST() {
   }
 
   return NextResponse.json({ success: true, created, updated, total: events.length })
+}
+
+function legacyMeetingData(input: {
+  title: string
+  scheduled_at: string
+  duration_minutes: number
+  attendees: string[]
+  agenda: string | null
+  status: string
+  owner_id: string
+}) {
+  return {
+    title: input.title,
+    scheduled_at: input.scheduled_at,
+    duration_minutes: input.duration_minutes,
+    attendees: input.attendees,
+    agenda: input.agenda,
+    status: input.status,
+    owner_id: input.owner_id,
+  }
+}
+
+function isMissingMeetingSyncColumnError(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const typed = error as SupabaseErrorLike
+  const message = `${typed.code ?? ''} ${typed.message ?? ''} ${typed.details ?? ''} ${typed.hint ?? ''}`.toLowerCase()
+  return (
+    message.includes('meetings.source') ||
+    message.includes('meetings.calendar_event_id') ||
+    message.includes('meetings.meeting_link') ||
+    message.includes('meetings.notes') ||
+    message.includes('meetings.sync_status') ||
+    message.includes("column 'source'") ||
+    message.includes("column 'calendar_event_id'") ||
+    message.includes("column 'meeting_link'") ||
+    message.includes("column 'notes'") ||
+    message.includes("column 'sync_status'") ||
+    message.includes('schema cache')
+  )
 }

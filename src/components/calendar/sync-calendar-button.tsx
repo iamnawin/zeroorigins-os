@@ -15,7 +15,7 @@ export function SyncCalendarButton() {
       const res = await fetch('/api/calendar/sync', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) {
-        setResult(data.error || 'Sync failed')
+        setResult([data.error, data.details].filter(Boolean).join(': ') || 'Sync failed')
       } else {
         setResult(`Synced: ${data.created} new, ${data.updated} updated`)
         setTimeout(() => window.location.reload(), 1500)

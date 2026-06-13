@@ -35,6 +35,13 @@ type ActionResult = {
   error?: string
 }
 
+type SupabaseErrorLike = {
+  code?: string
+  message?: string
+  details?: string
+  hint?: string
+}
+
 type Supabase = Awaited<ReturnType<typeof createClient>>
 
 export type LeadFormInput = {
@@ -300,7 +307,12 @@ function revalidateResource(paths: string[]) {
 }
 
 function toResult(error: unknown): ActionResult {
-  return { error: error instanceof Error ? error.message : 'Something went wrong while saving.' }
+  if (error instanceof Error) return { error: error.message }
+  if (error && typeof error === 'object' && 'message' in error) {
+    const typed = error as SupabaseErrorLike
+    return { error: [typed.message, typed.details, typed.hint].filter(Boolean).join(' ') }
+  }
+  return { error: 'Something went wrong while saving.' }
 }
 
 export async function createLead(input: LeadFormInput): Promise<ActionResult> {
@@ -667,7 +679,25 @@ export async function createMeeting(input: MeetingFormInput): Promise<ActionResu
       .select('id')
       .single()
 
-    if (error) throw error
+    if (error) {
+      if (isMissingMeetingSyncColumnError(error)) {
+        const { data: legacyData, error: legacyError } = await supabase
+          .from('meetings')
+          .insert({
+            ...legacyMeetingPayload(payload),
+            status: input.status ?? 'scheduled',
+            owner_id: optionalText(input.owner_id) ?? user.id,
+            created_by: user.id,
+          })
+          .select('id')
+          .single()
+
+        if (legacyError) throw legacyError
+        revalidateResource(['/internal/meetings'])
+        return { id: legacyData.id }
+      }
+      throw error
+    }
     revalidateResource(['/internal/meetings'])
     return { id: data.id }
   } catch (error) {
@@ -688,7 +718,23 @@ export async function updateMeeting(id: string, input: MeetingFormInput): Promis
       })
       .eq('id', id)
 
-    if (error) throw error
+    if (error) {
+      if (isMissingMeetingSyncColumnError(error)) {
+        const { error: legacyError } = await supabase
+          .from('meetings')
+          .update({
+            ...legacyMeetingPayload(meetingPayload(input)),
+            status: input.status ?? 'scheduled',
+            owner_id: optionalText(input.owner_id) ?? user.id,
+          })
+          .eq('id', id)
+
+        if (legacyError) throw legacyError
+        revalidateResource(['/internal/meetings', `/internal/meetings/${id}`])
+        return { id }
+      }
+      throw error
+    }
     revalidateResource(['/internal/meetings', `/internal/meetings/${id}`])
     return { id }
   } catch (error) {
@@ -1167,6 +1213,43 @@ function meetingPayload(input: MeetingFormInput) {
     notes: optionalText(input.notes),
     sync_status: input.sync_status ?? 'not_connected',
   }
+}
+
+function legacyMeetingPayload(input: ReturnType<typeof meetingPayload>) {
+  return {
+    title: input.title,
+    entity_type: input.entity_type,
+    entity_id: input.entity_id,
+    lead_id: input.lead_id,
+    deal_id: input.deal_id,
+    customer_id: input.customer_id,
+    project_id: input.project_id,
+    scheduled_at: input.scheduled_at,
+    duration_minutes: input.duration_minutes,
+    attendees: input.attendees,
+    agenda: input.agenda,
+    outcome: input.outcome,
+    next_action: input.next_action,
+  }
+}
+
+function isMissingMeetingSyncColumnError(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const typed = error as SupabaseErrorLike
+  const message = `${typed.code ?? ''} ${typed.message ?? ''} ${typed.details ?? ''} ${typed.hint ?? ''}`.toLowerCase()
+  return (
+    message.includes('meetings.source') ||
+    message.includes('meetings.calendar_event_id') ||
+    message.includes('meetings.meeting_link') ||
+    message.includes('meetings.notes') ||
+    message.includes('meetings.sync_status') ||
+    message.includes("column 'source'") ||
+    message.includes("column 'calendar_event_id'") ||
+    message.includes("column 'meeting_link'") ||
+    message.includes("column 'notes'") ||
+    message.includes("column 'sync_status'") ||
+    message.includes('schema cache')
+  )
 }
 
 function knowledgeArticlePayload(input: KnowledgeArticleFormInput) {
