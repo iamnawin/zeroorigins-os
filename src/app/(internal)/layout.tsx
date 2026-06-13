@@ -16,11 +16,11 @@ export default async function InternalLayout({ children }: { children: React.Rea
   const role = profile?.role as Role | undefined
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen overflow-x-hidden bg-background">
       <InternalSidebar role={role} />
       <div className="min-h-screen lg:pl-64">
         <InternalHeader email={user?.email} fullName={profile?.full_name} role={role} />
-        <main className="mx-auto max-w-screen-2xl px-4 py-6 md:px-6">
+        <main className="mx-auto max-w-screen-2xl px-3 py-4 sm:px-4 sm:py-6 md:px-6">
           {children}
         </main>
       </div>

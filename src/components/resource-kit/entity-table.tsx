@@ -16,8 +16,8 @@ interface EntityTableProps<T extends { id: string }> {
 
 export function EntityTable<T extends { id: string }>({ rows, columns, getHref }: EntityTableProps<T>) {
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full min-w-[720px] text-sm md:min-w-0">
         <thead>
           <tr className="border-b border-border bg-muted/50">
             {columns.map(col => (

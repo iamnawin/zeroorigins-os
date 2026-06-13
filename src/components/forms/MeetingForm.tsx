@@ -103,7 +103,7 @@ export default function MeetingForm({
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="w-full max-w-2xl">
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-zo-chrome">{mode === 'create' ? 'New Meeting' : 'Edit Meeting'}</CardTitle>
@@ -114,7 +114,7 @@ export default function MeetingForm({
               <Label>Title</Label>
               <Input value={form.title} onChange={set('title')} required placeholder="Discovery call, proposal review..." />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Scheduled Time</Label>
                 <Input type="datetime-local" value={form.scheduled_at} onChange={set('scheduled_at')} required />
@@ -210,11 +210,11 @@ export default function MeetingForm({
               </>
             )}
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <div className="flex gap-3">
-              <Button type="submit" disabled={loading}>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button type="submit" disabled={loading} className="w-full sm:w-auto">
                 {loading ? 'Saving...' : mode === 'create' ? 'Create Meeting' : 'Save Changes'}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => router.back()} className="w-full sm:w-auto">Cancel</Button>
             </div>
           </form>
         </CardContent>

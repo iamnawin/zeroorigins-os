@@ -12,8 +12,8 @@ interface ResourcePageHeaderProps {
 
 export function ResourcePageHeader({ title, description, newHref, newLabel, showNew = true }: ResourcePageHeaderProps) {
   return (
-    <div className="flex items-center justify-between selection:bg-zo-purple/20">
-      <div>
+    <div className="flex flex-col gap-3 selection:bg-zo-purple/20 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
         <h1 className="text-xl font-bold text-zo-chrome">{title}</h1>
         <p className="text-sm text-zo-muted">{description}</p>
       </div>

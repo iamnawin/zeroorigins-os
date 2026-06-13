@@ -36,7 +36,7 @@ export function InternalHeader({ email, fullName, role }: InternalHeaderProps) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
-      <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
+      <div className="flex min-h-14 flex-wrap items-center gap-2 overflow-x-auto px-3 py-2 sm:gap-3 sm:px-4 lg:px-6">
         <label className="relative hidden min-w-0 flex-1 md:block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -48,7 +48,7 @@ export function InternalHeader({ email, fullName, role }: InternalHeaderProps) {
         </label>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">
+          <DropdownMenuTrigger className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">
             <CirclePlus className="h-4 w-4" />
             Quick Add
           </DropdownMenuTrigger>
@@ -62,16 +62,16 @@ export function InternalHeader({ email, fullName, role }: InternalHeaderProps) {
         </DropdownMenu>
 
         <Link href="/internal/automation?tab=calendar-sync">
-          <Button size="sm" variant="outline">
+          <Button size="sm" variant="outline" className="shrink-0">
             <CalendarSync className="mr-1 h-4 w-4" />
             Sync
           </Button>
         </Link>
 
         <Link href="/internal/automation">
-          <Button size="sm" variant="outline">
+          <Button size="sm" variant="outline" className="shrink-0">
             <Zap className="mr-1 h-4 w-4" />
-            Automation
+            <span className="hidden sm:inline">Automation</span>
           </Button>
         </Link>
 

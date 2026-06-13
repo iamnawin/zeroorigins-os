@@ -17,38 +17,38 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="dark min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="dark min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(139,92,246,0.18),transparent_60%)]" />
       {/* Subtle grid pattern */}
       <div className="absolute inset-0 zo-grid-pattern opacity-20" />
       
       {/* Content */}
-      <div className="relative z-10 max-w-6xl w-full space-y-16 py-16">
+      <div className="relative z-10 max-w-6xl w-full space-y-10 py-8 sm:space-y-16 sm:py-16">
         {/* Header Section */}
         <div className="text-center space-y-6">
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-4 sm:mb-8">
             <Image
               src="/wordmark.png"
               alt="ZeroOrigins"
               width={560}
               height={187}
-              className="w-full max-w-[480px] h-auto opacity-90"
+              className="h-auto w-full max-w-[320px] opacity-90 sm:max-w-[480px]"
               priority
             />
           </div>
           <div className="space-y-3">
             <p className="text-white/40 text-sm font-medium tracking-wider uppercase">Company Operating System • v2.0</p>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-br from-white to-white/70 bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-br from-white to-white/70 bg-clip-text text-transparent">
               Choose your operating layer.
             </h1>
-            <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
+            <p className="text-white/60 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
               Access the internal workspace, client portal, or partner channel from one secure gateway.
             </p>
           </div>
         </div>
 
         {/* Portal Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 lg:gap-8">
           {/* Internal Workspace */}
           <Card className="group relative overflow-hidden zo-glass hover:zo-glass-elevated zo-motion-safe border-white/10 hover:border-purple-500/30">
             {/* Accent glow */}
