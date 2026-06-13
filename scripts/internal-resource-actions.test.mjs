@@ -102,9 +102,48 @@ test('internal resource server actions expose CRM workflow operations', () => {
     'createProjectFromCustomer',
     'archiveApplication',
     'deleteApplication',
+    'createApplication',
+    'updateApplication',
   ]) {
     assert.match(source, new RegExp(`export async function ${action}\\b`))
   }
+})
+
+test('application registry can be created and edited from internal pages', () => {
+  const actions = fs.readFileSync(
+    path.join(repoRoot, 'src/lib/actions/internal-resources.ts'),
+    'utf8',
+  )
+  const listPage = fs.readFileSync(
+    path.join(repoRoot, 'src/app/(internal)/internal/applications/page.tsx'),
+    'utf8',
+  )
+  const detailPage = fs.readFileSync(
+    path.join(repoRoot, 'src/app/(internal)/internal/applications/[id]/page.tsx'),
+    'utf8',
+  )
+
+  for (const relativePath of [
+    'src/components/forms/ApplicationForm.tsx',
+    'src/app/(internal)/internal/applications/new/page.tsx',
+    'src/app/(internal)/internal/applications/[id]/edit/page.tsx',
+  ]) {
+    assert.ok(fs.existsSync(path.join(repoRoot, relativePath)), `${relativePath} should exist`)
+  }
+
+  const form = fs.readFileSync(
+    path.join(repoRoot, 'src/components/forms/ApplicationForm.tsx'),
+    'utf8',
+  )
+
+  assert.match(actions, /export async function createApplication\b[\s\S]*\.from\('applications'\)[\s\S]*\.insert/)
+  assert.match(actions, /export async function updateApplication\b[\s\S]*\.from\('applications'\)[\s\S]*\.update/)
+  assert.match(form, /createApplication/)
+  assert.match(form, /updateApplication/)
+  assert.match(listPage, /newHref=\{`\$\{BASE\}\/new`\}/)
+  assert.match(listPage, /newLabel="Add Application"/)
+  assert.doesNotMatch(listPage, /showNew=\{false\}/)
+  assert.match(detailPage, /\/internal\/applications\/\$\{app\.id\}\/edit/)
 })
 
 test('application registry exposes safe archive and delete operations', () => {

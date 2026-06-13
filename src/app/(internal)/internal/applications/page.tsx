@@ -50,7 +50,7 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
 
   return (
     <div className="space-y-5">
-      <ResourcePageHeader title="Application Registry" description="Products, apps, and tools being built or live" newHref={`${BASE}/new`} newLabel="Add Application" showNew={false} />
+      <ResourcePageHeader title="Application Registry" description="Products, apps, and tools being built or live" newHref={`${BASE}/new`} newLabel="Add Application" />
 
       <div className="flex flex-wrap items-center gap-2">
         {filters.map(f => (

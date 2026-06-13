@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { AppWindow, Bot, ExternalLink, File, Folder, FolderOpen } from 'lucide-react'
+import { AppWindow, Bot, ExternalLink, File, Folder, FolderOpen, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { AiAssistPanel } from '@/components/ai/AiAssistPanel'
 import { ApplicationDangerActions } from '@/components/internal/application-danger-actions'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import { Badge } from '@/components/ui/badge'
@@ -54,7 +55,12 @@ export default async function ApplicationDetailPage({ params, searchParams }: { 
             <h1 className="mt-2 text-2xl font-bold">{app.name}</h1>
             {app.description && <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{app.description}</p>}
           </div>
-          <ApplicationDangerActions applicationId={app.id} applicationName={app.name} archived={app.status === 'archived'} />
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+            <Link href={`/internal/applications/${app.id}/edit`} className="w-full sm:w-auto">
+              <Button size="sm" variant="outline" className="w-full sm:w-auto"><Pencil className="mr-1 h-4 w-4" />Edit</Button>
+            </Link>
+            <ApplicationDangerActions applicationId={app.id} applicationName={app.name} archived={app.status === 'archived'} />
+          </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <Badge variant="outline" className="text-[10px]">{app.stage.replace(/_/g, ' ')}</Badge>

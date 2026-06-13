@@ -7,6 +7,9 @@ import type {
   AIAppCategory,
   AIAppStatus,
   AIAppType,
+  ApplicationStage,
+  ApplicationStatus,
+  ApplicationType,
   BusinessVerticalStatus,
   BusinessVerticalType,
   CalendarProvider,
@@ -313,6 +316,27 @@ function toResult(error: unknown): ActionResult {
     return { error: [typed.message, typed.details, typed.hint].filter(Boolean).join(' ') }
   }
   return { error: 'Something went wrong while saving.' }
+}
+
+export type ApplicationFormInput = {
+  name: string
+  slug?: string
+  description?: string
+  stage: ApplicationStage
+  status: ApplicationStatus
+  type: ApplicationType
+  repo_url?: string
+  local_folder_path?: string
+  docs_url?: string
+  docs_folder_path?: string
+  website_url?: string
+  deployment_url?: string
+  database_url?: string
+  n8n_workflow_url?: string
+  figma_url?: string
+  tech_stack?: string[] | string
+  build_status?: string
+  notes?: string
 }
 
 export async function createLead(input: LeadFormInput): Promise<ActionResult> {
@@ -1170,6 +1194,44 @@ export async function createProjectFromCustomer(customerId: string, title?: stri
   }
 }
 
+export async function createApplication(input: ApplicationFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    const user = await requireInternalUser(supabase)
+    const { data, error } = await supabase
+      .from('applications')
+      .insert({
+        ...applicationPayload(input),
+        owner_id: user.id,
+      })
+      .select('id')
+      .single()
+
+    if (error) throw error
+    revalidateResource(['/internal/applications'])
+    return { id: data.id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
+export async function updateApplication(id: string, input: ApplicationFormInput): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    await requireInternalUser(supabase)
+    const { error } = await supabase
+      .from('applications')
+      .update(applicationPayload(input))
+      .eq('id', id)
+
+    if (error) throw error
+    revalidateResource(['/internal/applications', `/internal/applications/${id}`])
+    return { id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
 export async function archiveApplication(id: string): Promise<ActionResult> {
   try {
     const supabase = await createClient()
@@ -1365,5 +1427,28 @@ function appPayload(input: AppFormInput) {
     is_sellable_product: input.is_sellable_product,
     is_internal_tool: input.is_internal_tool,
     is_open_source: input.is_open_source,
+  }
+}
+
+function applicationPayload(input: ApplicationFormInput) {
+  return {
+    name: requiredText(input.name, 'Application name'),
+    slug: optionalText(input.slug) ?? slugify(input.name),
+    description: optionalText(input.description),
+    stage: input.stage,
+    status: input.status,
+    type: input.type,
+    repo_url: optionalText(input.repo_url),
+    local_folder_path: optionalText(input.local_folder_path),
+    docs_url: optionalText(input.docs_url),
+    docs_folder_path: optionalText(input.docs_folder_path),
+    website_url: optionalText(input.website_url),
+    deployment_url: optionalText(input.deployment_url),
+    database_url: optionalText(input.database_url),
+    n8n_workflow_url: optionalText(input.n8n_workflow_url),
+    figma_url: optionalText(input.figma_url),
+    tech_stack: optionalTextArray(input.tech_stack),
+    build_status: optionalText(input.build_status),
+    notes: optionalText(input.notes),
   }
 }
