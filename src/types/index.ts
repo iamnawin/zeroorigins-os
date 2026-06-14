@@ -33,12 +33,14 @@ export type AiAssistIntent = typeof AI_ASSIST_INTENTS[number]
 
 export const AI_ASSIST_STATUSES = ['draft', 'confirmed', 'created', 'failed', 'cancelled'] as const
 export type AiAssistStatus = typeof AI_ASSIST_STATUSES[number]
+export type AiAssistInputMode = 'text' | 'voice'
 
 export type ZoAgentMode = 'draft' | 'query' | 'summary' | 'action'
 
 export interface ZoAgentOutput {
   intent: AiAssistIntent
   mode: ZoAgentMode
+  input_mode?: AiAssistInputMode
   title: string
   summary: string
   confidence: number

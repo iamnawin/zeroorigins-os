@@ -16,6 +16,7 @@ import {
   BUSINESS_IDEA_PRIORITIES,
   BUSINESS_IDEA_STATUSES,
   type AiAssistIntent,
+  type AiAssistInputMode,
   type FinanceCategory,
   type FinanceTransactionStatus,
   type RecurrenceInterval,
@@ -50,6 +51,7 @@ export type ZoAgentResponse = {
 export type AiAssistDraftInput = {
   inputText: string
   intent?: AiAssistIntent
+  inputMode?: AiAssistInputMode
 }
 
 export type FinanceAiInput = {
@@ -354,6 +356,7 @@ export async function createAiAssistDraft(input: AiAssistDraftInput): Promise<Ai
 
     const parsed = parseJsonObject<Record<string, unknown>>(result.content)
     const output = normalizeZoAgentOutput(parsed, input.intent)
+    output.input_mode = input.inputMode ?? 'text'
 
     const relatedVerticalId = await findVerticalId(
       supabase,
@@ -375,7 +378,7 @@ export async function createAiAssistDraft(input: AiAssistDraftInput): Promise<Ai
         user_id: user.id,
         intent: output.intent,
         input_text: inputText,
-        ai_output_json: output,
+        ai_output_json: { ...output, input_mode: input.inputMode ?? 'text' },
         status: isExecutable ? 'confirmed' : 'draft',
         related_vertical_id: relatedVerticalId,
       })

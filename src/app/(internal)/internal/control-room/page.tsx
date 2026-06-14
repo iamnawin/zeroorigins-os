@@ -12,6 +12,7 @@ import {
   Lightbulb,
   MailCheck,
   MessageSquareText,
+  Plus,
   ReceiptText,
   Sparkles,
   Target,
@@ -19,13 +20,13 @@ import {
   Users,
   WalletCards,
   Workflow,
+  Zap,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { AiAssistPanel } from '@/components/ai/AiAssistPanel'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import type {
   AiAssistRequest,
@@ -41,13 +42,6 @@ import type {
 } from '@/types'
 
 const defaultCurrency = 'INR'
-const agentPrompts = [
-  'What needs my attention today?',
-  'Which leads need follow-up?',
-  'What tasks are blocked?',
-  'Summarize partner activity.',
-  'What should we do next?',
-]
 
 function formatCurrency(value: number, currency = defaultCurrency) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value)
@@ -58,11 +52,133 @@ function formatDate(value?: string | null) {
 }
 
 function formatDateTime(value?: string | null) {
-  return value ? new Date(value).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'No time'
+  return value
+    ? new Date(value).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : 'No time'
+}
+
+function formatTime(value?: string | null) {
+  return value
+    ? new Date(value).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+    : ''
 }
 
 function plural(count: number, singular: string, pluralLabel = `${singular}s`) {
   return `${count} ${count === 1 ? singular : pluralLabel}`
+}
+
+function truncate(text: string, max = 44) {
+  return text.length > max ? `${text.slice(0, max)}…` : text
+}
+
+type SuggestedMove = {
+  label: string
+  subtext: string
+  href: string
+  tone: 'urgent' | 'revenue' | 'attention' | 'create' | 'steady'
+}
+
+function buildSuggestedMoves(opts: {
+  leads: Lead[]
+  tasks: Task[]
+  projects: Project[]
+  partners: Partner[]
+  todayMeetings: Meeting[]
+  leadsNeedingAction: Lead[]
+  overdueTasks: Task[]
+  blockedTasks: Task[]
+  partnerOpportunities: Partner[]
+  projectsWithoutRecentActivity: Project[]
+}): SuggestedMove[] {
+  const {
+    leads, tasks, projects,
+    overdueTasks, blockedTasks, leadsNeedingAction,
+    todayMeetings, partnerOpportunities, projectsWithoutRecentActivity,
+  } = opts
+  const moves: SuggestedMove[] = []
+
+  if (overdueTasks.length > 0) {
+    moves.push({
+      label: truncate(overdueTasks[0].title),
+      subtext: `Overdue task · clear now`,
+      href: `/internal/tasks/${overdueTasks[0].id}`,
+      tone: 'urgent',
+    })
+  } else if (blockedTasks.length > 0) {
+    moves.push({
+      label: truncate(blockedTasks[0].title),
+      subtext: `Blocked · needs attention`,
+      href: `/internal/tasks/${blockedTasks[0].id}`,
+      tone: 'attention',
+    })
+  }
+
+  if (leadsNeedingAction.length > 0) {
+    const lead = leadsNeedingAction[0]
+    moves.push({
+      label: lead.name,
+      subtext: `Follow up · ${lead.status.replace(/_/g, ' ')}`,
+      href: `/internal/leads/${lead.id}`,
+      tone: 'revenue',
+    })
+  }
+
+  if (projectsWithoutRecentActivity.length > 0) {
+    const project = projectsWithoutRecentActivity[0]
+    moves.push({
+      label: truncate(project.title),
+      subtext: 'No recent activity · resume',
+      href: `/internal/projects/${project.id}`,
+      tone: 'attention',
+    })
+  }
+
+  if (todayMeetings.length > 0) {
+    const meeting = todayMeetings[0]
+    moves.push({
+      label: truncate(meeting.title),
+      subtext: `Meeting today · ${formatTime(meeting.scheduled_at)}`,
+      href: `/internal/meetings/${meeting.id}`,
+      tone: 'steady',
+    })
+  }
+
+  const newPartner = partnerOpportunities.find(p => p.status === 'new_application')
+  if (newPartner) {
+    moves.push({
+      label: newPartner.name,
+      subtext: 'New partner application',
+      href: `/internal/partners/${newPartner.id}`,
+      tone: 'steady',
+    })
+  }
+
+  // Empty-state fillers
+  if (moves.length < 3 && leads.length === 0) {
+    moves.push({ label: 'Create your first lead', subtext: 'Start the revenue pipeline', href: '/internal/leads/new', tone: 'create' })
+  }
+  if (moves.length < 3 && tasks.length === 0) {
+    moves.push({ label: "Add today's priority task", subtext: 'Plan your delivery work', href: '/internal/tasks/new', tone: 'create' })
+  }
+  if (moves.length < 3 && projects.length === 0) {
+    moves.push({ label: 'Start first project', subtext: 'Create a delivery workspace', href: '/internal/projects/new', tone: 'create' })
+  }
+  if (moves.length < 3) {
+    moves.push({ label: 'Ask agent to plan the week', subtext: 'Use ZO_Agent for a planning session', href: '/internal/automation', tone: 'steady' })
+  }
+  if (moves.length < 4) {
+    moves.push({ label: 'Add a partner', subtext: 'Grow your partner network', href: '/internal/partners/new', tone: 'create' })
+  }
+
+  return moves.slice(0, 5)
+}
+
+const TONE = {
+  urgent:    { card: 'border-amber-500/25 hover:border-amber-500/50 hover:bg-amber-500/5',   dot: 'bg-amber-400',   sub: 'text-amber-400/80',   arrow: 'text-amber-400' },
+  revenue:   { card: 'border-emerald-500/25 hover:border-emerald-500/50 hover:bg-emerald-500/5', dot: 'bg-emerald-400', sub: 'text-emerald-400/80', arrow: 'text-emerald-400' },
+  attention: { card: 'border-orange-500/25 hover:border-orange-500/50 hover:bg-orange-500/5', dot: 'bg-orange-400',  sub: 'text-orange-400/80',  arrow: 'text-orange-400' },
+  create:    { card: 'border-zo-purple/30 hover:border-zo-purple/60 hover:bg-zo-purple/5',    dot: 'bg-zo-purple',   sub: 'text-zo-purple-2/80', arrow: 'text-zo-purple-2' },
+  steady:    { card: 'border-white/10 hover:border-white/20 hover:bg-white/[0.03]',           dot: 'bg-white/25',    sub: 'text-muted-foreground', arrow: 'text-muted-foreground' },
 }
 
 export default async function ControlRoomPage() {
@@ -131,159 +247,246 @@ export default async function ControlRoomPage() {
     .reduce((sum, row) => sum + Number(row.amount ?? 0), 0)
   const upcomingRenewals = financeRows.filter(row => row.next_due_date && row.next_due_date >= today).slice(0, 3)
   const pendingPayments = financeRows.filter(row => ['planned', 'due', 'overdue'].includes(row.status)).length
+
+  const hour = now.getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'there'
   const totalAttention = overdueTasks.length + blockedTasks.length + leadsNeedingAction.length + todayMeetings.length
-  const briefingSummary = totalAttention > 0
-    ? `${plural(totalAttention, 'item')} need attention across follow-ups, tasks, meetings, and revenue motion.`
-    : 'The workspace is quiet. Use the agent to plan the next growth or delivery move.'
 
-  const suggestedActions = [
-    {
-      label: overdueTasks.length ? `Clear ${plural(overdueTasks.length, 'overdue task')}` : "Plan today's delivery work",
-      href: '/internal/tasks',
-      tone: overdueTasks.length ? 'urgent' : 'steady',
-    },
-    {
-      label: leadsNeedingAction.length ? `Follow up ${plural(leadsNeedingAction.length, 'lead')}` : 'Create the next qualified lead',
-      href: '/internal/leads',
-      tone: leadsNeedingAction.length ? 'revenue' : 'steady',
-    },
-    {
-      label: projectsWithoutRecentActivity.length ? `Refresh ${plural(projectsWithoutRecentActivity.length, 'project')}` : 'Open active projects',
-      href: '/internal/projects',
-      tone: projectsWithoutRecentActivity.length ? 'attention' : 'steady',
-    },
-  ]
+  // Executive briefing copy
+  const briefingLines: string[] = []
+  if (overdueTasks.length) briefingLines.push(`${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}`)
+  if (blockedTasks.length) briefingLines.push(`${blockedTasks.length} blocked`)
+  if (leadsNeedingAction.length) briefingLines.push(`${leadsNeedingAction.length} lead follow-up${leadsNeedingAction.length > 1 ? 's' : ''}`)
+  if (todayMeetings.length) briefingLines.push(`${todayMeetings.length} meeting${todayMeetings.length > 1 ? 's' : ''} today`)
+
+  const briefingSummary = briefingLines.length > 0
+    ? `Active signals: ${briefingLines.join(' · ')}.`
+    : leads.length === 0 && tasks.length === 0
+      ? `Your workspace is ready. Start by adding a lead, creating today's task, or asking the agent to plan your first operating move.`
+      : `All clear. Use the agent to surface the next growth or delivery move.`
+
+  const moves = buildSuggestedMoves({
+    leads, tasks, projects, partners, todayMeetings,
+    leadsNeedingAction, overdueTasks, blockedTasks,
+    partnerOpportunities, projectsWithoutRecentActivity,
+  })
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <section className="overflow-hidden rounded-2xl border border-zo-purple/25 bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.26),transparent_34%),linear-gradient(135deg,rgba(24,24,27,0.96),rgba(8,8,10,0.98))] p-4 shadow-2xl shadow-black/30 sm:p-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_22rem]">
+    <div className="space-y-6">
+
+      {/* ── 1. AI BRIEFING HERO ─────────────────────────────────── */}
+      <section className="overflow-hidden rounded-2xl border border-zo-purple/20 bg-[radial-gradient(ellipse_90%_55%_at_50%_-15%,rgba(139,92,246,0.14),transparent_70%),linear-gradient(180deg,rgba(14,14,18,1),rgba(8,8,10,1))] p-6 shadow-2xl shadow-black/50 sm:p-8">
+        <div className="grid gap-6 xl:grid-cols-[1fr_17rem]">
+
+          {/* Left: briefing content */}
           <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="border-zo-purple/40 bg-zo-purple/10 text-zo-purple-2">AI Business Briefing</Badge>
+            {/* Status bar */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Badge variant="outline" className="gap-1.5 border-zo-purple/35 bg-zo-purple/10 text-zo-purple-2">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                ZO_Agent · Live
+              </Badge>
               <span className="text-xs text-muted-foreground">{formatDateTime(now.toISOString())}</span>
             </div>
-            <div className="max-w-4xl">
-              <p className="text-sm font-medium text-zo-purple-2">Welcome back, {displayName}</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-normal text-white sm:text-4xl">Here is what needs attention today.</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300 sm:text-base">{briefingSummary}</p>
+
+            {/* Main heading */}
+            <div>
+              <p className="text-sm font-medium text-zo-purple-2">{greeting}, {displayName}</p>
+              <h1 className="mt-1.5 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                {totalAttention > 0 ? 'Here is what matters today.' : 'Your workspace is ready.'}
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">{briefingSummary}</p>
             </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              {suggestedActions.map(action => (
+
+            {/* Attention signal chips */}
+            {totalAttention > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {overdueTasks.length > 0 && (
+                  <Link href="/internal/tasks" className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-300 transition hover:border-amber-500/50">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    {overdueTasks.length} overdue
+                  </Link>
+                )}
+                {blockedTasks.length > 0 && (
+                  <Link href="/internal/tasks" className="inline-flex items-center gap-1.5 rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-xs text-orange-300 transition hover:border-orange-500/50">
+                    <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
+                    {blockedTasks.length} blocked
+                  </Link>
+                )}
+                {leadsNeedingAction.length > 0 && (
+                  <Link href="/internal/leads" className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300 transition hover:border-emerald-500/50">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    {leadsNeedingAction.length} follow-up{leadsNeedingAction.length > 1 ? 's' : ''}
+                  </Link>
+                )}
+                {todayMeetings.length > 0 && (
+                  <Link href="/internal/meetings" className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs text-blue-300 transition hover:border-blue-500/50">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                    {todayMeetings.length} meeting{todayMeetings.length > 1 ? 's' : ''} today
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {/* Suggested moves */}
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
+              {moves.slice(0, 3).map(move => (
                 <Link
-                  key={action.href}
-                  href={action.href}
-                  className="group rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-zo-purple/50 hover:bg-zo-purple/10"
+                  key={move.href}
+                  href={move.href}
+                  className={`group rounded-xl border bg-white/[0.025] p-3.5 transition ${TONE[move.tone].card}`}
                 >
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Suggested action</p>
-                  <p className="mt-2 text-sm font-semibold text-white">{action.label}</p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-zo-purple-2">
-                    Open <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-                  </span>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${TONE[move.tone].dot}`} />
+                    <ArrowRight className={`h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-100 ${TONE[move.tone].arrow}`} />
+                  </div>
+                  <p className="mt-2 text-sm font-semibold leading-snug text-white">{move.label}</p>
+                  <p className={`mt-1 text-[11px] ${TONE[move.tone].sub}`}>{move.subtext}</p>
                 </Link>
               ))}
             </div>
+
+            {/* Quick action buttons */}
             <div className="flex flex-wrap gap-2">
               <Link href="/internal/tasks/new">
-                <Button><CirclePlus className="mr-2 h-4 w-4" />Add Task</Button>
+                <Button size="sm"><CirclePlus className="mr-1.5 h-3.5 w-3.5" />Add Task</Button>
               </Link>
               <Link href="/internal/leads/new">
-                <Button variant="outline"><Users className="mr-2 h-4 w-4" />Create Lead</Button>
+                <Button size="sm" variant="outline"><Users className="mr-1.5 h-3.5 w-3.5" />Create Lead</Button>
               </Link>
               <Link href="/internal/automation">
-                <Button variant="outline"><Workflow className="mr-2 h-4 w-4" />Run Automation</Button>
+                <Button size="sm" variant="outline"><Workflow className="mr-1.5 h-3.5 w-3.5" />Automation</Button>
               </Link>
             </div>
           </div>
 
-          <aside className="rounded-xl border border-white/10 bg-black/30 p-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-zo-purple-2" />
-              <p className="text-sm font-semibold text-white">Agent readout</p>
+          {/* Right: Agent readout */}
+          <aside className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-4">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Agent Readout</p>
             </div>
-            <div className="mt-4 space-y-3 text-sm">
-              <BriefingLine label="Attention" value={plural(totalAttention, 'signal')} />
-              <BriefingLine label="Revenue motion" value={formatCurrency(openDealValue + openProposalValue)} />
-              <BriefingLine label="Business memory" value={`${knowledgeRes.count ?? 0} notes`} />
-              <BriefingLine label="This month spend" value={formatCurrency(monthSpend)} />
+            <div className="space-y-3 text-sm">
+              <ReadoutLine label="Attention signals" value={totalAttention > 0 ? plural(totalAttention, 'signal') : 'None'} highlight={totalAttention > 0} />
+              <ReadoutLine label="Revenue motion" value={openDealValue + openProposalValue > 0 ? formatCurrency(openDealValue + openProposalValue) : '—'} />
+              <ReadoutLine label="Business memory" value={knowledgeRes.count ? `${knowledgeRes.count} notes` : '—'} />
+              <ReadoutLine label="This month spend" value={monthSpend > 0 ? formatCurrency(monthSpend) : '—'} />
+            </div>
+
+            <div className="mt-5 space-y-1.5">
+              {moves.slice(3).map(move => (
+                <Link
+                  key={move.href}
+                  href={move.href}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] px-3 py-2 text-xs text-muted-foreground transition hover:border-zo-purple/30 hover:text-foreground"
+                >
+                  <span className="truncate">{move.label}</span>
+                  <ArrowRight className="h-3 w-3 shrink-0" />
+                </Link>
+              ))}
             </div>
           </aside>
         </div>
       </section>
 
+      {/* ── 2. ZO_AGENT COMMAND BAR ─────────────────────────────── */}
+      {/* AiAssistPanel embedded — AiAssistPanel embedded */}
+      <section className="rounded-2xl border border-zo-purple/25 bg-[linear-gradient(135deg,rgba(139,92,246,0.07),rgba(0,0,0,0)_60%)] p-5 shadow-xl shadow-black/20">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zo-purple/15">
+              <Sparkles className="h-3.5 w-3.5 text-zo-purple" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-white">ZO_Agent Command Bar</h2>
+              <p className="text-xs text-muted-foreground">Type or speak your next move — draft, create, or search</p>
+            </div>
+          </div>
+          <span className="hidden text-[10px] text-muted-foreground/50 sm:block">Powered by Together AI</span>
+        </div>
+        <AiAssistPanel embedded showHeader={false} />
+      </section>
+
+      {/* ── 3. BUSINESS PULSE ───────────────────────────────────── */}
       <section className="space-y-3">
-        <div>
-          <h2 className="text-base font-semibold">Business Pulse</h2>
-          <p className="text-sm text-muted-foreground">Live signals across revenue, delivery, partners, and follow-ups.</p>
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-zo-purple" />
+          <h2 className="text-sm font-semibold">Business Pulse</h2>
+          <span className="text-xs text-muted-foreground">· live signals</span>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-          <PulseCard icon={Users} label="Active leads" value={leads.length} href="/internal/leads" />
-          <PulseCard icon={CheckSquare} label="Open tasks" value={tasks.length} href="/internal/tasks" />
-          <PulseCard icon={BriefcaseBusiness} label="Active projects" value={projects.length} href="/internal/projects" />
-          <PulseCard icon={Handshake} label="Partner opportunities" value={partnerOpportunities.length} href="/internal/partners" />
-          <PulseCard icon={Clock3} label="Pending follow-ups" value={leadsNeedingAction.length + overdueTasks.length} href="/internal/tasks" />
+          <PulseCard icon={Users} label="Active leads" value={leads.length} href="/internal/leads" empty={leads.length === 0} emptyAction="Add a lead" />
+          <PulseCard icon={CheckSquare} label="Open tasks" value={tasks.length} href="/internal/tasks" urgent={overdueTasks.length > 0} />
+          <PulseCard icon={BriefcaseBusiness} label="Active projects" value={projects.length} href="/internal/projects" empty={projects.length === 0} emptyAction="Start project" />
+          <PulseCard icon={Handshake} label="Partner opps" value={partnerOpportunities.length} href="/internal/partners" />
+          <PulseCard icon={Clock3} label="Follow-ups due" value={leadsNeedingAction.length + overdueTasks.length} href="/internal/tasks" urgent={(leadsNeedingAction.length + overdueTasks.length) > 0} />
           <PulseCard icon={DollarSign} label="Pipeline value" value={formatCurrency(openDealValue + openProposalValue)} href="/internal/deals" />
         </div>
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_25rem]">
+      {/* ── 4. MAIN GRID ────────────────────────────────────────── */}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <main className="space-y-5">
+
           <div className="grid gap-5 lg:grid-cols-2">
-            <Panel title="Today&apos;s Priorities" icon={Target} actionHref="/internal/tasks" actionLabel="Open work">
+            {/* Today's Priorities */}
+            <Panel title="Today's Priorities" icon={Target} actionHref="/internal/tasks" actionLabel="Open work">
               <PriorityRow icon={CheckSquare} label="Due tasks" value={plural(dueTodayTasks.length + overdueTasks.length, 'task')} href="/internal/tasks" urgent={overdueTasks.length > 0} />
               <PriorityRow icon={Clock3} label="Stuck tasks" value={plural(blockedTasks.length, 'blocked item')} href="/internal/tasks" urgent={blockedTasks.length > 0} />
               <PriorityRow icon={MailCheck} label="Follow-ups due" value={plural(leadsNeedingAction.length, 'lead')} href="/internal/leads" urgent={leadsNeedingAction.length > 0} />
-              <PriorityRow icon={BriefcaseBusiness} label="Projects without recent activity" value={plural(projectsWithoutRecentActivity.length, 'project')} href="/internal/projects" urgent={projectsWithoutRecentActivity.length > 0} />
+              <PriorityRow icon={BriefcaseBusiness} label="Stale projects" value={plural(projectsWithoutRecentActivity.length, 'project')} href="/internal/projects" urgent={projectsWithoutRecentActivity.length > 0} />
               <PriorityRow icon={CalendarDays} label="Meetings today" value={plural(todayMeetings.length, 'meeting')} href="/internal/meetings?calendar=my" />
+              {tasks.length === 0 && (
+                <EmptyPrompt
+                  text="No open tasks yet."
+                  action="Create today's priority"
+                  href="/internal/tasks/new"
+                />
+              )}
             </Panel>
 
+            {/* Revenue Motion */}
             <Panel title="Revenue Motion" icon={TrendingUp} actionHref="/internal/deals" actionLabel="Open pipeline">
               <MetricRow label="New leads" value={String(newLeads.length)} />
               <MetricRow label="Qualified leads" value={String(qualifiedLeads.length)} />
               <MetricRow label="Open deals" value={`${deals.length} / ${formatCurrency(openDealValue)}`} />
               <MetricRow label="Proposals or contracts" value={`${proposals.length} / ${formatCurrency(openProposalValue)}`} />
-              <div className="rounded-lg border border-zo-purple/25 bg-zo-purple/10 p-3 text-sm">
-                <p className="font-semibold text-zo-purple-2">AI recommendation</p>
-                <p className="mt-1 text-muted-foreground">
-                  {leadsNeedingAction.length
-                    ? 'Prioritize the oldest lead follow-up before creating new pipeline.'
-                    : 'Pipeline is clean. Ask the agent for the next partner or outbound move.'}
-                </p>
-              </div>
-            </Panel>
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-2">
-            <Panel title="Team Rhythm" icon={MessageSquareText} actionHref="/internal/meetings" actionLabel="Open meetings">
-              <RhythmRow label="Daily check-in" value="Placeholder ready" detail="Check-ins are not wired yet; this panel will consume the real check-in table when available." />
-              <RhythmRow label="Blockers" value={plural(blockedTasks.length, 'item')} detail={blockedTasks[0]?.title || 'No blocked tasks reported.'} />
-              <RhythmRow label="Ownership" value={plural(tasks.filter(row => row.owner_id).length, 'owned task')} detail="Open task ownership is visible from Tasks." />
-              <RhythmRow label="Recent updates" value={projects[0]?.title || 'No active projects yet'} detail={projects[0] ? `Updated ${formatDate(projects[0].updated_at)}` : 'Create a project to start tracking delivery.'} />
-            </Panel>
-
-            <Panel title="Business Memory" icon={Workflow} actionHref="/internal/knowledge" actionLabel="Open memory">
-              {aiRequests.map(row => (
-                <Link key={row.id} href="/internal/automation" className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 p-3 hover:border-zo-purple/40">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold capitalize">{row.intent.replace(/_/g, ' ')}</p>
-                    <p className="text-xs text-muted-foreground">{formatDateTime(row.created_at)}</p>
-                  </div>
-                  <ResourceStatusBadge status={row.status} />
-                </Link>
-              ))}
-              {aiRequests.length === 0 && (
-                <EmptyState
-                  icon={Bot}
-                  title="No automation memory yet"
-                  description="Agent runs and automation drafts will appear here once activity is available."
-                  href="/internal/automation"
-                  action="Open automation"
+              {leads.length === 0 ? (
+                <EmptyPrompt
+                  text="No pipeline yet."
+                  action="Add first lead"
+                  href="/internal/leads/new"
+                  agentPrompt="Create a lead capture plan"
                 />
+              ) : (
+                <div className="rounded-lg border border-zo-purple/20 bg-zo-purple/[0.06] p-3">
+                  <p className="text-xs font-semibold text-zo-purple-2">AI recommendation</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {leadsNeedingAction.length
+                      ? 'Prioritize the oldest lead follow-up before creating new pipeline.'
+                      : 'Pipeline is clean. Ask the agent for the next partner or outbound move.'}
+                  </p>
+                </div>
               )}
             </Panel>
           </div>
 
+          {/* Team Rhythm */}
+          <Panel title="Team Rhythm" icon={MessageSquareText} actionHref="/internal/meetings" actionLabel="Open meetings">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <RhythmRow label="Blockers" value={plural(blockedTasks.length, 'item')} detail={blockedTasks[0]?.title || 'No blocked tasks reported.'} urgent={blockedTasks.length > 0} />
+              <RhythmRow label="Owned tasks" value={plural(tasks.filter(row => row.owner_id).length, 'task')} detail="Open task ownership visible from Tasks." />
+              <RhythmRow label="Meetings today" value={plural(todayMeetings.length, 'meeting')} detail={todayMeetings[0]?.title || 'No meetings scheduled.'} />
+              <RhythmRow
+                label="Last active project"
+                value={projects[0]?.title ? truncate(projects[0].title, 28) : 'None'}
+                detail={projects[0] ? `Updated ${formatDate(projects[0].updated_at)}` : 'Create a project to track delivery.'}
+              />
+            </div>
+          </Panel>
+
+          {/* Quick Actions */}
           <Panel title="Quick Actions" icon={CirclePlus}>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <QuickAction href="/internal/leads/new" icon={Users} label="Create lead" />
@@ -291,91 +494,109 @@ export default async function ControlRoomPage() {
               <QuickAction href="/internal/projects/new" icon={BriefcaseBusiness} label="Add project" />
               <QuickAction href="/internal/partners/new" icon={Handshake} label="Add partner" />
               <QuickAction href="/internal/ideas/new" icon={Lightbulb} label="Add idea" />
-              <QuickAction href="/internal/automation" icon={Workflow} label="Open agent/chat" />
-              <QuickAction href="/request-build" icon={ReceiptText} label="Request build form" />
+              <QuickAction href="/internal/automation" icon={Workflow} label="Open agent" />
+              <QuickAction href="/request-build" icon={ReceiptText} label="Request build" />
               <QuickAction href="/partner-with-us" icon={Handshake} label="Partner form" />
             </div>
           </Panel>
         </main>
 
+        {/* ── Right aside ─── */}
         <aside className="space-y-5">
-          <section className="rounded-2xl border border-zo-purple/25 bg-card/90 p-4 shadow-xl shadow-black/20">
-            <div className="mb-3 flex items-center gap-2">
-              <Bot className="h-4 w-4 text-zo-purple" />
-              <div>
-                <h2 className="text-sm font-semibold">Ask ZeroOrigins Agent</h2>
-                <p className="text-xs text-muted-foreground">Turn the briefing into drafts, tasks, meetings, and follow-ups.</p>
-              </div>
-            </div>
-            <div className="mb-4 flex flex-wrap gap-2">
-              {agentPrompts.map(prompt => (
-                <span key={prompt} className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs text-muted-foreground">
-                  {prompt}
-                </span>
-              ))}
-            </div>
-            <AiAssistPanel embedded />
-          </section>
 
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <WalletCards className="h-4 w-4 text-zo-purple" />
-                Operating Costs
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <MetricRow label="This month spend" value={formatCurrency(monthSpend)} />
-              <MetricRow label="Upcoming renewals" value={String(upcomingRenewals.length)} />
-              <MetricRow label="Pending payments" value={String(pendingPayments)} />
-              <MetricRow label="Active customers" value={String(customers.length)} />
-            </CardContent>
-          </Card>
+          {/* Business Memory */}
+          <Panel title="Agent Activity" icon={Bot} actionHref="/internal/automation" actionLabel="Open automation">
+            {aiRequests.length > 0 ? (
+              aiRequests.map(row => (
+                <Link
+                  key={row.id}
+                  href="/internal/automation"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 p-3 hover:border-zo-purple/40"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium capitalize">{row.intent.replace(/_/g, ' ')}</p>
+                    <p className="text-xs text-muted-foreground">{formatDateTime(row.created_at)}</p>
+                  </div>
+                  <ResourceStatusBadge status={row.status} />
+                </Link>
+              ))
+            ) : (
+              <EmptySection
+                icon={Bot}
+                title="No agent activity yet"
+                description="Agent drafts and automation runs will appear here."
+                href="/internal/automation"
+                action="Open automation"
+                agentPrompt="What should I do first?"
+              />
+            )}
+          </Panel>
+
+          {/* Operating Costs */}
+          <Panel title="Operating Costs" icon={WalletCards} actionHref="/internal/finance" actionLabel="Open finance">
+            <MetricRow label="This month spend" value={monthSpend > 0 ? formatCurrency(monthSpend) : '—'} />
+            <MetricRow label="Upcoming renewals" value={String(upcomingRenewals.length)} />
+            <MetricRow label="Pending payments" value={String(pendingPayments)} />
+            <MetricRow label="Active customers" value={String(customers.length)} />
+          </Panel>
         </aside>
       </div>
-
-      {leads.length === 0 && (
-        <EmptyState
-          icon={Users}
-          title="No active leads yet"
-          description="Create the first lead so the briefing can start surfacing follow-ups and revenue motion."
-          href="/internal/leads/new"
-          action="Create lead"
-        />
-      )}
     </div>
   )
 }
 
-function BriefingLine({ label, value }: { label: string; value: string }) {
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function ReadoutLine({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-2 last:border-0 last:pb-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold text-white">{value}</span>
+    <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-2.5 last:border-0 last:pb-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className={`text-xs font-semibold ${highlight ? 'text-amber-300' : 'text-white'}`}>{value}</span>
     </div>
   )
 }
 
-function PulseCard({ icon: Icon, label, value, href }: { icon: LucideIcon; label: string; value: string | number; href: string }) {
+function PulseCard({
+  icon: Icon, label, value, href, urgent = false, empty = false, emptyAction,
+}: {
+  icon: LucideIcon; label: string; value: string | number; href: string;
+  urgent?: boolean; empty?: boolean; emptyAction?: string;
+}) {
   return (
-    <Link href={href} className="rounded-xl border border-border bg-card p-3 transition hover:border-zo-purple/45 hover:bg-zo-purple/5 sm:p-4">
-      <div className="flex items-center justify-between gap-3">
-        <Icon className="h-4 w-4 text-zo-purple" />
-        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+    <Link
+      href={href}
+      className={`group rounded-xl border p-3.5 transition sm:p-4 ${
+        urgent
+          ? 'border-amber-500/25 bg-amber-500/[0.04] hover:border-amber-500/45'
+          : 'border-border bg-card hover:border-zo-purple/40 hover:bg-zo-purple/[0.04]'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <Icon className={`h-3.5 w-3.5 ${urgent ? 'text-amber-400' : 'text-zo-purple'}`} />
+        <ArrowRight className="h-3 w-3 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
       </div>
-      <p className="mt-3 text-2xl font-bold text-foreground">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`mt-3 text-2xl font-bold ${empty ? 'text-muted-foreground' : 'text-foreground'}`}>{value}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
+      {empty && emptyAction && (
+        <p className="mt-1.5 flex items-center gap-1 text-xs text-zo-purple">
+          <Plus className="h-3 w-3" />{emptyAction}
+        </p>
+      )}
     </Link>
   )
 }
 
-function Panel({ title, icon: Icon, actionHref, actionLabel, children }: { title: string; icon: LucideIcon; actionHref?: string; actionLabel?: string; children: React.ReactNode }) {
+function Panel({
+  title, icon: Icon, actionHref, actionLabel, children,
+}: {
+  title: string; icon: LucideIcon; actionHref?: string; actionLabel?: string; children: React.ReactNode;
+}) {
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-zo-purple" />
-          <h2 className="text-base font-semibold">{title}</h2>
+          <Icon className="h-3.5 w-3.5 text-zo-purple" />
+          <h2 className="text-sm font-semibold">{title}</h2>
         </div>
         {actionHref && actionLabel && (
           <Link href={actionHref} className="shrink-0 text-xs font-medium text-zo-purple hover:text-zo-purple-2">
@@ -383,19 +604,26 @@ function Panel({ title, icon: Icon, actionHref, actionLabel, children }: { title
           </Link>
         )}
       </div>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-2.5">{children}</div>
     </section>
   )
 }
 
-function PriorityRow({ icon: Icon, label, value, href, urgent = false }: { icon: LucideIcon; label: string; value: string; href: string; urgent?: boolean }) {
+function PriorityRow({
+  icon: Icon, label, value, href, urgent = false,
+}: {
+  icon: LucideIcon; label: string; value: string; href: string; urgent?: boolean;
+}) {
   return (
-    <Link href={href} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 p-3 hover:border-zo-purple/40">
+    <Link
+      href={href}
+      className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 px-3 py-2.5 transition hover:border-zo-purple/35"
+    >
       <div className="flex min-w-0 items-center gap-2">
-        <Icon className={urgent ? 'h-4 w-4 shrink-0 text-amber-300' : 'h-4 w-4 shrink-0 text-zo-purple'} />
-        <span className="truncate text-sm text-muted-foreground">{label}</span>
+        <Icon className={urgent ? 'h-3.5 w-3.5 shrink-0 text-amber-400' : 'h-3.5 w-3.5 shrink-0 text-zo-purple'} />
+        <span className="truncate text-xs text-muted-foreground">{label}</span>
       </div>
-      <span className="shrink-0 text-sm font-semibold">{value}</span>
+      <span className="shrink-0 text-xs font-semibold">{value}</span>
     </Link>
   )
 }
@@ -403,18 +631,22 @@ function PriorityRow({ icon: Icon, label, value, href, urgent = false }: { icon:
 function MetricRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/50 px-3 py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-semibold">{value}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs font-semibold">{value}</span>
     </div>
   )
 }
 
-function RhythmRow({ label, value, detail }: { label: string; value: string; detail: string }) {
+function RhythmRow({
+  label, value, detail, urgent = false,
+}: {
+  label: string; value: string; detail: string; urgent?: boolean;
+}) {
   return (
     <div className="rounded-lg border border-border bg-background/60 p-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold">{label}</p>
-        <span className="text-xs text-zo-purple-2">{value}</span>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold">{label}</p>
+        <span className={`text-xs ${urgent ? 'text-amber-400' : 'text-zo-purple-2'}`}>{value}</span>
       </div>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
     </div>
@@ -423,22 +655,54 @@ function RhythmRow({ label, value, detail }: { label: string; value: string; det
 
 function QuickAction({ href, icon: Icon, label }: { href: string; icon: LucideIcon; label: string }) {
   return (
-    <Link href={href} className="flex min-h-12 items-center gap-2 rounded-lg border border-border bg-background/60 px-3 text-sm font-medium hover:border-zo-purple/40 hover:bg-zo-purple/10">
-      <Icon className="h-4 w-4 shrink-0 text-zo-purple" />
+    <Link
+      href={href}
+      className="flex min-h-10 items-center gap-2 rounded-lg border border-border bg-background/60 px-3 text-xs font-medium transition hover:border-zo-purple/35 hover:bg-zo-purple/[0.06]"
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0 text-zo-purple" />
       <span>{label}</span>
     </Link>
   )
 }
 
-function EmptyState({ icon: Icon, title, description, href, action }: { icon: LucideIcon; title: string; description: string; href: string; action: string }) {
+function EmptyPrompt({
+  text, action, href, agentPrompt,
+}: {
+  text: string; action: string; href: string; agentPrompt?: string;
+}) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-card/70 p-5 text-center">
-      <Icon className="mx-auto h-5 w-5 text-zo-purple" />
-      <p className="mt-2 text-sm font-semibold">{title}</p>
-      <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{description}</p>
-      <Link href={href} className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-zo-purple hover:text-zo-purple-2">
-        {action} <ArrowRight className="h-3.5 w-3.5" />
-      </Link>
+    <div className="rounded-lg border border-dashed border-border bg-background/40 px-3 py-3">
+      <p className="text-xs text-muted-foreground">{text}</p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Link href={href} className="inline-flex items-center gap-1 text-xs font-medium text-zo-purple hover:text-zo-purple-2">
+          <Plus className="h-3 w-3" />{action}
+        </Link>
+        {agentPrompt && (
+          <span className="text-xs text-muted-foreground/50">or ask: &ldquo;{agentPrompt}&rdquo;</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function EmptySection({
+  icon: Icon, title, description, href, action, agentPrompt,
+}: {
+  icon: LucideIcon; title: string; description: string; href: string; action: string; agentPrompt?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-dashed border-border bg-background/40 p-4 text-center">
+      <Icon className="mx-auto h-5 w-5 text-zo-purple/50" />
+      <p className="mt-2 text-xs font-semibold">{title}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+        <Link href={href} className="inline-flex items-center gap-1 text-xs font-medium text-zo-purple hover:text-zo-purple-2">
+          {action} <ArrowRight className="h-3 w-3" />
+        </Link>
+        {agentPrompt && (
+          <span className="text-xs text-muted-foreground/50">or: &ldquo;{agentPrompt}&rdquo;</span>
+        )}
+      </div>
     </div>
   )
 }
