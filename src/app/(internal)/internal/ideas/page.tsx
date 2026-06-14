@@ -3,6 +3,7 @@ import { ResourcePageHeader } from '@/components/resource-kit/resource-page-head
 import { ResourceEmptyState } from '@/components/resource-kit/resource-empty-state'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import { Badge } from '@/components/ui/badge'
+import { GridReveal, GridRevealItem } from '@/components/ui/grid-reveal'
 import Link from 'next/link'
 import type { BusinessIdea } from '@/types'
 
@@ -68,19 +69,21 @@ export default async function IdeasVaultPage({ searchParams }: { searchParams: P
           {grouped.filter(g => g.items.length > 0).map(group => (
             <section key={group.key}>
               <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{group.label} ({group.items.length})</h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {group.items.map(idea => (
-                  <Link key={idea.id} href={`${BASE}/${idea.id}`} className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-zo-purple/40">
-                    <p className="mb-1 text-sm font-semibold text-foreground line-clamp-1">{idea.title}</p>
-                    {idea.description && <p className="mb-2 text-xs text-muted-foreground line-clamp-2">{idea.description}</p>}
-                    <div className="flex items-center gap-2">
-                      <ResourceStatusBadge status={idea.status} />
-                      <Badge variant="outline" className="text-[10px]">{idea.priority}</Badge>
-                      {idea.local_folder_path && <Badge variant="outline" className="text-[10px]">📁 linked</Badge>}
-                    </div>
-                  </Link>
+              <GridReveal className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {group.items.map((idea, index) => (
+                  <GridRevealItem key={idea.id} index={index} className="h-full">
+                    <Link href={`${BASE}/${idea.id}`} className="zo-grid-reveal-card block h-full rounded-lg border border-border bg-card p-4">
+                      <p className="mb-1 text-sm font-semibold text-foreground line-clamp-1">{idea.title}</p>
+                      {idea.description && <p className="mb-2 text-xs text-muted-foreground line-clamp-2">{idea.description}</p>}
+                      <div className="flex items-center gap-2">
+                        <ResourceStatusBadge status={idea.status} />
+                        <Badge variant="outline" className="text-[10px]">{idea.priority}</Badge>
+                        {idea.local_folder_path && <Badge variant="outline" className="text-[10px]">📁 linked</Badge>}
+                      </div>
+                    </Link>
+                  </GridRevealItem>
                 ))}
-              </div>
+              </GridReveal>
             </section>
           ))}
         </div>

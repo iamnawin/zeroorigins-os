@@ -26,6 +26,7 @@ export function DraggableLifecycleCard({ card, columnId, draggingId, onDragStart
   return (
     <div
       draggable
+      data-dragging={isDragging ? 'true' : 'false'}
       onDragStart={event => {
         event.dataTransfer.effectAllowed = 'move'
         event.dataTransfer.setData('text/plain', JSON.stringify({ type: card.type, id: item.id, fromColumn: columnId }))
@@ -33,8 +34,8 @@ export function DraggableLifecycleCard({ card, columnId, draggingId, onDragStart
       }}
       onDragEnd={onDragEnd}
       className={cn(
-        'group rounded-lg border border-border bg-card p-3 shadow-sm transition-all duration-150',
-        'hover:border-zo-purple/40 hover:bg-card/90',
+        'zo-grid-reveal-card group rounded-lg border border-border bg-card p-3 shadow-sm transition-all duration-150',
+        'hover:bg-card/90',
         isDragging && 'scale-[1.02] border-zo-purple/70 shadow-lg shadow-zo-purple/20 opacity-80',
       )}
     >

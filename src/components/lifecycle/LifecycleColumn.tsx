@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { GridRevealItem } from '@/components/ui/grid-reveal'
 import { DraggableLifecycleCard } from './DraggableLifecycleCard'
 import type { DropZoneState, LifecycleCard, LifecycleColumn as LifecycleColumnType, LifecycleColumnId } from './types'
 
@@ -59,15 +60,16 @@ export function LifecycleColumn({
             {emptyText}
           </div>
         ) : (
-          cards.map(card => (
-            <DraggableLifecycleCard
-              key={`${card.type}:${card.item.id}`}
-              card={card}
-              columnId={column.id}
-              draggingId={draggingId}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
-            />
+          cards.map((card, index) => (
+            <GridRevealItem key={`${card.type}:${card.item.id}`} index={index}>
+              <DraggableLifecycleCard
+                card={card}
+                columnId={column.id}
+                draggingId={draggingId}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+              />
+            </GridRevealItem>
           ))
         )}
       </div>
