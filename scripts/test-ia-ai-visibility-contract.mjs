@@ -45,7 +45,7 @@ assert.ok(header.includes('Global search'), 'Top bar must expose global search')
 assert.ok(header.includes('Quick Add'), 'Top bar must expose Quick Add')
 assert.ok(header.includes('Sync'), 'Top bar must expose Sync')
 
-for (const section of ['Today&apos;s Focus', 'Quick Actions', 'Pipeline Snapshot', 'Automation Feed', 'Finance Snapshot']) {
+for (const section of ['AI Business Briefing', 'Business Pulse', 'Today&apos;s Priorities', 'Revenue Motion', 'Team Rhythm', 'Business Memory', 'Quick Actions']) {
   assert.ok(controlRoomPage.includes(section), `Control Room missing ${section}`)
 }
 
