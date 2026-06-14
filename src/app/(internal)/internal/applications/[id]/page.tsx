@@ -93,6 +93,8 @@ export default async function ApplicationDetailPage({ params, searchParams }: { 
 
 function OverviewTab({ app }: { app: Application }) {
   const fields = [
+    { label: 'Purpose', value: app.description },
+    { label: 'Next Action', value: app.next_action },
     { label: 'Tech Stack', value: app.tech_stack.length > 0 ? app.tech_stack.join(', ') : null },
     { label: 'Build Status', value: app.build_status },
     { label: 'Last Synced', value: app.last_synced_at ? new Date(app.last_synced_at).toLocaleString() : null },

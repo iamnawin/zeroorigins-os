@@ -9,11 +9,12 @@ export default async function EditApplicationPage({ params }: { params: Promise<
   const supabase = await createClient()
   const { data } = await supabase.from('applications').select('*').eq('id', id).single()
   if (!data) notFound()
+  const { data: verticals } = await supabase.from('business_verticals').select('id, name').order('name')
 
   return (
     <div className="space-y-6">
       <ResourcePageHeader title="Edit Application" description="Update registry details, source links, status, and notes." showNew={false} />
-      <ApplicationForm initialData={data as Application} />
+      <ApplicationForm initialData={data as Application} verticals={verticals ?? []} />
     </div>
   )
 }

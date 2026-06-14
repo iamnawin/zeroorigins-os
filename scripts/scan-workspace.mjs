@@ -11,6 +11,7 @@ import { join, basename, extname, relative } from 'path'
 const IDEAS_ROOT = 'D:\\AI-Workspace\\Ideas'
 const REPOS_ROOT = 'D:\\AI-Workspace\\Repos'
 const OUTPUT = join(process.cwd(), 'zeroorigins-source-inventory.json')
+const CRM_VERTICAL_SLUG = 'crm-salesforce-systems'
 
 const COMPANY_DOC_SOURCES = [
   {
@@ -37,6 +38,86 @@ const VERTICAL_SOURCE_ROOTS = [
     description: 'IgnAIte institute source material including course pages, brochures, workshop pages, offer documents, markdown, PDFs, and HTML collateral.',
   },
 ]
+
+const CRM_IDEA_OVERRIDES = {
+  'serviceops-pulse': {
+    vertical_slug: CRM_VERTICAL_SLUG,
+    next_action: 'Promote to an application once MVP scope is confirmed.',
+  },
+  'orgtrace': {
+    vertical_slug: CRM_VERTICAL_SLUG,
+    next_action: 'Keep linked to CRM & Salesforce Systems and attach repo details.',
+  },
+  'perfect-store-scorecard': {
+    vertical_slug: CRM_VERTICAL_SLUG,
+    next_action: 'Confirm Salesforce packaging and demo path.',
+  },
+  'salesforce-automation-packs': {
+    vertical_slug: CRM_VERTICAL_SLUG,
+    next_action: 'Define the first reusable automation pack.',
+  },
+  'crm-implementation-accelerators': {
+    vertical_slug: CRM_VERTICAL_SLUG,
+    next_action: 'Collect reusable delivery assets.',
+  },
+  'experience-cloud-portal-systems': {
+    vertical_slug: CRM_VERTICAL_SLUG,
+    next_action: 'Map portal components and reusable templates.',
+  },
+}
+
+const CRM_APP_OVERRIDES = {
+  'serviceops-pulse': {
+    name: 'ServiceOps Pulse',
+    vertical_slug: CRM_VERTICAL_SLUG,
+    stage: 'concept',
+    type: 'salesforce_app',
+    description: 'Salesforce-integrated service operations monitoring dashboard for support and delivery visibility.',
+    next_action: 'Confirm MVP scope and connect source assets.',
+  },
+  'orgtrace': {
+    name: 'OrgTrace',
+    vertical_slug: CRM_VERTICAL_SLUG,
+    stage: 'production_ready',
+    type: 'salesforce_app',
+    description: 'Product-ready developer and Salesforce metadata intelligence application.',
+    next_action: 'Package the Salesforce metadata intelligence workflow for first demos.',
+  },
+  'perfect-store-scorecard': {
+    name: 'Perfect Store Scorecard',
+    vertical_slug: CRM_VERTICAL_SLUG,
+    stage: 'prototype',
+    type: 'salesforce_app',
+    description: 'Retail execution and CRM scorecard product for field audits, store scoring, and follow-up workflows.',
+    next_action: 'Validate demo flow and identify Salesforce packaging path.',
+  },
+  'salesforce-automation-packs': {
+    name: 'Salesforce Automation Packs',
+    vertical_slug: CRM_VERTICAL_SLUG,
+    stage: 'concept',
+    type: 'automation',
+    description: 'Reusable Salesforce and CRM automation packs for lead follow-up, service workflows, alerts, and reporting.',
+    next_action: 'Define first three automation packs and required assets.',
+  },
+  'crm-implementation-accelerators': {
+    name: 'CRM Implementation Accelerators',
+    vertical_slug: CRM_VERTICAL_SLUG,
+    stage: 'concept',
+    type: 'service_product',
+    description: 'Templates, scripts, discovery assets, and implementation shortcuts for CRM delivery projects.',
+    next_action: 'Collect reusable delivery assets and publish accelerator checklist.',
+  },
+  'experience-cloud-portal-systems': {
+    name: 'Experience Cloud / Portal Systems',
+    vertical_slug: CRM_VERTICAL_SLUG,
+    stage: 'concept',
+    type: 'salesforce_app',
+    description: 'Customer and partner portal systems using Salesforce Experience Cloud and connected CRM workflows.',
+    next_action: 'Map portal use cases and reusable portal components.',
+  },
+}
+
+// Repo folder aliases include Perfect-Store-Scorecard from D:\AI-Workspace\Repos.
 
 // Known stage overrides
 const STAGE_OVERRIDES = {
@@ -188,15 +269,19 @@ function buildSourceTree(dir, maxDepth = 3, currentDepth = 0) {
 
 function scanIdea(dir) {
   const name = basename(dir)
+  const slug = slugify(name)
   const stat = statSync(dir)
+  const crmOverride = CRM_IDEA_OVERRIDES[slug]
   return {
     name,
-    slug: slugify(name),
+    slug,
     local_folder_path: dir,
+    vertical_slug: crmOverride?.vertical_slug || inferCrmVerticalSlug(name),
     status: 'raw',
     priority: 'normal',
     source: 'local_folder',
     description: getReadmeSummary(dir) || `Idea concept: ${name}`,
+    next_action: crmOverride?.next_action || 'Review and classify idea',
     detected_files: detectFiles(dir),
     readme_summary: getReadmeSummary(dir),
     last_modified: stat.mtime.toISOString(),
@@ -206,21 +291,25 @@ function scanIdea(dir) {
 
 function scanRepo(dir) {
   const name = basename(dir)
+  const slug = slugify(name)
   const stat = statSync(dir)
   const pkg = safeJson(join(dir, 'package.json'))
   const techStack = inferTechStack(dir, pkg)
   const gitRemote = getGitRemote(dir)
   const gitBranch = getGitBranch(dir)
   const docsPath = existsSync(join(dir, 'docs')) ? join(dir, 'docs') : existsSync(join(dir, 'Docs')) ? join(dir, 'Docs') : null
+  const crmOverride = CRM_APP_OVERRIDES[slug]
 
   return {
-    name: pkg?.name || name,
-    slug: slugify(name),
+    name: crmOverride?.name || pkg?.name || name,
+    slug,
     local_folder_path: dir,
-    stage: STAGE_OVERRIDES[name] || 'prototype',
+    vertical_slug: crmOverride?.vertical_slug || inferCrmVerticalSlug(name, techStack),
+    stage: crmOverride?.stage || STAGE_OVERRIDES[name] || 'prototype',
     status: 'active',
-    type: TYPE_OVERRIDES[name] || 'application',
-    description: DESC_OVERRIDES[name] || pkg?.description || getReadmeSummary(dir) || `Application: ${name}`,
+    type: crmOverride?.type || TYPE_OVERRIDES[name] || 'application',
+    description: crmOverride?.description || DESC_OVERRIDES[name] || pkg?.description || getReadmeSummary(dir) || `Application: ${name}`,
+    next_action: crmOverride?.next_action || null,
     tech_stack: techStack,
     package_name: pkg?.name || null,
     framework: techStack[0] || null,
@@ -239,6 +328,13 @@ function scanRepo(dir) {
     build_status: null,
     source_tree: buildSourceTree(dir),
   }
+}
+
+function inferCrmVerticalSlug(name, techStack = []) {
+  const haystack = `${name} ${techStack.join(' ')}`.toLowerCase()
+  return /(salesforce|crm|service cloud|sales cloud|experience cloud|appExchange|orgtrace|serviceops|scorecard)/i.test(haystack)
+    ? CRM_VERTICAL_SLUG
+    : null
 }
 
 function scanKnowledgeSource(source) {

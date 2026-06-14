@@ -60,12 +60,13 @@ async function main() {
         title: idea.name,
         slug: idea.slug,
         description: idea.description,
+        vertical_id: await verticalIdForSlug(idea.vertical_slug),
         status: idea.status || 'raw',
         priority: idea.priority || 'normal',
         source: idea.source || 'local_folder',
         local_folder_path: idea.local_folder_path,
         ai_summary: idea.readme_summary || null,
-        next_action: 'Review and classify idea',
+        next_action: idea.next_action || 'Review and classify idea',
       }
 
       const existing = await supabase('business_ideas', 'GET', null, `?slug=eq.${idea.slug}&select=id`)
@@ -89,6 +90,7 @@ async function main() {
         name: app.name,
         slug: app.slug,
         description: app.description,
+        vertical_id: await verticalIdForSlug(app.vertical_slug),
         stage: isArchived ? 'archived' : (app.stage || 'prototype'),
         status: isArchived ? 'archived' : (app.status || 'active'),
         type: app.type || 'application',
@@ -96,6 +98,7 @@ async function main() {
         repo_url: app.repo_url || null,
         docs_folder_path: app.docs_folder_path || null,
         tech_stack: app.tech_stack || [],
+        next_action: app.next_action || null,
         last_synced_at: new Date().toISOString(),
       }
 

@@ -322,6 +322,7 @@ export type ApplicationFormInput = {
   name: string
   slug?: string
   description?: string
+  vertical_id?: string
   stage: ApplicationStage
   status: ApplicationStatus
   type: ApplicationType
@@ -336,6 +337,7 @@ export type ApplicationFormInput = {
   figma_url?: string
   tech_stack?: string[] | string
   build_status?: string
+  next_action?: string
   notes?: string
 }
 
@@ -1435,6 +1437,7 @@ function applicationPayload(input: ApplicationFormInput) {
     name: requiredText(input.name, 'Application name'),
     slug: optionalText(input.slug) ?? slugify(input.name),
     description: optionalText(input.description),
+    vertical_id: optionalText(input.vertical_id),
     stage: input.stage,
     status: input.status,
     type: input.type,
@@ -1449,6 +1452,7 @@ function applicationPayload(input: ApplicationFormInput) {
     figma_url: optionalText(input.figma_url),
     tech_stack: optionalTextArray(input.tech_stack),
     build_status: optionalText(input.build_status),
+    next_action: optionalText(input.next_action),
     notes: optionalText(input.notes),
   }
 }

@@ -7,6 +7,10 @@ import { ExternalLink } from 'lucide-react'
 import type { Application } from '@/types'
 
 const BASE = '/internal/applications'
+type ApplicationCardRow = Application & {
+  vertical?: { id: string; name: string } | null
+  owner?: { full_name?: string | null; email?: string | null } | null
+}
 
 const STAGE_COLORS: Record<string, string> = {
   live: 'border-green-500/40 text-green-400',
@@ -22,7 +26,7 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
   const { filter } = await searchParams
 
   const supabase = await createClient()
-  let query = supabase.from('applications').select('*').order('name')
+  let query = supabase.from('applications').select('*, vertical:business_verticals(id, name), owner:profiles(full_name, email)').order('name')
 
   if (filter === 'archived') query = query.eq('status', 'archived')
   else if (filter === 'production_ready') query = query.eq('stage', 'production_ready').neq('status', 'archived')
@@ -35,7 +39,7 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
   else query = query.neq('status', 'archived')
 
   const { data } = await query
-  const rows = (data ?? []) as Application[]
+  const rows = (data ?? []) as ApplicationCardRow[]
 
   const filters = [
     { key: '', label: 'All' },
@@ -78,7 +82,17 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
                     <span className="truncate">Open site: {formatUrlHost(primaryAppUrl)}</span>
                   </span>
                 )}
+                <div className="mb-2 flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
+                  {app.vertical && <span className="rounded-full border border-border px-2 py-0.5">{app.vertical.name}</span>}
+                  <span className="rounded-full border border-border px-2 py-0.5">{app.type.replace(/_/g, ' ')}</span>
+                  <span className="rounded-full border border-border px-2 py-0.5">Owner: {app.owner?.full_name || app.owner?.email || 'Unassigned'}</span>
+                </div>
                 {app.description && <p className="mb-3 text-xs text-muted-foreground line-clamp-2">{app.description}</p>}
+                {app.next_action && (
+                  <p className="mb-3 rounded-md border border-border/70 bg-background/60 px-2 py-1.5 text-[11px] text-muted-foreground">
+                    <span className="font-medium text-foreground">Next:</span> {app.next_action}
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-1.5">
                   <SourceIndicator label="Repo" connected={!!app.repo_url} />
                   <SourceIndicator label="Local" connected={!!app.local_folder_path} />

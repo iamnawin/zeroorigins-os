@@ -15,18 +15,21 @@ import {
   type ApplicationStage,
   type ApplicationStatus,
   type ApplicationType,
+  type BusinessVertical,
 } from '@/types'
 import { createApplication, updateApplication } from '@/lib/actions/internal-resources'
 
 type Props = {
   initialData?: Partial<Application>
+  verticals?: Pick<BusinessVertical, 'id' | 'name'>[]
 }
 
-export function ApplicationForm({ initialData }: Props) {
+export function ApplicationForm({ initialData, verticals = [] }: Props) {
   const [form, setForm] = useState({
     name: initialData?.name ?? '',
     slug: initialData?.slug ?? '',
     description: initialData?.description ?? '',
+    vertical_id: initialData?.vertical_id ?? '',
     stage: initialData?.stage ?? 'prototype',
     status: initialData?.status ?? 'active',
     type: initialData?.type ?? 'application',
@@ -41,6 +44,7 @@ export function ApplicationForm({ initialData }: Props) {
     figma_url: initialData?.figma_url ?? '',
     tech_stack: initialData?.tech_stack?.join(', ') ?? '',
     build_status: initialData?.build_status ?? '',
+    next_action: initialData?.next_action ?? '',
     notes: initialData?.notes ?? '',
   })
   const [saving, setSaving] = useState(false)
@@ -97,6 +101,13 @@ export function ApplicationForm({ initialData }: Props) {
               <Input value={form.build_status} onChange={set('build_status')} placeholder="production ready" />
             </div>
             <div className="space-y-2">
+              <Label>Business Vertical</Label>
+              <select value={form.vertical_id} onChange={set('vertical_id')} className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm">
+                <option value="">No vertical</option>
+                {verticals.map(vertical => <option key={vertical.id} value={vertical.id}>{vertical.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
               <Label>Stage</Label>
               <select value={form.stage} onChange={set('stage')} className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm">
                 {APPLICATION_STAGES.map(stage => <option key={stage} value={stage}>{stage.replace(/_/g, ' ')}</option>)}
@@ -123,6 +134,10 @@ export function ApplicationForm({ initialData }: Props) {
           <div className="space-y-2">
             <Label>Description</Label>
             <Textarea value={form.description} onChange={set('description')} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label>Next Action</Label>
+            <Input value={form.next_action} onChange={set('next_action')} placeholder="Package demo, connect repo, define MVP..." />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

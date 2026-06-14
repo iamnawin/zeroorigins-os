@@ -17,7 +17,7 @@ export type CalendarProvider = typeof CALENDAR_PROVIDERS[number]
 export const CALENDAR_SYNC_STATUSES = ['not_connected', 'ready', 'paused', 'error'] as const
 export type CalendarSyncStatus = typeof CALENDAR_SYNC_STATUSES[number]
 
-export const BUSINESS_VERTICAL_TYPES = ['brand', 'product', 'education', 'media', 'internal', 'client_service', 'experiment', 'lab', 'video', 'creative_tech', 'product_studio', 'service', 'other'] as const
+export const BUSINESS_VERTICAL_TYPES = ['brand', 'product', 'education', 'media', 'internal', 'client_service', 'experiment', 'lab', 'video', 'creative_tech', 'product_studio', 'service', 'crm', 'other'] as const
 export type BusinessVerticalType = typeof BUSINESS_VERTICAL_TYPES[number]
 
 export const BUSINESS_VERTICAL_STATUSES = ['idea', 'active', 'paused', 'archived'] as const
@@ -69,7 +69,7 @@ export type ApplicationStage = typeof APPLICATION_STAGES[number]
 export const APPLICATION_STATUSES = ['active', 'paused', 'archived'] as const
 export type ApplicationStatus = typeof APPLICATION_STATUSES[number]
 
-export const APPLICATION_TYPES = ['application', 'product', 'internal_system', 'automation', 'website', 'tool', 'service_product', 'other'] as const
+export const APPLICATION_TYPES = ['application', 'product', 'internal_system', 'automation', 'website', 'tool', 'service_product', 'salesforce_app', 'other'] as const
 export type ApplicationType = typeof APPLICATION_TYPES[number]
 
 export const SOURCE_TYPES = ['ideas_root', 'repos_root', 'repo', 'local_folder', 'docs', 'deployment', 'website', 'figma', 'n8n', 'supabase', 'google_drive', 'other'] as const
@@ -546,6 +546,7 @@ export interface Application {
   owner_id?: string
   tech_stack: string[]
   build_status?: string
+  next_action?: string
   last_synced_at?: string
   source_idea_id?: string
   notes?: string
