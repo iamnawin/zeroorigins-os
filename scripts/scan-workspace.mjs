@@ -12,6 +12,32 @@ const IDEAS_ROOT = 'D:\\AI-Workspace\\Ideas'
 const REPOS_ROOT = 'D:\\AI-Workspace\\Repos'
 const OUTPUT = join(process.cwd(), 'zeroorigins-source-inventory.json')
 
+const COMPANY_DOC_SOURCES = [
+  {
+    name: 'ZeroOrigins Company Docs & Policies',
+    slug: 'zeroorigins',
+    local_folder_path: join(REPOS_ROOT, 'zeroorigins'),
+    category: 'company_policy',
+    vertical_slug: 'zeroorigins-internal',
+    tags: ['zeroorigins', 'company-docs', 'policy', 'brand', 'website'],
+    description: 'Company documentation, policy material, brand identity, strategy packs, website files, and operating-system documents for ZeroOrigins.',
+  },
+]
+
+const COMPANY_DOC_SLUGS = new Set(COMPANY_DOC_SOURCES.map(source => source.slug))
+
+const VERTICAL_SOURCE_ROOTS = [
+  {
+    name: 'IgnAIte Institute Source Library',
+    slug: 'ignaite-institute-source-library',
+    local_folder_path: 'D:\\AI-Workspace\\ignAIte',
+    vertical_slug: 'ignaite',
+    category: 'course_material',
+    tags: ['ignaite', 'institute', 'course', 'brochure', 'workshop'],
+    description: 'IgnAIte institute source material including course pages, brochures, workshop pages, offer documents, markdown, PDFs, and HTML collateral.',
+  },
+]
+
 // Known stage overrides
 const STAGE_OVERRIDES = {
   'OrgTrace': 'production_ready',
@@ -87,6 +113,33 @@ function detectFiles(dir) {
       try { return statSync(join(dir, f)).isFile() } catch { return false }
     })
   } catch { return [] }
+}
+
+function detectDocumentFiles(dir, max = 40) {
+  const allowed = new Set(['.md', '.html', '.pdf', '.docx', '.txt', '.json'])
+  const found = []
+
+  function walk(current) {
+    if (found.length >= max) return
+    let entries = []
+    try { entries = readdirSync(current, { withFileTypes: true }) } catch { return }
+
+    for (const entry of entries) {
+      if (found.length >= max) return
+      if (entry.name.startsWith('.') || ['node_modules', '.git', '.next', 'dist', 'build'].includes(entry.name)) continue
+      const fullPath = join(current, entry.name)
+      if (entry.isDirectory()) {
+        walk(fullPath)
+        continue
+      }
+      if (allowed.has(extname(entry.name).toLowerCase())) {
+        found.push(relative(dir, fullPath).replace(/\\/g, '/'))
+      }
+    }
+  }
+
+  walk(dir)
+  return found
 }
 
 function inferTechStack(dir, pkg) {
@@ -188,11 +241,25 @@ function scanRepo(dir) {
   }
 }
 
+function scanKnowledgeSource(source) {
+  const stat = statSync(source.local_folder_path)
+  return {
+    ...source,
+    source_type: 'docs',
+    detected_files: detectDocumentFiles(source.local_folder_path),
+    readme_summary: getReadmeSummary(source.local_folder_path),
+    last_modified: stat.mtime.toISOString(),
+    source_tree: buildSourceTree(source.local_folder_path),
+  }
+}
+
 function main() {
   console.log('🔍 Scanning workspace...')
 
   const ideas = []
   const applications = []
+  const knowledgeSources = []
+  const verticalSources = []
 
   if (existsSync(IDEAS_ROOT)) {
     const dirs = readdirSync(IDEAS_ROOT, { withFileTypes: true }).filter(d => d.isDirectory())
@@ -208,23 +275,40 @@ function main() {
     const dirs = readdirSync(REPOS_ROOT, { withFileTypes: true }).filter(d => d.isDirectory())
     for (const d of dirs) {
       console.log(`  📦 Repo: ${d.name}`)
+      if (COMPANY_DOC_SLUGS.has(slugify(d.name))) continue
       applications.push(scanRepo(join(REPOS_ROOT, d.name)))
     }
   } else {
     console.log(`  ⚠️  Repos root not found: ${REPOS_ROOT}`)
   }
 
+  for (const source of COMPANY_DOC_SOURCES) {
+    if (!existsSync(source.local_folder_path)) continue
+    console.log(`  Company docs: ${source.name}`)
+    knowledgeSources.push(scanKnowledgeSource(source))
+  }
+
+  for (const source of VERTICAL_SOURCE_ROOTS) {
+    if (!existsSync(source.local_folder_path)) continue
+    console.log(`  Vertical source: ${source.name}`)
+    verticalSources.push(scanKnowledgeSource(source))
+  }
+
   const inventory = {
     generated_at: new Date().toISOString(),
-    roots: { ideas: IDEAS_ROOT, repos: REPOS_ROOT },
+    roots: { ideas: IDEAS_ROOT, repos: REPOS_ROOT, ignaite: 'D:\\AI-Workspace\\ignAIte' },
     ideas,
     applications,
+    knowledgeSources,
+    verticalSources,
   }
 
   writeFileSync(OUTPUT, JSON.stringify(inventory, null, 2), 'utf8')
   console.log(`\n✅ Written ${OUTPUT}`)
   console.log(`   Ideas: ${ideas.length}`)
   console.log(`   Applications: ${applications.length}`)
+  console.log(`   Knowledge sources: ${knowledgeSources.length}`)
+  console.log(`   Vertical sources: ${verticalSources.length}`)
 }
 
 main()

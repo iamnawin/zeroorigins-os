@@ -36,6 +36,7 @@ export default async function ApplicationDetailPage({ params, searchParams }: { 
     : { data: null }
 
   const sourceEntries = (sources ?? []) as SourceRegistryEntry[]
+  const primaryAppUrl = app.website_url || app.deployment_url
 
   // Extract source_tree from the local_folder source_registry entry
   const localSource = sourceEntries.find(s => s.source_type === 'local_folder')
@@ -56,6 +57,11 @@ export default async function ApplicationDetailPage({ params, searchParams }: { 
             {app.description && <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{app.description}</p>}
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+            {primaryAppUrl && (
+              <a href={primaryAppUrl} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto"><ExternalLink className="mr-1 h-4 w-4" />Open website</Button>
+              </a>
+            )}
             <Link href={`/internal/applications/${app.id}/edit`} className="w-full sm:w-auto">
               <Button size="sm" variant="outline" className="w-full sm:w-auto"><Pencil className="mr-1 h-4 w-4" />Edit</Button>
             </Link>

@@ -19,6 +19,8 @@ function formatCategory(value: string) {
   return value.replace(/_/g, ' ')
 }
 
+const categoryHelp = 'Use company_policy for policies, brand_collateral for brand docs, and course_material for institute content.'
+
 export default function KnowledgeArticleForm({ mode, initialData }: Props) {
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [content, setContent] = useState(initialData?.content ?? '')
@@ -67,6 +69,7 @@ export default function KnowledgeArticleForm({ mode, initialData }: Props) {
                     <option key={item} value={item}>{formatCategory(item)}</option>
                   ))}
                 </select>
+                <p className="text-xs text-muted-foreground">{categoryHelp}</p>
               </div>
               <div className="space-y-2">
                 <Label>Tags</Label>

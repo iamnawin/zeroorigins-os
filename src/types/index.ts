@@ -357,6 +357,9 @@ export interface Meeting {
 
 export const KNOWLEDGE_CATEGORIES = [
   'project_document',
+  'company_policy',
+  'brand_collateral',
+  'course_material',
   'client_requirement',
   'meeting_note',
   'decision',

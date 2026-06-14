@@ -3,6 +3,7 @@ import { ResourcePageHeader } from '@/components/resource-kit/resource-page-head
 import { ResourceEmptyState } from '@/components/resource-kit/resource-empty-state'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
+import { ExternalLink } from 'lucide-react'
 import type { Application } from '@/types'
 
 const BASE = '/internal/applications'
@@ -62,29 +63,47 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
         <ResourceEmptyState showAll={false} basePath={BASE} />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map(app => (
-            <Link key={app.id} href={`${BASE}/${app.id}`} className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-zo-purple/40">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-semibold text-foreground line-clamp-1">{app.name}</p>
-                <Badge variant="outline" className={`text-[10px] ${STAGE_COLORS[app.stage] ?? ''}`}>{app.stage.replace(/_/g, ' ')}</Badge>
-              </div>
-              {app.description && <p className="mb-3 text-xs text-muted-foreground line-clamp-2">{app.description}</p>}
-              <div className="flex flex-wrap gap-1.5">
-                <SourceIndicator label="Repo" connected={!!app.repo_url} />
-                <SourceIndicator label="Local" connected={!!app.local_folder_path} />
-                <SourceIndicator label="Docs" connected={!!(app.docs_url || app.docs_folder_path)} />
-                <SourceIndicator label="Deploy" connected={!!app.deployment_url} />
-                <SourceIndicator label="DB" connected={!!app.database_url} />
-                <SourceIndicator label="n8n" connected={!!app.n8n_workflow_url} />
-                <SourceIndicator label="Site" connected={!!app.website_url} />
-              </div>
-              {app.last_synced_at && <p className="mt-2 text-[10px] text-muted-foreground">Synced {new Date(app.last_synced_at).toLocaleDateString()}</p>}
-            </Link>
-          ))}
+          {rows.map(app => {
+            const primaryAppUrl = app.website_url || app.deployment_url
+
+            return (
+              <Link key={app.id} href={`${BASE}/${app.id}`} className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-zo-purple/40">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-foreground line-clamp-1">{app.name}</p>
+                  <Badge variant="outline" className={`text-[10px] ${STAGE_COLORS[app.stage] ?? ''}`}>{app.stage.replace(/_/g, ' ')}</Badge>
+                </div>
+                {primaryAppUrl && (
+                  <span className="mb-3 inline-flex max-w-full items-center gap-1 rounded-md border border-zo-purple/30 bg-zo-purple/10 px-2 py-1 text-xs font-medium text-zo-purple-2">
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                    <span className="truncate">Open site: {formatUrlHost(primaryAppUrl)}</span>
+                  </span>
+                )}
+                {app.description && <p className="mb-3 text-xs text-muted-foreground line-clamp-2">{app.description}</p>}
+                <div className="flex flex-wrap gap-1.5">
+                  <SourceIndicator label="Repo" connected={!!app.repo_url} />
+                  <SourceIndicator label="Local" connected={!!app.local_folder_path} />
+                  <SourceIndicator label="Docs" connected={!!(app.docs_url || app.docs_folder_path)} />
+                  <SourceIndicator label="Deploy" connected={!!app.deployment_url} />
+                  <SourceIndicator label="DB" connected={!!app.database_url} />
+                  <SourceIndicator label="n8n" connected={!!app.n8n_workflow_url} />
+                  <SourceIndicator label="Site" connected={!!app.website_url} />
+                </div>
+                {app.last_synced_at && <p className="mt-2 text-[10px] text-muted-foreground">Synced {new Date(app.last_synced_at).toLocaleDateString()}</p>}
+              </Link>
+            )
+          })}
         </div>
       )}
     </div>
   )
+}
+
+function formatUrlHost(value: string) {
+  try {
+    return new URL(value).hostname
+  } catch {
+    return value
+  }
 }
 
 function SourceIndicator({ label, connected }: { label: string; connected: boolean }) {
