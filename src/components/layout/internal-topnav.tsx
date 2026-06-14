@@ -94,8 +94,8 @@ export function InternalTopNav({ email, fullName, role }: InternalTopNavProps) {
   const displayName = fullName || email?.split('@')[0] || 'Account'
   const isAdmin = role === 'admin'
   const groups = filterInternalNavGroups(role)
-  const mainGroups = groups.filter(group => group.id !== 'admin')
-  const deferredGroups = groups.filter(group => group.id === 'admin')
+  const mainGroups = groups.filter(group => group.id !== 'settings')
+  const deferredGroups = groups.filter(group => group.id === 'settings')
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
