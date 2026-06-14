@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { GridReveal, GridRevealItem } from '@/components/ui/grid-reveal'
 import { LifecycleBoard } from '@/components/lifecycle/LifecycleBoard'
 import Link from 'next/link'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, LayoutGrid, Columns3 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { Application } from '@/types'
 import type { LifecycleApplication, LifecycleIdea } from '@/components/lifecycle/types'
 
@@ -25,8 +26,9 @@ const STAGE_COLORS: Record<string, string> = {
   archived: 'border-muted-foreground/40 text-muted-foreground',
 }
 
-export default async function ApplicationsPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
-  const { filter } = await searchParams
+export default async function ApplicationsPage({ searchParams }: { searchParams: Promise<{ filter?: string; view?: string }> }) {
+  const { filter, view } = await searchParams
+  const isBoard = view === 'board'
 
   const supabase = await createClient()
   let query = supabase.from('applications').select('*, vertical:business_verticals(id, name), owner:profiles(full_name, email)').order('name')
@@ -71,66 +73,100 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
 
   return (
     <div className="space-y-5">
-      <ResourcePageHeader title="Application Registry" description="Products, apps, and tools being built or live" newHref={`${BASE}/new`} newLabel="Add Application" />
-
-      <LifecycleBoard
-        ideas={(boardIdeas ?? []) as LifecycleIdea[]}
-        applications={(boardApps ?? []) as LifecycleApplication[]}
-        verticals={verticals ?? []}
-      />
-
-      <div className="flex flex-wrap items-center gap-2">
-        {filters.map(f => (
-          <Link key={f.key} href={f.key ? `${BASE}?filter=${f.key}` : BASE} className={`rounded-full border px-3 py-1 text-xs transition-colors ${(filter || '') === f.key ? 'border-zo-purple bg-zo-purple/15 text-zo-purple-2' : 'border-border text-muted-foreground hover:text-foreground'}`}>{f.label}</Link>
-        ))}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <ResourcePageHeader title="Application Registry" description="Products, apps, and tools being built or live" newHref={`${BASE}/new`} newLabel="Add Application" />
+        <div className="flex items-center gap-1 self-start rounded-lg border border-border bg-card/60 p-1">
+          <Link
+            href={BASE}
+            className={cn(
+              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+              !isBoard ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <LayoutGrid className="h-3 w-3" />
+            Registry
+          </Link>
+          <Link
+            href={`${BASE}?view=board`}
+            className={cn(
+              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+              isBoard ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Columns3 className="h-3 w-3" />
+            Lifecycle Board
+          </Link>
+        </div>
       </div>
 
-      {rows.length === 0 ? (
-        <ResourceEmptyState showAll={false} basePath={BASE} />
+      {isBoard ? (
+        <LifecycleBoard
+          ideas={(boardIdeas ?? []) as LifecycleIdea[]}
+          applications={(boardApps ?? []) as LifecycleApplication[]}
+          verticals={verticals ?? []}
+        />
       ) : (
-        <GridReveal className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((app, index) => {
-            const primaryAppUrl = app.website_url || app.deployment_url
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            {filters.map(f => (
+              <Link
+                key={f.key}
+                href={f.key ? `${BASE}?filter=${f.key}` : BASE}
+                className={`rounded-full border px-3 py-1 text-xs transition-colors ${(filter || '') === f.key ? 'border-zo-purple bg-zo-purple/15 text-zo-purple-2' : 'border-border text-muted-foreground hover:text-foreground'}`}
+              >
+                {f.label}
+              </Link>
+            ))}
+          </div>
 
-            return (
-              <GridRevealItem key={app.id} index={index} className="h-full">
-                <Link href={`${BASE}/${app.id}`} className="zo-grid-reveal-card block h-full rounded-lg border border-border bg-card p-4">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-foreground line-clamp-1">{app.name}</p>
-                    <Badge variant="outline" className={`text-[10px] ${STAGE_COLORS[app.stage] ?? ''}`}>{app.stage.replace(/_/g, ' ')}</Badge>
-                  </div>
-                  {primaryAppUrl && (
-                    <span className="mb-3 inline-flex max-w-full items-center gap-1 rounded-md border border-zo-purple/30 bg-zo-purple/10 px-2 py-1 text-xs font-medium text-zo-purple-2">
-                      <ExternalLink className="h-3 w-3 shrink-0" />
-                      <span className="truncate">Open site: {formatUrlHost(primaryAppUrl)}</span>
-                    </span>
-                  )}
-                  <div className="mb-2 flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
-                    {app.vertical && <span className="rounded-full border border-border px-2 py-0.5">{app.vertical.name}</span>}
-                    <span className="rounded-full border border-border px-2 py-0.5">{app.type.replace(/_/g, ' ')}</span>
-                    <span className="rounded-full border border-border px-2 py-0.5">Owner: {app.owner?.full_name || app.owner?.email || 'Unassigned'}</span>
-                  </div>
-                  {app.description && <p className="mb-3 text-xs text-muted-foreground line-clamp-2">{app.description}</p>}
-                  {app.next_action && (
-                    <p className="mb-3 rounded-md border border-border/70 bg-background/60 px-2 py-1.5 text-[11px] text-muted-foreground">
-                      <span className="font-medium text-foreground">Next:</span> {app.next_action}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap gap-1.5">
-                    <SourceIndicator label="Repo" connected={!!app.repo_url} />
-                    <SourceIndicator label="Local" connected={!!app.local_folder_path} />
-                    <SourceIndicator label="Docs" connected={!!(app.docs_url || app.docs_folder_path)} />
-                    <SourceIndicator label="Deploy" connected={!!app.deployment_url} />
-                    <SourceIndicator label="DB" connected={!!app.database_url} />
-                    <SourceIndicator label="n8n" connected={!!app.n8n_workflow_url} />
-                    <SourceIndicator label="Site" connected={!!app.website_url} />
-                  </div>
-                  {app.last_synced_at && <p className="mt-2 text-[10px] text-muted-foreground">Synced {new Date(app.last_synced_at).toLocaleDateString()}</p>}
-                </Link>
-              </GridRevealItem>
-            )
-          })}
-        </GridReveal>
+          {rows.length === 0 ? (
+            <ResourceEmptyState showAll={false} basePath={BASE} />
+          ) : (
+            <GridReveal className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {rows.map((app, index) => {
+                const primaryAppUrl = app.website_url || app.deployment_url
+
+                return (
+                  <GridRevealItem key={app.id} index={index} className="h-full">
+                    <Link href={`${BASE}/${app.id}`} className="zo-grid-reveal-card block h-full rounded-lg border border-border bg-card p-4">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-foreground line-clamp-1">{app.name}</p>
+                        <Badge variant="outline" className={`text-[10px] ${STAGE_COLORS[app.stage] ?? ''}`}>{app.stage.replace(/_/g, ' ')}</Badge>
+                      </div>
+                      {primaryAppUrl && (
+                        <span className="mb-3 inline-flex max-w-full items-center gap-1 rounded-md border border-zo-purple/30 bg-zo-purple/10 px-2 py-1 text-xs font-medium text-zo-purple-2">
+                          <ExternalLink className="h-3 w-3 shrink-0" />
+                          <span className="truncate">Open site: {formatUrlHost(primaryAppUrl)}</span>
+                        </span>
+                      )}
+                      <div className="mb-2 flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
+                        {app.vertical && <span className="rounded-full border border-border px-2 py-0.5">{app.vertical.name}</span>}
+                        <span className="rounded-full border border-border px-2 py-0.5">{app.type.replace(/_/g, ' ')}</span>
+                        <span className="rounded-full border border-border px-2 py-0.5">Owner: {app.owner?.full_name || app.owner?.email || 'Unassigned'}</span>
+                      </div>
+                      {app.description && <p className="mb-3 text-xs text-muted-foreground line-clamp-2">{app.description}</p>}
+                      {app.next_action && (
+                        <p className="mb-3 rounded-md border border-border/70 bg-background/60 px-2 py-1.5 text-[11px] text-muted-foreground">
+                          <span className="font-medium text-foreground">Next:</span> {app.next_action}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-1.5">
+                        <SourceIndicator label="Repo" connected={!!app.repo_url} />
+                        <SourceIndicator label="Local" connected={!!app.local_folder_path} />
+                        <SourceIndicator label="Docs" connected={!!(app.docs_url || app.docs_folder_path)} />
+                        <SourceIndicator label="Deploy" connected={!!app.deployment_url} />
+                        <SourceIndicator label="DB" connected={!!app.database_url} />
+                        <SourceIndicator label="n8n" connected={!!app.n8n_workflow_url} />
+                        <SourceIndicator label="Site" connected={!!app.website_url} />
+                      </div>
+                      {app.last_synced_at && <p className="mt-2 text-[10px] text-muted-foreground">Synced {new Date(app.last_synced_at).toLocaleDateString()}</p>}
+                    </Link>
+                  </GridRevealItem>
+                )
+              })}
+            </GridReveal>
+          )}
+        </>
       )}
     </div>
   )

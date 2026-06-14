@@ -25,6 +25,18 @@ export const INTERNAL_NAV_GROUPS: InternalNavGroup[] = [
     ],
   },
   {
+    id: 'system',
+    label: 'System',
+    items: [
+      { label: 'Applications', href: '/internal/applications', icon: 'AppWindow' },
+      { label: 'Business Verticals', href: '/internal/business-verticals', icon: 'PanelsTopLeft' },
+      { label: 'Ideas Vault', href: '/internal/ideas', icon: 'Lightbulb' },
+      { label: 'Automation', href: '/internal/automation', icon: 'Workflow' },
+      { label: 'Finance', href: '/internal/finance', icon: 'WalletCards', roles: ['admin'] },
+      { label: 'Knowledge', href: '/internal/knowledge', icon: 'BookOpen' },
+    ],
+  },
+  {
     id: 'business',
     label: 'Business',
     items: [
@@ -42,18 +54,6 @@ export const INTERNAL_NAV_GROUPS: InternalNavGroup[] = [
       { label: 'Projects', href: '/internal/projects', icon: 'FolderKanban' },
       { label: 'Tasks', href: '/internal/tasks', icon: 'CheckSquare' },
       { label: 'Meetings', href: '/internal/meetings', icon: 'CalendarDays' },
-    ],
-  },
-  {
-    id: 'system',
-    label: 'System',
-    items: [
-      { label: 'Applications', href: '/internal/applications', icon: 'AppWindow' },
-      { label: 'Business Verticals', href: '/internal/business-verticals', icon: 'PanelsTopLeft' },
-      { label: 'Ideas Vault', href: '/internal/ideas', icon: 'Lightbulb' },
-      { label: 'Automation', href: '/internal/automation', icon: 'Workflow' },
-      { label: 'Finance', href: '/internal/finance', icon: 'WalletCards', roles: ['admin'] },
-      { label: 'Knowledge', href: '/internal/knowledge', icon: 'BookOpen' },
     ],
   },
   {

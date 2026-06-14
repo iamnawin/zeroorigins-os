@@ -8,7 +8,7 @@ import { useLifecycleMove } from './useLifecycleMove'
 import type { DropZoneState, LifecycleApplication, LifecycleCard, LifecycleColumn as LifecycleColumnType, LifecycleColumnId, LifecycleIdea } from './types'
 
 const COLUMNS: LifecycleColumnType[] = [
-  { id: 'ideas', label: 'Ideas', description: 'Raw concepts and early signals.' },
+  { id: 'ideas', label: 'Idea', description: 'Raw concepts and early signals.' },
   { id: 'evaluating', label: 'Evaluating', description: 'Worth reviewing or validating.' },
   { id: 'experiment', label: 'Experiment', description: 'Small tests and proofs.' },
   { id: 'prototype', label: 'Prototype', description: 'Usable early product shape.' },
@@ -29,6 +29,7 @@ export function LifecycleBoard({ ideas, applications, verticals }: Props) {
     ...ideas.map(item => ({ type: 'idea' as const, item })),
     ...applications.map(item => ({ type: 'application' as const, item })),
   ], [ideas, applications])
+
   const {
     cards,
     pendingMove,
@@ -36,10 +37,12 @@ export function LifecycleBoard({ ideas, applications, verticals }: Props) {
     isPending,
     requestMove,
     confirmPromotion,
+    confirmSimpleMove,
     confirmRevert,
     clearPendingMove,
     clearToast,
   } = useLifecycleMove(initialCards)
+
   const [dragging, setDragging] = useState<{ card: LifecycleCard; fromColumn: LifecycleColumnId } | null>(null)
   const [hoverColumn, setHoverColumn] = useState<LifecycleColumnId | null>(null)
 
@@ -57,57 +60,66 @@ export function LifecycleBoard({ ideas, applications, verticals }: Props) {
     const move = { card: dragging.card, fromColumn: dragging.fromColumn, toColumn }
     setDragging(null)
     setHoverColumn(null)
-    if (!isValidMove(move.card, move.fromColumn, move.toColumn)) {
-      return
-    }
+    if (!isValidMove(move.card, move.fromColumn, move.toColumn)) return
     requestMove(move)
   }
 
   const promoteIdea = pendingMove?.card.type === 'idea' ? pendingMove.card.item : null
   const confirmMove = pendingMove?.card.type === 'application' ? pendingMove : null
+  const isGoLive = confirmMove?.toColumn === 'live'
 
   return (
-    <section className="rounded-xl border border-border bg-card/70 p-4">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-zo-purple-2">Product Lifecycle Board</p>
-          <h2 className="mt-1 text-xl font-semibold">Move ideas into real products</h2>
-          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Drag cards through the lifecycle. Promotion and reverts ask for confirmation before changing the database.
-          </p>
+    <section className="overflow-hidden rounded-xl border border-border bg-card/70">
+      <div className="p-4 pb-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-zo-purple-2">Product Lifecycle Board</p>
+            <h2 className="mt-1 text-xl font-semibold">Move ideas into real products</h2>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+              Drag cards through the lifecycle. Promotion and reverts ask for confirmation before changing the database.
+            </p>
+            <p className="mt-2 font-mono text-[10px] tracking-wide text-muted-foreground/50">
+              Idea → Evaluating → Experiment → Prototype → Application → Production Ready → Live
+            </p>
+          </div>
+          {toast && (
+            <button
+              type="button"
+              onClick={clearToast}
+              className={`rounded-md border px-3 py-2 text-left text-xs ${toast.tone === 'success' ? 'border-green-500/30 text-green-300' : 'border-destructive/40 text-destructive'}`}
+            >
+              {toast.message}
+            </button>
+          )}
         </div>
-        {toast && (
-          <button
-            type="button"
-            onClick={clearToast}
-            className={`rounded-md border px-3 py-2 text-left text-xs ${toast.tone === 'success' ? 'border-green-500/30 text-green-300' : 'border-destructive/40 text-destructive'}`}
-          >
-            {toast.message}
-          </button>
-        )}
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {COLUMNS.map(column => (
-          <LifecycleColumn
-            key={column.id}
-            column={column}
-            cards={grouped[column.id] ?? []}
-            dropState={dropState(column.id)}
-            draggingId={draggingId}
-            onDragStart={(card, fromColumn) => {
-              setDragging({ card, fromColumn })
-              setHoverColumn(fromColumn)
-            }}
-            onDragEnd={() => {
-              setDragging(null)
-              setHoverColumn(null)
-            }}
-            onDrop={handleDrop}
-            onDragOver={setHoverColumn}
-            emptyText={emptyTextForColumn(column.id)}
-          />
-        ))}
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-card/70 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-card/70 to-transparent" />
+        <div className="flex gap-3 overflow-x-auto px-4 pb-4 pt-1 [scrollbar-color:hsl(var(--border))_transparent] [scrollbar-width:thin]">
+          {COLUMNS.map(column => (
+            <LifecycleColumn
+              key={column.id}
+              column={column}
+              cards={grouped[column.id] ?? []}
+              dropState={dropState(column.id)}
+              draggingId={draggingId}
+              isDraggingAny={!!dragging}
+              onDragStart={(card, fromColumn) => {
+                setDragging({ card, fromColumn })
+                setHoverColumn(fromColumn)
+              }}
+              onDragEnd={() => {
+                setDragging(null)
+                setHoverColumn(null)
+              }}
+              onDrop={handleDrop}
+              onDragOver={setHoverColumn}
+              emptyText={emptyTextForColumn(column.id)}
+            />
+          ))}
+        </div>
       </div>
 
       <PromoteIdeaModal
@@ -115,24 +127,28 @@ export function LifecycleBoard({ ideas, applications, verticals }: Props) {
         verticals={verticals}
         open={Boolean(promoteIdea)}
         saving={isPending}
-        onOpenChange={open => {
-          if (!open) clearPendingMove()
-        }}
+        onOpenChange={open => { if (!open) clearPendingMove() }}
         onConfirm={confirmPromotion}
       />
 
       <MoveCardConfirmationModal
         open={Boolean(confirmMove)}
         saving={isPending}
-        title="Move application back to idea flow?"
+        title={isGoLive ? 'Mark this application as live?' : 'Move application back to idea flow?'}
         fromColumn={confirmMove?.fromColumn ?? 'application'}
         toColumn={confirmMove?.toColumn ?? 'evaluating'}
-        statusChange="Application status will become reverted_to_idea; linked source idea will move to evaluating or experiment."
-        warning="Production-ready, live, or public-surface applications require stronger review before this action."
-        onOpenChange={open => {
-          if (!open) clearPendingMove()
-        }}
-        onConfirm={confirmRevert}
+        statusChange={
+          isGoLive
+            ? "Application stage becomes 'live' — publicly visible or actively used."
+            : "Application status will become reverted_to_idea; linked source idea will move to evaluating or experiment."
+        }
+        warning={
+          isGoLive
+            ? undefined
+            : "Production-ready, live, or public-surface applications require stronger review before this action."
+        }
+        onOpenChange={open => { if (!open) clearPendingMove() }}
+        onConfirm={isGoLive ? confirmSimpleMove : confirmRevert}
       />
     </section>
   )
@@ -149,7 +165,6 @@ function groupCards(cards: LifecycleCard[]) {
     live: [],
     archived: [],
   }
-
   for (const card of cards) {
     grouped[columnForCard(card)].push(card)
   }
@@ -165,7 +180,6 @@ function columnForCard(card: LifecycleCard): LifecycleColumnId {
     if (card.item.status === 'archived' || card.item.status === 'rejected') return 'archived'
     return 'ideas'
   }
-
   if (card.item.status === 'archived' || card.item.stage === 'archived' || card.item.status === 'reverted_to_idea') return 'archived'
   if (card.item.stage === 'live') return 'live'
   if (card.item.stage === 'production_ready') return 'production_ready'
@@ -185,6 +199,15 @@ function isValidMove(card: LifecycleCard, fromColumn: LifecycleColumnId, toColum
 }
 
 function emptyTextForColumn(column: LifecycleColumnId) {
-  if (column === 'ideas') return 'No ideas yet. Capture a raw concept or ask the agent to suggest business ideas.'
-  return 'No applications in this stage yet. Promote an idea or add an application.'
+  const map: Record<LifecycleColumnId, string> = {
+    ideas: 'Drop an idea here, or promote one from Ideas Vault.',
+    evaluating: 'Drop an idea here to start reviewing it.',
+    experiment: 'Move ideas here when running small tests.',
+    prototype: 'Move items here when you have an early product shape.',
+    application: 'Promote a prototype here when it becomes a real product.',
+    production_ready: 'Move here when the product is demo-ready.',
+    live: 'Confirm launch — mark the product as live.',
+    archived: 'Drag here to pause from the active lifecycle.',
+  }
+  return map[column]
 }

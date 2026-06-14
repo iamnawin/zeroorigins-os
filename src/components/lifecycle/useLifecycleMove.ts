@@ -55,6 +55,10 @@ export function useLifecycleMove(initialCards: LifecycleCard[]) {
       setPendingMove(move)
       return
     }
+    if (move.card.type === 'application' && move.toColumn === 'live') {
+      setPendingMove(move)
+      return
+    }
 
     const rollback = moveCardOptimistically(move)
     startTransition(async () => {
@@ -102,6 +106,26 @@ export function useLifecycleMove(initialCards: LifecycleCard[]) {
     })
   }
 
+  function confirmSimpleMove() {
+    if (!pendingMove) return
+    const rollback = moveCardOptimistically(pendingMove)
+    startTransition(async () => {
+      const result = await moveLifecycleCard({
+        cardType: pendingMove.card.type,
+        cardId: pendingMove.card.item.id,
+        fromColumn: pendingMove.fromColumn,
+        toColumn: pendingMove.toColumn,
+      })
+      if (result.error) {
+        rollback()
+        setToast({ tone: 'error', message: result.error })
+        return
+      }
+      setPendingMove(null)
+      setToast({ tone: 'success', message: 'Lifecycle updated.' })
+    })
+  }
+
   function confirmRevert() {
     if (!pendingMove || pendingMove.card.type !== 'application') return
     const rollback = moveCardOptimistically(pendingMove)
@@ -129,6 +153,7 @@ export function useLifecycleMove(initialCards: LifecycleCard[]) {
     isPending,
     requestMove,
     confirmPromotion,
+    confirmSimpleMove,
     confirmRevert,
     clearPendingMove: () => setPendingMove(null),
     clearToast: () => setToast(null),

@@ -10,6 +10,7 @@ type Props = {
   cards: LifecycleCard[]
   dropState: DropZoneState
   draggingId?: string | null
+  isDraggingAny?: boolean
   onDragStart: (card: LifecycleCard, columnId: LifecycleColumnId) => void
   onDragEnd: () => void
   onDrop: (columnId: LifecycleColumnId) => void
@@ -22,6 +23,7 @@ export function LifecycleColumn({
   cards,
   dropState,
   draggingId,
+  isDraggingAny,
   onDragStart,
   onDragEnd,
   onDrop,
@@ -40,10 +42,12 @@ export function LifecycleColumn({
         onDrop(column.id)
       }}
       className={cn(
-        'min-h-[22rem] w-[18rem] shrink-0 rounded-xl border border-border bg-background/50 p-3 transition-colors',
-        dropState === 'active' && 'border-zo-purple/40 bg-zo-purple/5',
-        dropState === 'valid' && 'border-zo-purple/70 bg-zo-purple/10 shadow-lg shadow-zo-purple/10',
-        dropState === 'invalid' && 'border-destructive/50 bg-destructive/5 opacity-70',
+        'w-[17rem] flex-shrink-0 rounded-xl border p-3 transition-all duration-150',
+        cards.length === 0 ? 'min-h-[8rem]' : 'min-h-[20rem]',
+        dropState === 'idle' && 'border-border bg-background/50',
+        dropState === 'active' && 'border-border/60 bg-background/50',
+        dropState === 'valid' && 'border-zo-purple/60 bg-zo-purple/8 shadow-md shadow-zo-purple/10',
+        dropState === 'invalid' && 'border-destructive/40 bg-destructive/5 opacity-60',
       )}
     >
       <div className="mb-3">
@@ -51,13 +55,20 @@ export function LifecycleColumn({
           <h3 className="text-sm font-semibold text-foreground">{column.label}</h3>
           <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">{cards.length}</span>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">{column.description}</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground/70">{column.description}</p>
       </div>
 
       <div className="space-y-2">
         {cards.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
-            {emptyText}
+          <div className={cn(
+            'flex min-h-[5rem] items-center justify-center rounded-lg border border-dashed p-3 text-center transition-colors',
+            dropState === 'valid'
+              ? 'border-zo-purple/50 bg-zo-purple/5 text-zo-purple-2'
+              : isDraggingAny
+              ? 'border-border/50 text-muted-foreground/40'
+              : 'border-border/30 text-muted-foreground/30',
+          )}>
+            <p className="text-[11px] leading-relaxed">{emptyText}</p>
           </div>
         ) : (
           cards.map((card, index) => (
