@@ -57,16 +57,16 @@ export interface ZoAgentQueryResult {
   href?: string
 }
 
-export const BUSINESS_IDEA_STATUSES = ['raw', 'reviewing', 'validated', 'testing', 'tested', 'rejected', 'archived', 'promoted_to_application'] as const
+export const BUSINESS_IDEA_STATUSES = ['idea', 'raw', 'evaluating', 'reviewing', 'approved', 'validated', 'experiment', 'testing', 'prototype', 'tested', 'rejected', 'archived', 'promoted_to_application'] as const
 export type BusinessIdeaStatus = typeof BUSINESS_IDEA_STATUSES[number]
 
 export const BUSINESS_IDEA_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const
 export type BusinessIdeaPriority = typeof BUSINESS_IDEA_PRIORITIES[number]
 
-export const APPLICATION_STAGES = ['concept', 'prototype', 'testing', 'production_ready', 'live', 'paused', 'archived'] as const
+export const APPLICATION_STAGES = ['concept', 'experiment', 'prototype', 'mvp', 'application', 'testing', 'production_ready', 'live', 'paused', 'archived', 'reverted_to_idea'] as const
 export type ApplicationStage = typeof APPLICATION_STAGES[number]
 
-export const APPLICATION_STATUSES = ['active', 'paused', 'archived'] as const
+export const APPLICATION_STATUSES = ['active', 'paused', 'archived', 'reverted_to_idea'] as const
 export type ApplicationStatus = typeof APPLICATION_STATUSES[number]
 
 export const APPLICATION_TYPES = ['application', 'product', 'internal_system', 'automation', 'website', 'tool', 'service_product', 'salesforce_app', 'other'] as const
@@ -520,6 +520,9 @@ export interface BusinessIdea {
   owner_id?: string
   ai_summary?: string
   next_action?: string
+  linked_application_id?: string
+  promoted_at?: string
+  promoted_by?: string
   promoted_application_id?: string
   created_at: string
   updated_at: string
@@ -549,6 +552,7 @@ export interface Application {
   next_action?: string
   last_synced_at?: string
   source_idea_id?: string
+  source_idea?: BusinessIdea
   notes?: string
   created_at: string
   updated_at: string

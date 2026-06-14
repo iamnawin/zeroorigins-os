@@ -2,9 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { ResourcePageHeader } from '@/components/resource-kit/resource-page-header'
 import { ResourceEmptyState } from '@/components/resource-kit/resource-empty-state'
 import { Badge } from '@/components/ui/badge'
+import { LifecycleBoard } from '@/components/lifecycle/LifecycleBoard'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import type { Application } from '@/types'
+import type { LifecycleApplication, LifecycleIdea } from '@/components/lifecycle/types'
 
 const BASE = '/internal/applications'
 type ApplicationCardRow = Application & {
@@ -38,7 +40,20 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
   else if (filter === 'missing_deploy') query = query.is('deployment_url', null).neq('status', 'archived')
   else query = query.neq('status', 'archived')
 
-  const { data } = await query
+  const [{ data }, { data: boardApps }, { data: boardIdeas }, { data: verticals }] = await Promise.all([
+    query,
+    supabase
+      .from('applications')
+      .select('*, vertical:business_verticals(id, name), owner:profiles(full_name, email), source_idea:business_ideas!applications_source_idea_id_fkey(id, title)')
+      .order('updated_at', { ascending: false })
+      .limit(250),
+    supabase
+      .from('business_ideas')
+      .select('*, vertical:business_verticals(id, name), owner:profiles(full_name, email), promoted_application:applications!business_ideas_promoted_application_id_fkey(id, name), linked_application:applications!business_ideas_linked_application_id_fkey(id, name)')
+      .order('updated_at', { ascending: false })
+      .limit(250),
+    supabase.from('business_verticals').select('id, name').order('name'),
+  ])
   const rows = (data ?? []) as ApplicationCardRow[]
 
   const filters = [
@@ -56,6 +71,12 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
   return (
     <div className="space-y-5">
       <ResourcePageHeader title="Application Registry" description="Products, apps, and tools being built or live" newHref={`${BASE}/new`} newLabel="Add Application" />
+
+      <LifecycleBoard
+        ideas={(boardIdeas ?? []) as LifecycleIdea[]}
+        applications={(boardApps ?? []) as LifecycleApplication[]}
+        verticals={verticals ?? []}
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         {filters.map(f => (
