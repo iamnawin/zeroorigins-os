@@ -71,10 +71,12 @@ create trigger set_sync_signals_updated_at
 alter table sync_signals     enable row level security;
 alter table meeting_sync_links enable row level security;
 
+drop policy if exists "Internal users full access to sync_signals" on sync_signals;
 create policy "Internal users full access to sync_signals"
   on sync_signals for all
   using (is_internal_user());
 
+drop policy if exists "Internal users full access to meeting_sync_links" on meeting_sync_links;
 create policy "Internal users full access to meeting_sync_links"
   on meeting_sync_links for all
   using (is_internal_user());
