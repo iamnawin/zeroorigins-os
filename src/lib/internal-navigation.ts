@@ -32,6 +32,7 @@ export const INTERNAL_NAV_GROUPS: InternalNavGroup[] = [
       { label: 'Business Verticals', href: '/internal/business-verticals', icon: 'PanelsTopLeft' },
       { label: 'Ideas Vault', href: '/internal/ideas', icon: 'Lightbulb' },
       { label: 'Automation', href: '/internal/automation', icon: 'Workflow' },
+      { label: 'Sync Inbox', href: '/internal/sync-inbox', icon: 'Inbox' },
       { label: 'Finance', href: '/internal/finance', icon: 'WalletCards', roles: ['admin'] },
       { label: 'Knowledge', href: '/internal/knowledge', icon: 'BookOpen' },
     ],

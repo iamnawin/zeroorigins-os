@@ -560,6 +560,34 @@ export interface Application {
   updated_at: string
 }
 
+export const SYNC_SIGNAL_STATUSES = ['new', 'needs_review', 'matched', 'created', 'ignored', 'error'] as const
+export type SyncSignalStatus = typeof SYNC_SIGNAL_STATUSES[number]
+
+export interface SyncSignal {
+  id: string
+  source_provider: string
+  source_account: string
+  source_object_id: string
+  source_payload: Record<string, unknown> | null
+  title: string | null
+  occurred_at: string | null
+  source_url: string | null
+  extracted_text: string | null
+  suggested_record_type: string | null
+  suggested_vertical_id: string | null
+  confidence_score: number | null
+  status: SyncSignalStatus
+  related_meeting_id: string | null
+  related_record_type: string | null
+  related_record_id: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  review_action: string | null
+  error_message: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface SourceRegistryEntry {
   id: string
   name: string
