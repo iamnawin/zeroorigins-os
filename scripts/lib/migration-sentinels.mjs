@@ -42,4 +42,10 @@ export const SENTINELS = [
   { migration: '014_zo_agent_ideas_applications', table: 'applications', column: 'repo_url' },
   { migration: '014_zo_agent_ideas_applications', table: 'source_registry', column: 'source_type' },
   { migration: '014_zo_agent_ideas_applications', table: 'ai_assist_requests', column: 'related_application_id' },
+  { migration: '019_sync_inbox_calendar_dedupe', table: 'sync_signals', column: 'source_provider' },
+  { migration: '019_sync_inbox_calendar_dedupe', table: 'sync_signals', column: 'source_account_type' },
+  { migration: '019_sync_inbox_calendar_dedupe', table: 'sync_signals', column: 'source_object_id' },
+  { migration: '019_sync_inbox_calendar_dedupe', table: 'sync_signals', column: 'status' },
+  { migration: '019_sync_inbox_calendar_dedupe', table: 'meeting_sync_links', column: 'meeting_id' },
+  { migration: '019_sync_inbox_calendar_dedupe', table: 'meeting_sync_links', column: 'sync_signal_id' },
 ]
