@@ -16,7 +16,8 @@
     "test:crm-navigation": "node scripts/test-internal-navigation.mjs",
     "test:crm-knowledge": "node scripts/test-knowledge-contract.mjs",
     "test:crm-team-calendar": "node --test scripts/test-team-calendar-contract.mjs",
-    "test:crm-ia-ai": "node scripts/test-ia-ai-visibility-contract.mjs"
+    "test:crm-ia-ai": "node scripts/test-ia-ai-visibility-contract.mjs",
+    "test:sync-inbox-calendar": "node --test scripts/test-sync-inbox-calendar-dedupe.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
