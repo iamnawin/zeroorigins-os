@@ -102,10 +102,18 @@ export function parseJsonObject<T extends Record<string, unknown>>(content: stri
   const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/i)
   const candidate = fenced?.[1] ?? content
   const start = candidate.indexOf('{')
-  const end = candidate.lastIndexOf('}')
-  if (start === -1 || end === -1 || end <= start) {
+  if (start === -1) {
     throw new Error('AI response did not include a JSON object.')
   }
+
+  // Find matching closing brace (handles nested objects)
+  let depth = 0
+  let end = -1
+  for (let i = start; i < candidate.length; i++) {
+    if (candidate[i] === '{') depth++
+    else if (candidate[i] === '}') { depth--; if (depth === 0) { end = i; break } }
+  }
+  if (end === -1) throw new Error('AI response did not include a JSON object.')
 
   return JSON.parse(candidate.slice(start, end + 1)) as T
 }

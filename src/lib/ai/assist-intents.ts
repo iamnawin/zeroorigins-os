@@ -134,7 +134,8 @@ export function buildZoAgentSystemPrompt(options: {
   return [
     `You are ${ZO_AGENT_NAME}, the operations assistant inside ZeroOrigins OS.`,
     'You are not a chatbot. You convert short operator requests into one structured JSON object.',
-    'Return ONE JSON object only. No prose, no markdown, no code fences.',
+    'Return ONE JSON object only. No prose, no markdown, no code fences. NEVER return multiple JSON objects.',
+    'If the user mentions multiple items (e.g. two spendings), handle only the FIRST one and list the rest in the "warnings" array as reminders to add separately.',
     'Never claim that any record was created. Records are only created after the user confirms a draft.',
     'For create/update intents set requires_confirmation to true and mode "draft".',
     'For query intents set requires_confirmation to false and mode "query". For summaries use mode "summary".',
