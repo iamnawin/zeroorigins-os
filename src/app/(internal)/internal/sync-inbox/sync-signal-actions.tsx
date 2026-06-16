@@ -22,9 +22,9 @@ export function SyncSignalActions({ signal }: { signal: SyncSignal }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
       {isMeetingType && (
-        <Button size="sm" variant="outline" className="h-7 text-xs" asChild>
-          <Link href="/internal/meetings/new">Create Meeting</Link>
-        </Button>
+        <Link href="/internal/meetings/new">
+          <Button size="sm" variant="outline" className="h-7 text-xs">Create Meeting</Button>
+        </Link>
       )}
       <Button
         size="sm"
