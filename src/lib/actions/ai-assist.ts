@@ -64,7 +64,9 @@ export type FinanceAiInput = {
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
 function toResult<T>(error: unknown): AiActionResult<T> {
-  return { error: error instanceof Error ? error.message : 'AI assist failed.' }
+  const msg = error instanceof Error ? error.message : 'AI assist failed.'
+  console.error('[ZO_Agent]', msg)
+  return { error: msg }
 }
 
 function asString(value: unknown) {
