@@ -37,7 +37,16 @@
 
 ---
 
-- **Next priority:** Sync Inbox (dedupe engine that writes to `sync_signals` table), real email inbox integration, ZO Agent improvements.
+## ZO_Agent Fix (updated 2026-06-16)
+
+- **Root cause of "Service unavailable":** Together AI reasoning models (GPT-OSS 120B, Qwen3.5-9B) put all output in the `reasoning` response field, leaving `content` empty. The code only read `content` → threw "empty response" → surfaced as "Service unavailable" in UI.
+- **Fix:** `together-client.ts` now: 1) Falls back to `reasoning` field when `content` is empty. 2) Uses `developer` role + `temperature: 1.0` + `reasoning_effort: "low"` for GPT-OSS (Adjustable Effort models). 3) Uses `reasoning: { enabled: false }` for Hybrid models (Qwen3.5, DeepSeek).
+- **New intent: `create_spending`** — added to types, quick actions, schemas, behavior examples, and confirmAiAssistDraft handler. Inserts into `finance_transactions` table. Supports amount, currency, description, category, paid_by, status, date.
+- **All intents now functional:** create_task, schedule_meeting, create_spending, draft_reply, create_proposal, create_idea, promote_idea_to_application, create_application, query_*, summarize_today — all working end-to-end.
+
+---
+
+- **Next priority:** Sync Inbox (dedupe engine that writes to `sync_signals` table), real email inbox integration, voice input for ZO_Agent.
 
 ---
 

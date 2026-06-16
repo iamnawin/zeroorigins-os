@@ -459,6 +459,31 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       createdId = data.id
       links.related_meeting_id = data.id
       href = `/internal/meetings/${data.id}`
+    } else if (intent === 'create_spending') {
+      const amount = typeof draft.amount === 'number' ? draft.amount : parseFloat(asString(draft.amount)) || 0
+      if (!amount) throw new Error('ZO_Agent draft is missing the spending amount.')
+
+      const { data, error: createError } = await supabase
+        .from('finance_transactions')
+        .insert({
+          type: asString(draft.type) || 'expense',
+          amount,
+          currency: asString(draft.currency) || 'INR',
+          description: requiredInputText(asString(draft.description) || output.title || 'ZO_Agent spending'),
+          category: asString(draft.category) || 'other',
+          status: asString(draft.status) || 'paid',
+          date: asString(draft.date) || new Date().toISOString().slice(0, 10),
+          notes: [asString(draft.notes), asString(draft.paid_by) ? `Paid by: ${asString(draft.paid_by)}` : ''].filter(Boolean).join('. '),
+          related_vertical_id: relatedVerticalId,
+          owner_id: user.id,
+          created_by: user.id,
+        })
+        .select('id')
+        .single()
+
+      if (createError) throw createError
+      createdId = data.id
+      href = `/internal/finance/${data.id}`
     } else if (intent === 'create_proposal') {
       const content = [
         asString(draft.problem_statement) && `Problem\n${asString(draft.problem_statement)}`,
@@ -650,6 +675,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
     revalidatePath('/internal/projects')
     revalidatePath('/internal/ideas')
     revalidatePath('/internal/applications')
+    revalidatePath('/internal/finance')
     if (!createdId) throw new Error('ZO_Agent confirmation did not create a record.')
     return { data: { id: createdId, intent, href } }
   } catch (error) {

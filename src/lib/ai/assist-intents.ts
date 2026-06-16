@@ -6,6 +6,7 @@ export const ZO_AGENT_PROVIDER = 'Together AI'
 export const ZO_AGENT_QUICK_ACTIONS: { intent: AiAssistIntent; label: string }[] = [
   { intent: 'create_task', label: 'Create task' },
   { intent: 'schedule_meeting', label: 'Schedule meeting' },
+  { intent: 'create_spending', label: 'Add spending' },
   { intent: 'draft_reply', label: 'Draft reply' },
   { intent: 'summarize_email', label: 'Summarize email' },
   { intent: 'create_proposal', label: 'Create proposal' },
@@ -19,6 +20,7 @@ export const ZO_AGENT_QUICK_ACTIONS: { intent: AiAssistIntent; label: string }[]
 export const ZO_AGENT_BUTTON_LABELS: Record<AiAssistIntent, string> = {
   create_task: 'Generate Task Draft',
   schedule_meeting: 'Generate Meeting Draft',
+  create_spending: 'Generate Spending Draft',
   draft_reply: 'Generate Reply Draft',
   summarize_email: 'Summarize Email',
   create_followup: 'Generate Follow-up Draft',
@@ -47,6 +49,7 @@ export function zoAgentButtonLabel(intent?: AiAssistIntent) {
 export const ZO_AGENT_INTENT_MODES: Record<AiAssistIntent, ZoAgentMode> = {
   create_task: 'draft',
   schedule_meeting: 'draft',
+  create_spending: 'draft',
   draft_reply: 'draft',
   summarize_email: 'summary',
   create_followup: 'draft',
@@ -70,13 +73,14 @@ export const ZO_AGENT_INTENT_MODES: Record<AiAssistIntent, ZoAgentMode> = {
 
 // Draft intents that can create a record after explicit user confirmation.
 export const ZO_AGENT_CONFIRMABLE_INTENTS: AiAssistIntent[] = [
-  'create_task', 'schedule_meeting', 'create_followup', 'create_project', 'create_proposal',
+  'create_task', 'schedule_meeting', 'create_spending', 'create_followup', 'create_project', 'create_proposal',
   'create_idea', 'promote_idea_to_application', 'create_application', 'update_application_source',
 ]
 
 const INTENT_SCHEMAS: Partial<Record<AiAssistIntent, string>> = {
   create_task: '{"intent":"create_task","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"task_title":"","description":"","priority":"low | normal | high | urgent","due_date":"YYYY-MM-DD","assigned_to":"","related_vertical":"","related_project":"","related_application":""},"next_actions":[],"warnings":[]}',
   schedule_meeting: '{"intent":"schedule_meeting","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"meeting_title":"","date":"YYYY-MM-DD","start_time":"HH:MM","end_time":"HH:MM","attendees":[],"agenda":[],"related_vertical":"","related_application":"","notes":""},"next_actions":[],"warnings":[]}',
+  create_spending: '{"intent":"create_spending","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"description":"","amount":0,"currency":"INR","category":"software | infrastructure | ai_api | marketing | contractor | payroll | travel | office | tax | hosting | domain | operations | project_cost | other","type":"expense","vendor_name":"","paid_by":"","status":"paid | due | overdue | planned","date":"YYYY-MM-DD","notes":""},"next_actions":[],"warnings":[]}',
   draft_reply: '{"intent":"draft_reply","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"recipient":"","subject":"","message":"","tone":"professional"},"next_actions":[],"warnings":[]}',
   summarize_email: '{"intent":"summarize_email","mode":"summary","title":"","summary":"","confidence":0,"requires_confirmation":false,"draft":{"sender":"","action_items":[],"urgency":"normal"},"next_actions":[],"warnings":[]}',
   create_followup: '{"intent":"create_followup","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"channel":"email","recipient":"","subject":"","message":"","related_lead":"","related_vertical":""},"next_actions":[],"warnings":[]}',
@@ -103,6 +107,8 @@ const BEHAVIOR_EXAMPLES = `Examples of correct intent resolution:
 - "what are the emails today?" -> intent query_emails (NEVER create_task)
 - "create task for Ankita to check IgnAIte brochure tomorrow" -> intent create_task
 - "schedule meeting with Srikar this weekend about AIWithNoBrain Labs" -> intent schedule_meeting
+- "add spending 10000 INR on company registration paid by naveen" -> intent create_spending, draft.amount 10000, draft.currency "INR", draft.description "company registration", draft.paid_by "naveen"
+- "gmail spend 5000 inr paid by srikar" -> intent create_spending, draft.amount 5000, draft.currency "INR", draft.description "gmail", draft.category "software", draft.paid_by "srikar"
 - "capture an idea for EpicsToYou AI video generator" -> intent create_idea, draft.vertical "EpicsToYou"
 - "promote the tested EpicsToYou video generator idea to application" -> intent promote_idea_to_application
 - "create project proposal for IgnAIte launch" -> intent create_proposal

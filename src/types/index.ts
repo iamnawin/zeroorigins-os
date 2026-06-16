@@ -24,7 +24,7 @@ export const BUSINESS_VERTICAL_STATUSES = ['idea', 'active', 'paused', 'archived
 export type BusinessVerticalStatus = typeof BUSINESS_VERTICAL_STATUSES[number]
 
 export const AI_ASSIST_INTENTS = [
-  'create_task', 'schedule_meeting', 'draft_reply', 'summarize_email', 'create_followup',
+  'create_task', 'schedule_meeting', 'create_spending', 'draft_reply', 'summarize_email', 'create_followup',
   'create_project', 'create_proposal', 'create_idea', 'promote_idea_to_application', 'create_application',
   'query_emails', 'query_tasks', 'query_projects', 'query_ideas', 'query_applications', 'query_verticals',
   'find_missing_sources', 'update_application_source', 'sync_repo_details', 'summarize_today', 'unknown',

@@ -26,6 +26,7 @@ type TogetherResponse = {
   choices?: Array<{
     message?: {
       content?: string
+      reasoning?: string
     }
   }>
   usage?: {
@@ -45,19 +46,35 @@ export async function callTogetherChat(input: TogetherChatInput): Promise<Togeth
   }
 
   const choice = chooseTogetherModel(input.task)
+  const isGptOss = choice.model.startsWith('openai/gpt-oss')
+  const isHybridReasoning = choice.model.startsWith('Qwen/') || choice.model.startsWith('deepseek-ai/')
+
+  // GPT-OSS: requires temperature 1.0, developer role, reasoning_effort
+  // Hybrid models (Qwen3.5, DeepSeek): use reasoning.enabled=false to get content
+  const messages = isGptOss
+    ? input.messages.map(m => m.role === 'system' ? { ...m, role: 'developer' as const } : m)
+    : input.messages
+
+  const body: Record<string, unknown> = {
+    model: choice.model,
+    messages,
+    max_tokens: input.maxTokens ?? 500,
+    temperature: isGptOss ? 1.0 : (input.temperature ?? 0.2),
+  }
+
+  if (isGptOss) {
+    body.reasoning_effort = 'low'
+  } else if (isHybridReasoning) {
+    body.reasoning = { enabled: false }
+  }
+
   const response = await fetch(`${getTogetherBaseUrl()}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: choice.model,
-      reasoning: { enabled: false },
-      messages: input.messages,
-      max_tokens: input.maxTokens ?? 500,
-      temperature: input.temperature ?? 0.2,
-    }),
+    body: JSON.stringify(body),
   })
 
   const payload = (await response.json().catch(() => ({}))) as TogetherResponse
@@ -65,7 +82,9 @@ export async function callTogetherChat(input: TogetherChatInput): Promise<Togeth
     throw new Error(payload.error?.message || `Together AI request failed with ${response.status}.`)
   }
 
-  const content = payload.choices?.[0]?.message?.content?.trim()
+  const msg = payload.choices?.[0]?.message
+  // Reasoning models may put output in `reasoning` field with empty `content`
+  const content = msg?.content?.trim() || msg?.reasoning?.trim() || ''
   if (!content) {
     throw new Error('Together AI returned an empty response.')
   }

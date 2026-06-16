@@ -79,14 +79,16 @@ Migrations are in `supabase/migrations/` (001 through 014+). Key conventions:
 ZO_Agent is a live AI agent powered by **Together AI** (`TOGETHER_API_KEY`). It is NOT a stub.
 
 Architecture:
-- `src/lib/ai/together-client.ts` — raw Together AI chat client, JSON parser
+- `src/lib/ai/together-client.ts` — raw Together AI chat client, JSON parser. Handles reasoning models: reads `reasoning` field as fallback when `content` is empty. Uses `developer` role + `temperature: 1.0` + `reasoning_effort: "low"` for GPT-OSS models; `reasoning: { enabled: false }` for Hybrid models (Qwen3.5).
 - `src/lib/ai/model-router.ts` — maps task types to models (cheap: Qwen3.5-9B, strong: gpt-oss-120b / DeepSeek-V4-Pro)
 - `src/lib/ai/assist-intents.ts` — intent registry, mode mapping, system prompt builder, JSON schemas per intent
 - `src/lib/actions/ai-assist.ts` — Server Actions: `createAiAssistDraft`, `confirmAiAssistDraft`, query runners, meeting/finance helpers
 
 Flow: user text → `createAiAssistDraft` calls Together AI → returns structured `ZoAgentOutput` → if `mode === 'query'/'summary'` executes DB query immediately → saves to `ai_assist_requests` as `draft` or `confirmed` → user clicks confirm → `confirmAiAssistDraft` creates the actual record.
 
-**Intents that create records** (require explicit user confirmation): `create_task`, `schedule_meeting`, `create_followup`, `create_project`, `create_proposal`, `create_idea`, `promote_idea_to_application`, `create_application`, `update_application_source`.
+**Intents that create records** (require explicit user confirmation): `create_task`, `schedule_meeting`, `create_spending`, `create_followup`, `create_project`, `create_proposal`, `create_idea`, `promote_idea_to_application`, `create_application`, `update_application_source`.
+
+**`create_spending`** inserts into `finance_transactions` with: type, amount, currency, description, category, status, date, notes (includes paid_by info). Triggered by phrases like "add spending 10000 INR on X paid by Y".
 
 **`promote_idea_to_application`** is a special two-step: finds the matching `business_ideas` row by title (fuzzy `ilike`), creates an `applications` row, then marks the idea `promoted_to_application`. If the idea isn't found, it throws — do not bypass this.
 
