@@ -1,10 +1,43 @@
-# ZeroOrigins OS — Current State (updated 2026-06-08)
+# ZeroOrigins OS — Current State (updated 2026-06-16)
 
 - **Internal Control Room** (`/internal/control-room`) is the first real operating dashboard: identity header (name/role/email/workspace + sign out), 8 module cards with live Supabase counts (Ideas, Projects, Tasks, Leads, Partners, AI Workspace, Proposals, Customers), 6 quick actions, AI Workspace snapshot, and recent-activity sections (Recent Leads, Recent Partner Applications, Recent Projects, Tasks Due Soon).
 - **AI Workspace is manual-first.** Apps are entered/edited by hand via `/internal/ai-workspace`. Full CRUD exists; `ai_workspace_apps` table is migrated and seeded with 9 apps.
 - **GitHub/Vercel sync is DEFERRED** — deliberately not built. Manual curation first; automation later without clobbering business fields. See `docs/AI_WORKSPACE.md`.
 - **Sidebar** is role-aware (Finance & Settings limited to FOUNDER/SUPER_ADMIN) and has **no dead links** — unbuilt modules route to clean "Coming Soon" placeholder pages.
-- **Next priority:** Lead → Proposal → Customer → Project flow.
+
+## Calendar & Google Sync (updated 2026-06-16)
+
+- **Auto-push to Google Calendar:** `createMeeting()` now checks if the user has `google_tokens` saved and automatically pushes every new meeting to Google Calendar. No manual "source" selection needed.
+- **Sync Now** pulls events from Google Calendar into the `meetings` table (upsert by `calendar_event_id`). Uses `router.refresh()` for immediate UI update.
+- **Delete meetings:** `deleteMeeting()` server action + `DeleteMeetingButton` component on meeting detail page with confirmation flow.
+- **Admin "All Teams" view:** Admin users see an "All Teams" tab that shows all meetings across the org, deduplicated by `calendar_event_id` (prevents seeing duplicates when multiple people sync the same event).
+- **Calendar tabs:** All Teams (admin-only, deduplicated) | Team Calendar (everyone's meetings) | My Calendar (filtered to current user). Active tab highlighted.
+- **Source/Sync Status dropdowns removed** from MeetingForm — these are now auto-determined by the system.
+
+## Email Notifications (new 2026-06-16)
+
+- **Resend integration:** `resend` package installed. Email utility at `src/lib/email/notifications.ts`.
+- **Meeting notifications:** When a meeting is created, all attendees receive an email with title, date/time, duration, agenda, and join link. Fire-and-forget (won't block meeting creation).
+- **Env vars required:** `RESEND_API_KEY` and optionally `RESEND_FROM_EMAIL` (defaults to `noreply@zeroorigins.in`).
+- **Google OAuth env vars:** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` now documented in `.env.local.example`.
+
+## Key Files (Calendar/Email)
+
+| File | Purpose |
+|------|---------|
+| `src/lib/actions/internal-resources.ts` | `createMeeting`, `updateMeeting`, `deleteMeeting` server actions |
+| `src/lib/google/calendar.ts` | `createGoogleCalendarEvent` — pushes to Google Calendar API |
+| `src/app/api/calendar/sync/route.ts` | Sync Now endpoint — pulls from Google Calendar |
+| `src/app/api/auth/google/route.ts` | OAuth initiation |
+| `src/app/api/auth/google/callback/route.ts` | OAuth callback — stores tokens |
+| `src/components/calendar/sync-calendar-button.tsx` | Sync Now button (client) |
+| `src/components/calendar/delete-meeting-button.tsx` | Delete with confirmation (client) |
+| `src/lib/email/notifications.ts` | `sendMeetingNotification` via Resend |
+| `src/app/(internal)/internal/meetings/page.tsx` | Meetings list with All Teams/Team/My filters |
+
+---
+
+- **Next priority:** Sync Inbox (dedupe engine that writes to `sync_signals` table), real email inbox integration, ZO Agent improvements.
 
 ---
 

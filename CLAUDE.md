@@ -124,6 +124,8 @@ The old `src/lib/ai/*.ts` stubs (`requirement-summarizer`, `followup-generator`,
 Requires:
 - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase project
 - `TOGETHER_API_KEY` — ZO_Agent (Together AI). Without this the ZO_Agent panel will throw on every request.
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` — Google Calendar OAuth. Without these, calendar sync/push won't work.
+- `RESEND_API_KEY` — email notifications via Resend. Without this, emails silently skip (no crash).
 - `OPENAI_API_KEY` — voice transcription endpoint (`/api/voice/transcribe`). Only needed when implementing the voice feature.
 - `SUPABASE_SERVICE_ROLE_KEY` — workspace sync script only (`pnpm sync:workspace`), never used in the Next.js app.
 
@@ -143,6 +145,7 @@ Requires:
 | Customers | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
 | AI Workspace | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ (group/status filters) |
 | Proposals | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ |
+| Meetings | ✅ | ✅ | ✅ | ✅ | ✅ (via edit) | ✅ (Team/My/All Teams) |
 
 Stub pages behind `ComingSoon` component: Assets, Content Studio, Finance (admin), Knowledge, Settings (admin). The `deals` table (migration 005) and `source_registry` table (migration 014) have **no UI yet**.
 
@@ -181,6 +184,28 @@ Shared primitives for internal list pages live in `src/lib/resource-kit/` and `s
 Migration `002_contact_and_automation_fields.sql` adds contact fields (`phone`, `whatsapp`, `website`, `linkedin`) and automation metadata (`automation_status`, `automation_source`, `n8n_workflow_id`, `external_reference_id`, `ai_summary`, `ai_score`) to both tables.
 
 Public forms set `automation_status = 'not_started'` and `automation_source = 'zeroorigins_os_public_form'` on every insert. This is the hook for future n8n workflows — filter `leads` or `partners` where `automation_status = 'not_started'` to find unprocessed submissions.
+
+### Calendar & Google Sync
+
+Meetings (`/internal/meetings`) have full bi-directional Google Calendar sync:
+
+- **Create → Google push:** `createMeeting()` auto-pushes to Google Calendar if the user has connected via OAuth (`google_tokens` table). No manual source selection needed.
+- **Sync Now → Google pull:** `/api/calendar/sync` fetches the user's primary Google Calendar events (next 30 days) and upserts into `meetings` by `calendar_event_id`.
+- **OAuth flow:** `/api/auth/google` → Google consent → `/api/auth/google/callback` stores tokens.
+- **Delete:** `deleteMeeting()` server action removes from local DB (does not delete from Google Calendar).
+- **Admin deduplication:** "All Teams" view deduplicates by `calendar_event_id` so the same Google event synced by multiple people only shows once.
+
+**Required env vars:** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`
+
+### Email notifications
+
+Email is handled via **Resend** (`resend` package). Utility at `src/lib/email/notifications.ts`.
+
+- `sendMeetingNotification()` — sends to all attendees on meeting creation (fire-and-forget).
+- Does not block the main action if email fails.
+- **Required env var:** `RESEND_API_KEY`. Optional: `RESEND_FROM_EMAIL` (default: `noreply@zeroorigins.in`).
+
+When adding new email notifications: follow the same fire-and-forget pattern (`.catch(() => {})`) so email failures never break business logic.
 
 ### AI Workspace sync — rules
 

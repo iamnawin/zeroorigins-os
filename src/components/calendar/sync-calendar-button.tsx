@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function SyncCalendarButton() {
   const [syncing, setSyncing] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+  const router = useRouter()
 
   async function handleSync() {
     setSyncing(true)
@@ -15,10 +17,10 @@ export function SyncCalendarButton() {
       const res = await fetch('/api/calendar/sync', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) {
-        setResult([data.error, data.details].filter(Boolean).join(': ') || 'Sync failed')
+        setResult(data.error || 'Sync failed')
       } else {
-        setResult(`Synced: ${data.created} new, ${data.updated} updated`)
-        setTimeout(() => window.location.reload(), 1500)
+        setResult(`✓ ${data.created} new, ${data.updated} updated`)
+        router.refresh()
       }
     } catch {
       setResult('Network error')

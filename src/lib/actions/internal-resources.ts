@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createGoogleCalendarEvent } from '@/lib/google/calendar'
+import { sendMeetingNotification } from '@/lib/email/notifications'
 import type {
   AIAppCategory,
   AIAppStatus,
@@ -678,20 +679,33 @@ export async function createMeeting(input: MeetingFormInput): Promise<ActionResu
     const supabase = await createClient()
     const user = await requireInternalUser(supabase)
     const payload = meetingPayload(input)
-    if (payload.source === 'google_calendar') {
-      const googleEvent = await createGoogleCalendarEvent(supabase, user.id, {
-        title: payload.title,
-        scheduled_at: payload.scheduled_at,
-        duration_minutes: payload.duration_minutes,
-        attendees: payload.attendees,
-        agenda: payload.agenda,
-        notes: payload.notes,
-        meeting_link: payload.meeting_link,
-      })
 
-      payload.calendar_event_id = googleEvent.calendarEventId
-      payload.meeting_link = googleEvent.meetingLink
-      payload.sync_status = 'ready'
+    // Always push to Google Calendar if user has connected their account
+    const { data: tokenRow } = await supabase
+      .from('google_tokens')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (tokenRow) {
+      try {
+        const googleEvent = await createGoogleCalendarEvent(supabase, user.id, {
+          title: payload.title,
+          scheduled_at: payload.scheduled_at,
+          duration_minutes: payload.duration_minutes,
+          attendees: payload.attendees,
+          agenda: payload.agenda,
+          notes: payload.notes,
+          meeting_link: payload.meeting_link,
+        })
+        payload.source = 'google_calendar'
+        payload.calendar_event_id = googleEvent.calendarEventId
+        payload.meeting_link = googleEvent.meetingLink
+        payload.sync_status = 'ready'
+      } catch {
+        // Google push failed — save locally anyway
+        payload.sync_status = 'error'
+      }
     }
 
     const { data, error } = await supabase
@@ -725,6 +739,20 @@ export async function createMeeting(input: MeetingFormInput): Promise<ActionResu
       throw error
     }
     revalidateResource(['/internal/meetings'])
+
+    // Send email notification to attendees (fire-and-forget)
+    if (payload.attendees.length > 0) {
+      sendMeetingNotification({
+        title: payload.title,
+        scheduled_at: payload.scheduled_at,
+        duration_minutes: payload.duration_minutes,
+        attendees: payload.attendees,
+        agenda: payload.agenda,
+        meeting_link: payload.meeting_link,
+        organizer_name: user.email ?? undefined,
+      }).catch(() => {})
+    }
+
     return { id: data.id }
   } catch (error) {
     return toResult(error)
@@ -762,6 +790,19 @@ export async function updateMeeting(id: string, input: MeetingFormInput): Promis
       throw error
     }
     revalidateResource(['/internal/meetings', `/internal/meetings/${id}`])
+    return { id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
+export async function deleteMeeting(id: string): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    await requireInternalUser(supabase)
+    const { error } = await supabase.from('meetings').delete().eq('id', id)
+    if (error) throw error
+    revalidateResource(['/internal/meetings'])
     return { id }
   } catch (error) {
     return toResult(error)

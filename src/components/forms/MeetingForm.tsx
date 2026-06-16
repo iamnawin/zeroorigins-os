@@ -123,22 +123,7 @@ export default function MeetingForm({
                 <Label>Duration Minutes</Label>
                 <Input type="number" min="1" value={form.duration_minutes} onChange={set('duration_minutes')} />
               </div>
-              <div className="space-y-2">
-                <Label>Source</Label>
-                <select value={form.source} onChange={set('source')} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
-                  <option value="manual">manual</option>
-                  <option value="google_calendar">google calendar</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>Sync Status</Label>
-                <select value={form.sync_status} onChange={set('sync_status')} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
-                  <option value="not_connected">not connected</option>
-                  <option value="ready">ready</option>
-                  <option value="paused">paused</option>
-                  <option value="error">error</option>
-                </select>
-              </div>
+              {/* Source and Sync Status are auto-determined based on Google Calendar connection */}
               <div className="space-y-2">
                 <Label>Owner</Label>
                 <select value={form.owner_id} onChange={set('owner_id')} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">

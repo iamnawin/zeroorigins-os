@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MeetingAiPanel } from '@/components/ai/MeetingAiPanel'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
+import { DeleteMeetingButton } from '@/components/calendar/delete-meeting-button'
 import type { Meeting } from '@/types'
 
 function formatDateTime(value: string) {
@@ -42,9 +43,12 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
         <Link href="/internal/meetings">
           <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
         </Link>
-        <Link href={`/internal/meetings/${id}/edit`}>
-          <Button size="sm"><Pencil className="w-4 h-4 mr-1" />Edit</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <DeleteMeetingButton meetingId={id} />
+          <Link href={`/internal/meetings/${id}/edit`}>
+            <Button size="sm"><Pencil className="w-4 h-4 mr-1" />Edit</Button>
+          </Link>
+        </div>
       </div>
       <Card className="bg-card border-border">
         <CardHeader>

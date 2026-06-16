@@ -11,10 +11,8 @@ import type { Meeting, Profile } from '@/types'
 import { SyncCalendarButton } from '@/components/calendar/sync-calendar-button'
 
 const BASE = '/internal/meetings'
-const TEAM_CALENDAR_HREF = '/internal/meetings?calendar=team'
-const MY_CALENDAR_HREF = '/internal/meetings?calendar=my'
 
-type CalendarFilter = 'team' | 'my'
+type CalendarFilter = 'all' | 'team' | 'my'
 type MeetingRow = Meeting & { ownerLabel: string }
 
 function formatDateTime(value: string) {
@@ -22,11 +20,8 @@ function formatDateTime(value: string) {
 }
 
 function filterLabel(filter: CalendarFilter) {
+  if (filter === 'all') return 'All Teams'
   return filter === 'my' ? 'My Calendar' : 'Team Calendar'
-}
-
-function filterHref(filter: CalendarFilter) {
-  return filter === 'my' ? MY_CALENDAR_HREF : TEAM_CALENDAR_HREF
 }
 
 const TABLE_COLUMNS: TableColumn<MeetingRow>[] = [
@@ -39,34 +34,64 @@ const TABLE_COLUMNS: TableColumn<MeetingRow>[] = [
   { key: 'next_action', label: 'Next Action', render: row => <span className="line-clamp-1">{row.next_action || row.agenda || '-'}</span> },
 ]
 
+/** Deduplicate meetings by calendar_event_id — keep earliest-created row per event */
+function deduplicateMeetings(meetings: Meeting[]): Meeting[] {
+  const seen = new Map<string, Meeting>()
+  const result: Meeting[] = []
+
+  for (const m of meetings) {
+    if (!m.calendar_event_id) {
+      result.push(m)
+      continue
+    }
+    const existing = seen.get(m.calendar_event_id)
+    if (!existing) {
+      seen.set(m.calendar_event_id, m)
+      result.push(m)
+    }
+    // skip duplicates — keep the first one (earliest by scheduled_at order)
+  }
+  return result
+}
+
 export default async function MeetingsPage({
   searchParams,
 }: {
   searchParams: Promise<{ calendar?: string }>
 }) {
   const params = await searchParams
-  const calendar: CalendarFilter = params.calendar === 'my' ? 'my' : 'team'
+  const calendar: CalendarFilter = params.calendar === 'my' ? 'my' : params.calendar === 'all' ? 'all' : 'team'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [{ data: meetings }, { data: profiles }] = await Promise.all([
+  const [{ data: meetings }, { data: profiles }, { data: currentProfile }] = await Promise.all([
     supabase.from('meetings').select('*').order('scheduled_at', { ascending: true }),
-    supabase.from('profiles').select('id, email, full_name').in('role', ['admin', 'employee']),
+    supabase.from('profiles').select('id, email, full_name, role').in('role', ['admin', 'employee']),
+    supabase.from('profiles').select('role').eq('id', user?.id || '').single(),
   ])
 
+  const isAdmin = currentProfile?.role === 'admin'
   const profileRows = (profiles ?? []) as Pick<Profile, 'id' | 'email' | 'full_name'>[]
   const ownerById = new Map(profileRows.map(profile => [profile.id, profile.full_name || profile.email]))
   const currentEmail = user?.email?.toLowerCase() ?? ''
-  const rows = ((meetings ?? []) as Meeting[])
-    .filter(row => {
-      if (calendar === 'team') return true
-      const attendeeEmails = (row.attendees ?? []).map(attendee => attendee.toLowerCase())
+
+  let filtered = (meetings ?? []) as Meeting[]
+
+  if (calendar === 'my') {
+    filtered = filtered.filter(row => {
+      const attendeeEmails = (row.attendees ?? []).map(a => a.toLowerCase())
       return row.owner_id === user?.id || attendeeEmails.includes(currentEmail)
     })
-    .map(row => ({
-      ...row,
-      ownerLabel: row.owner_id ? ownerById.get(row.owner_id) ?? 'Unassigned' : 'Unassigned',
-    }))
+  } else if (calendar === 'all') {
+    // Admin: all meetings, deduplicated by calendar_event_id
+    filtered = deduplicateMeetings(filtered)
+  }
+  // 'team' = show all without dedup (same person's meetings)
+
+  const rows: MeetingRow[] = filtered.map(row => ({
+    ...row,
+    ownerLabel: row.owner_id ? ownerById.get(row.owner_id) ?? 'Unassigned' : 'Unassigned',
+  }))
 
   return (
     <div className="space-y-5">
@@ -80,14 +105,17 @@ export default async function MeetingsPage({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Link href={filterHref('team')} className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted">
+        {isAdmin && (
+          <Link href={`${BASE}?calendar=all`} className={`rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted ${calendar === 'all' ? 'bg-muted font-medium' : ''}`}>
+            All Teams
+          </Link>
+        )}
+        <Link href={`${BASE}?calendar=team`} className={`rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted ${calendar === 'team' ? 'bg-muted font-medium' : ''}`}>
           Team Calendar
         </Link>
-        <Link href={filterHref('my')} className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted">
+        <Link href={`${BASE}?calendar=my`} className={`rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted ${calendar === 'my' ? 'bg-muted font-medium' : ''}`}>
           My Calendar
         </Link>
-        <Badge variant="outline">Manual meetings</Badge>
-        <Badge variant="outline">Synced from Google</Badge>
         <Badge variant="outline">{rows.length} {rows.length === 1 ? 'meeting' : 'meetings'}</Badge>
       </div>
 
