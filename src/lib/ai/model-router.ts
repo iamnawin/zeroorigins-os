@@ -6,6 +6,11 @@ export type AiTask =
   | 'proposal_strategy'
   | 'crm_planning'
   | 'complex_reasoning'
+  | 'radar_classify'
+  | 'radar_linkedin_draft'
+  | 'radar_instagram_caption'
+  | 'radar_x_draft'
+  | 'radar_carousel_outline'
 
 export type ModelTier = 'cheap' | 'standard' | 'strong'
 
@@ -58,6 +63,36 @@ const TASK_MODEL_MAP: Record<AiTask, ModelChoice> = {
     model: 'deepseek-ai/DeepSeek-V4-Pro',
     tier: 'strong',
     reason: 'Reserve deep reasoning for hard analysis where cheap routing is likely to be false economy.',
+  },
+  radar_classify: {
+    provider: 'together',
+    model: 'Qwen/Qwen3.5-9B',
+    tier: 'cheap',
+    reason: 'Signal classification into a constrained category/score schema is routine structured extraction.',
+  },
+  radar_linkedin_draft: {
+    provider: 'together',
+    model: 'Qwen/Qwen3.5-9B',
+    tier: 'cheap',
+    reason: 'LinkedIn draft generation is short-form copywriting, not deep reasoning.',
+  },
+  radar_instagram_caption: {
+    provider: 'together',
+    model: 'Qwen/Qwen3.5-9B',
+    tier: 'cheap',
+    reason: 'Instagram captions are short-form copywriting, not deep reasoning.',
+  },
+  radar_x_draft: {
+    provider: 'together',
+    model: 'Qwen/Qwen3.5-9B',
+    tier: 'cheap',
+    reason: 'X drafts are short-form copywriting, not deep reasoning.',
+  },
+  radar_carousel_outline: {
+    provider: 'together',
+    model: 'Qwen/Qwen3.5-9B',
+    tier: 'cheap',
+    reason: 'A 6-slide outline is structured short-form copywriting, not deep reasoning.',
   },
 }
 

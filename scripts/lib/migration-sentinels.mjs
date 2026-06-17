@@ -45,4 +45,8 @@ export const SENTINELS = [
   { migration: '019_sync_signals', table: 'sync_signals', column: 'source_provider' },
   { migration: '019_sync_signals', table: 'sync_signals', column: 'status' },
   { migration: '019_sync_signals', table: 'meeting_sync_links', column: 'is_primary' },
+  { migration: '020_radar_intelligence', table: 'radar_sources', column: 'trust_level' },
+  { migration: '020_radar_intelligence', table: 'radar_items', column: 'status' },
+  { migration: '020_radar_intelligence', table: 'radar_content_ideas', column: 'platform' },
+  { migration: '020_radar_intelligence', table: 'radar_actions', column: 'action_type' },
 ]

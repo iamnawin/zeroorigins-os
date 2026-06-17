@@ -224,3 +224,30 @@ The AI Workspace page (`/internal/ai-workspace`) reads from the `ai_workspace_ap
 **Automation:** Windows Task Scheduler task "AI Workspace Sync" runs the script daily at 9:00 AM on Naveen's machine; log at `D:\AI-Workspace\Temp\sync-ai-workspace.log`. Manual `pnpm sync:workspace` for immediate updates.
 
 **Known data nuance:** 9 seed rows from migration 003 have `slug = NULL` and overlap by name with synced rows (e.g. OrgTrace, QureWell). Do not delete them without explicit approval.
+
+### Intelligence Radar — Zero Audience Voice
+
+**Purpose:** Internal market signal hub. Capture URLs → AI classifies category/scores/angles → generate LinkedIn/Instagram/X/Carousel drafts → human reviews before publishing. Phase 1 is manual capture only; no auto-publishing; no LinkedIn/X scraping.
+
+**Tables (migration 020):** `radar_sources`, `radar_items`, `radar_content_ideas`, `radar_actions`  
+**Apply:** paste `supabase/migrations/020_radar_intelligence.sql` into Supabase SQL editor. Run `pnpm check:migrations` after.
+
+**Routes:**
+- `/internal/radar` — signal dashboard
+- `/internal/radar/[id]` — signal detail + AI actions
+- `/internal/radar/sources` + `/sources/new` — source registry (admin-write)
+- `/internal/radar/events` — events view
+- `/internal/radar/content-ideas` — draft review queue
+
+**Key lib files:** `src/lib/radar/` (scoring.ts, prompts.ts, ai.ts, queries.ts, actions.ts)  
+**Key components:** `src/components/radar/` (RadarItemCard, AddSignalDialog, RadarItemActions, ContentIdeaCard, RadarScoreBadge)  
+**Navigation:** Added to `primary` group in `src/lib/internal-navigation.ts`
+
+**Rules:**
+- Do NOT auto-publish to LinkedIn, Instagram, or X
+- Do NOT scrape LinkedIn or X directly
+- Placeholder AI output is labelled `[AI draft generation unavailable]` — never present it as real AI output
+- `radar_sources` write requires `admin` role — enforced in both `requireAdmin()` and RLS
+- AI calls use Together AI (`TOGETHER_API_KEY`) via existing `callTogetherChat` — if key is missing, classification returns placeholder
+
+**Docs:** `docs/features/zero-audience-voice-radar/` (README, ARCHITECTURE, DATABASE, AI_PROMPTS, OPEN_ITEMS, CHANGELOG, PHASE_PLAN)

@@ -22,6 +22,7 @@ export const INTERNAL_NAV_GROUPS: InternalNavGroup[] = [
     items: [
       { label: 'Control Room', href: '/internal/control-room', icon: 'LayoutDashboard' },
       { label: 'AI Workspace', href: '/internal/ai-workspace', icon: 'Bot' },
+      { label: 'Radar', href: '/internal/radar', icon: 'Radar' },
     ],
   },
   {

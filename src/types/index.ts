@@ -605,3 +605,170 @@ export interface SourceRegistryEntry {
   created_at: string
   updated_at: string
 }
+
+// Zero Audience Voice — Intelligence Radar
+
+export const RADAR_SOURCE_TYPES = [
+  'rss', 'website', 'event_platform', 'newsletter', 'manual_url', 'github',
+  'youtube', 'linkedin_manual', 'x_manual', 'salesforce_news', 'other',
+] as const
+export type RadarSourceType = typeof RADAR_SOURCE_TYPES[number]
+
+export const RADAR_TRUST_LEVELS = ['high', 'medium', 'low', 'unknown'] as const
+export type RadarTrustLevel = typeof RADAR_TRUST_LEVELS[number]
+
+export const RADAR_ITEM_CATEGORIES = [
+  'ai_news', 'ai_model_update', 'ai_tool_update', 'ai_agent_workflow',
+  'salesforce_ai', 'salesforce_crm', 'crm_automation', 'startup_news',
+  'india_ai', 'local_event', 'global_event', 'webinar', 'workshop',
+  'conference', 'hackathon', 'funding', 'competitor_signal',
+  'creator_trend', 'content_opportunity', 'product_idea', 'ignore',
+] as const
+export type RadarItemCategory = typeof RADAR_ITEM_CATEGORIES[number]
+
+export const RADAR_EVENT_MODES = ['online', 'offline', 'hybrid', 'unknown'] as const
+export type RadarEventMode = typeof RADAR_EVENT_MODES[number]
+
+export const RADAR_ITEM_STATUSES = [
+  'new', 'reviewed', 'saved', 'ignored', 'content_idea', 'draft_created',
+  'event_interested', 'event_registered', 'attended', 'task_created', 'archived',
+] as const
+export type RadarItemStatus = typeof RADAR_ITEM_STATUSES[number]
+
+export const RADAR_CONTENT_PLATFORMS = ['linkedin', 'instagram', 'x', 'youtube', 'blog', 'newsletter'] as const
+export type RadarContentPlatform = typeof RADAR_CONTENT_PLATFORMS[number]
+
+export const RADAR_CONTENT_TYPES = [
+  'text_post', 'short_post', 'carousel', 'reel_script',
+  'video_script', 'newsletter_note', 'blog_outline',
+] as const
+export type RadarContentType = typeof RADAR_CONTENT_TYPES[number]
+
+export const RADAR_CONTENT_STATUSES = [
+  'idea', 'draft', 'needs_review', 'approved', 'rejected', 'scheduled', 'published', 'archived',
+] as const
+export type RadarContentStatus = typeof RADAR_CONTENT_STATUSES[number]
+
+export const RADAR_ACTION_TYPES = [
+  'read', 'attend_event', 'register_event', 'create_post', 'create_carousel',
+  'test_tool', 'research_more', 'share_team', 'create_demo', 'create_campaign', 'create_task',
+] as const
+export type RadarActionType = typeof RADAR_ACTION_TYPES[number]
+
+export const RADAR_ACTION_STATUSES = ['open', 'in_progress', 'done', 'cancelled', 'archived'] as const
+export type RadarActionStatus = typeof RADAR_ACTION_STATUSES[number]
+
+export const RADAR_ACTION_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const
+export type RadarActionPriority = typeof RADAR_ACTION_PRIORITIES[number]
+
+export const RADAR_BUSINESS_VERTICALS = [
+  'ZeroOrigins CRM Systems',
+  'ZeroOrigins AI Systems',
+  'ZeroOrigins Media Lab',
+  'ZeroOrigins Academy',
+  'Zero Audience Voice',
+  'IgnAIte',
+  'General',
+] as const
+
+export interface RadarSource {
+  id: string
+  name: string
+  source_type: RadarSourceType
+  category?: string
+  url?: string
+  rss_url?: string
+  platform?: string
+  country?: string
+  city?: string
+  priority: number
+  trust_level: RadarTrustLevel
+  is_active: boolean
+  last_checked_at?: string
+  notes?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface RadarItem {
+  id: string
+  source_id?: string
+  source?: RadarSource
+  title: string
+  summary?: string
+  raw_content?: string
+  url?: string
+  canonical_url?: string
+  source_name?: string
+  source_type?: string
+  published_at?: string
+  captured_at: string
+  category?: RadarItemCategory
+  tags: string[]
+  business_vertical?: string
+  location_city?: string
+  location_country?: string
+  event_start_time?: string
+  event_end_time?: string
+  event_mode?: RadarEventMode
+  event_organizer?: string
+  registration_url?: string
+  relevance_score: number
+  urgency_score: number
+  content_potential_score: number
+  business_value_score: number
+  ai_summary?: string
+  why_it_matters?: string
+  recommended_action?: string
+  linkedin_angle?: string
+  instagram_angle?: string
+  x_angle?: string
+  status: RadarItemStatus
+  duplicate_key?: string
+  created_by?: string
+  assigned_to?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface RadarContentIdea {
+  id: string
+  radar_item_id?: string
+  radar_item?: RadarItem
+  platform: RadarContentPlatform
+  content_type: RadarContentType
+  post_angle?: string
+  hook?: string
+  draft_body?: string
+  caption?: string
+  carousel_outline?: Record<string, unknown>[]
+  hashtags: string[]
+  call_to_action?: string
+  brand_voice?: string
+  status: RadarContentStatus
+  scheduled_for?: string
+  published_at?: string
+  published_url?: string
+  notes?: string
+  created_by?: string
+  approved_by?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface RadarAction {
+  id: string
+  radar_item_id?: string
+  radar_item?: RadarItem
+  action_type: RadarActionType
+  title: string
+  description?: string
+  owner_id?: string
+  due_date?: string
+  status: RadarActionStatus
+  priority: RadarActionPriority
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
