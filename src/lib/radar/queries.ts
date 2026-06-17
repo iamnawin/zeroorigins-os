@@ -12,6 +12,7 @@ export type RadarDashboardCounts = {
   content_ideas: number
   events_upcoming: number
   high_relevance: number
+  migrationMissing: boolean
 }
 
 export type RadarItemFilters = {
@@ -23,8 +24,12 @@ export type RadarItemFilters = {
 }
 
 export async function getRadarDashboardCounts(supabase: Supabase): Promise<RadarDashboardCounts> {
-  const [total, newItems, saved, contentIdeas, events] = await Promise.all([
-    supabase.from('radar_items').select('id', { count: 'exact', head: true }),
+  const probe = await supabase.from('radar_items').select('id', { count: 'exact', head: true })
+  if (probe.error?.code === '42P01' || probe.error?.message?.includes('does not exist')) {
+    return { total: 0, new: 0, saved: 0, content_ideas: 0, events_upcoming: 0, high_relevance: 0, migrationMissing: true }
+  }
+
+  const [newItems, saved, contentIdeas, events] = await Promise.all([
     supabase.from('radar_items').select('id', { count: 'exact', head: true }).eq('status', 'new'),
     supabase.from('radar_items').select('id', { count: 'exact', head: true }).eq('status', 'saved'),
     supabase.from('radar_items').select('id', { count: 'exact', head: true }).eq('status', 'content_idea'),
@@ -40,12 +45,13 @@ export async function getRadarDashboardCounts(supabase: Supabase): Promise<Radar
     .not('status', 'in', '(ignored,archived)')
 
   return {
-    total: total.count ?? 0,
+    total: probe.count ?? 0,
     new: newItems.count ?? 0,
     saved: saved.count ?? 0,
     content_ideas: contentIdeas.count ?? 0,
     events_upcoming: events.count ?? 0,
     high_relevance: highRelevance.count ?? 0,
+    migrationMissing: false,
   }
 }
 

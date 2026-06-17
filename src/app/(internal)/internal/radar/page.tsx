@@ -41,7 +41,7 @@ export default async function RadarPage({
     getRadarDashboardCounts(supabase),
   ])
 
-  const migrationPending = items.length === 0 && counts.total === 0
+  const migrationPending = counts.migrationMissing
 
   return (
     <div className="space-y-5">
