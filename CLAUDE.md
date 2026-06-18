@@ -129,7 +129,8 @@ Requires:
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` — Google Calendar OAuth. Without these, calendar sync/push won't work.
 - `RESEND_API_KEY` — email notifications via Resend. Without this, emails silently skip (no crash).
 - `OPENAI_API_KEY` — voice transcription endpoint (`/api/voice/transcribe`). Only needed when implementing the voice feature.
-- `SUPABASE_SERVICE_ROLE_KEY` — workspace sync script only (`pnpm sync:workspace`), never used in the Next.js app.
+- `SUPABASE_SERVICE_ROLE_KEY` — workspace sync script (`pnpm sync:workspace`) **and** the RSS ingest cron (`/api/radar/ingest`). Must be set in Vercel env vars.
+- `CRON_SECRET` — optional but recommended. If set, `/api/radar/ingest` requires `Authorization: Bearer <CRON_SECRET>`. Set in Vercel and in the Vercel cron config automatically.
 
 ---
 
@@ -227,7 +228,7 @@ The AI Workspace page (`/internal/ai-workspace`) reads from the `ai_workspace_ap
 
 ### Intelligence Radar — Zero Audience Voice
 
-**Purpose:** Internal market signal hub. Capture URLs → AI classifies category/scores/angles → generate LinkedIn/Instagram/X/Carousel drafts → human reviews before publishing. Phase 1 is manual capture only; no auto-publishing; no LinkedIn/X scraping.
+**Purpose:** Internal market signal hub. Capture URLs → AI classifies category/scores/angles → generate LinkedIn/Instagram/X/Carousel drafts → human reviews before publishing. Phase 1: manual capture. Phase 2: RSS auto-ingest (built).
 
 **Tables (migration 020):** `radar_sources`, `radar_items`, `radar_content_ideas`, `radar_actions`  
 **Apply:** paste `supabase/migrations/020_radar_intelligence.sql` into Supabase SQL editor. Run `pnpm check:migrations` after.
@@ -235,13 +236,23 @@ The AI Workspace page (`/internal/ai-workspace`) reads from the `ai_workspace_ap
 **Routes:**
 - `/internal/radar` — signal dashboard
 - `/internal/radar/[id]` — signal detail + AI actions
-- `/internal/radar/sources` + `/sources/new` — source registry (admin-write)
+- `/internal/radar/sources` + `/sources/new` + `/sources/[id]/edit` — source registry (admin-write)
 - `/internal/radar/events` — events view
 - `/internal/radar/content-ideas` — draft review queue
+- `GET /api/radar/ingest` — Vercel cron endpoint (hourly); also callable via "Sync RSS" button on sources page
 
-**Key lib files:** `src/lib/radar/` (scoring.ts, prompts.ts, ai.ts, queries.ts, actions.ts)  
-**Key components:** `src/components/radar/` (RadarItemCard, AddSignalDialog, RadarItemActions, ContentIdeaCard, RadarScoreBadge)  
+**Key lib files:** `src/lib/radar/` (scoring.ts, prompts.ts, ai.ts, queries.ts, actions.ts, rss-ingest.ts)  
+**Key components:** `src/components/radar/` (RadarItemCard, AddSignalDialog, RadarItemActions, ContentIdeaCard, RadarScoreBadge, RssSyncButton)  
 **Navigation:** Added to `primary` group in `src/lib/internal-navigation.ts`
+
+**RSS ingest pipeline (`src/lib/radar/rss-ingest.ts`):**
+- Uses `rss-parser` package + `src/lib/supabase/service.ts` (service role client)
+- Deduplicates by `canonical_url` — safe to run repeatedly
+- Max 10 new items per source per run; each item is AI-classified on ingest
+- `ingestAllRssSources()` iterates all active sources with a non-null `rss_url`
+- `triggerRssIngest` server action (admin only) — wired to "Sync RSS" button on sources page
+- Cron schedule in `vercel.json`: `0 * * * *` (hourly); secured with `CRON_SECRET` env var
+- `SUPABASE_SERVICE_ROLE_KEY` is required at runtime (not just for sync script anymore)
 
 **Rules:**
 - Do NOT auto-publish to LinkedIn, Instagram, or X

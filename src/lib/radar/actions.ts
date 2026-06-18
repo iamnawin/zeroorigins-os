@@ -14,6 +14,7 @@ import type {
   RadarTrustLevel,
 } from '@/types'
 import { classifyRadarItem, generateLinkedInDraft, generateInstagramCaption, generateXDraft, generateCarouselOutline } from './ai'
+import { ingestAllRssSources } from './rss-ingest'
 
 type Supabase = Awaited<ReturnType<typeof createClient>>
 
@@ -474,6 +475,19 @@ export async function createRadarAction(input: {
     return { id: data.id }
   } catch (error) {
     return toResult(error)
+  }
+}
+
+export async function triggerRssIngest(): Promise<{ ok: boolean; total?: number; error?: string }> {
+  try {
+    const supabase = await createClient()
+    await requireAdmin(supabase)
+    const result = await ingestAllRssSources()
+    revalidateRadar()
+    return { ok: true, total: result.total }
+  } catch (error) {
+    if (error instanceof Error) return { ok: false, error: error.message }
+    return { ok: false, error: 'Ingest failed.' }
   }
 }
 
