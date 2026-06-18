@@ -138,6 +138,28 @@ async function findVerticalId(supabase: SupabaseServerClient, name?: string) {
   return data?.id ?? null
 }
 
+async function findExistingZoAgentLead(
+  supabase: SupabaseServerClient,
+  opts: { name: string; company?: string | null; serviceInterest?: string | null },
+) {
+  let query = supabase
+    .from('leads')
+    .select('id')
+    .ilike('name', opts.name)
+    .limit(1)
+
+  if (opts.company) query = query.eq('company', opts.company)
+  if (opts.serviceInterest) query = query.eq('service_interest', opts.serviceInterest)
+
+  const { data, error } = await query.maybeSingle()
+  if (error) throw error
+  return data?.id ?? null
+}
+
+function leadDetailHref(id: string) {
+  return `/internal/leads/${id}`
+}
+
 function normalizeZoAgentOutput(raw: Record<string, unknown>, requestedIntent?: AiAssistIntent): ZoAgentOutput {
   const parsedIntent = asString(raw.intent) as AiAssistIntent
   const intent = requestedIntent
@@ -526,6 +548,8 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
     } else if (intent === 'create_lead') {
       const name = requiredInputText(asString(draft.lead_name) || asString(draft.name) || output.title || request.input_text)
       const email = asString(draft.email) || `missing-email+${Date.now()}@zeroorigins.local`
+      const company = asString(draft.company) || null
+      const serviceInterest = asString(draft.service_area) || asString(draft.service_interest) || null
       const notes = [
         asString(draft.title) ? `Title: ${asString(draft.title)}` : '',
         asString(draft.lead_type) ? `Lead type: ${asString(draft.lead_type)}` : '',
@@ -536,29 +560,35 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
         !asString(draft.email) ? 'Email missing from ZO_Agent input; placeholder email used for CRM required field.' : '',
       ].filter(Boolean).join('\n')
 
-      const { data, error: createError } = await mutationSupabase
-        .from('leads')
-        .insert({
-          name,
-          email,
-          company: asString(draft.company) || null,
-          source: asString(draft.source) || 'ZO_Agent',
-          service_interest: asString(draft.service_area) || asString(draft.service_interest) || null,
-          budget_range: asString(draft.budget_range) || null,
-          notes: notes || request.input_text,
-          status: pickNormalizedAllowed(draft.status, LEAD_STATUSES, 'new'),
-          owner_id: user.id,
-          created_by: user.id,
-          ai_summary: output.summary || null,
-          qualification_notes: asString(draft.next_action) || null,
-        })
-        .select('id')
-        .single()
+      const existingLeadId = await findExistingZoAgentLead(mutationSupabase, { name, company, serviceInterest })
+      if (existingLeadId) {
+        createdId = existingLeadId
+      } else {
+        const { data, error: createError } = await mutationSupabase
+          .from('leads')
+          .insert({
+            name,
+            email,
+            company,
+            source: asString(draft.source) || 'ZO_Agent',
+            service_interest: serviceInterest,
+            budget_range: asString(draft.budget_range) || null,
+            notes: notes || request.input_text,
+            status: pickNormalizedAllowed(draft.status, LEAD_STATUSES, 'new'),
+            owner_id: user.id,
+            created_by: user.id,
+            ai_summary: output.summary || null,
+            qualification_notes: asString(draft.next_action) || null,
+          })
+          .select('id')
+          .single()
 
-      if (createError) throw createError
-      createdId = data.id
-      links.related_lead_id = data.id
-      href = `/internal/leads/${data.id}`
+        if (createError) throw createError
+        createdId = data.id
+      }
+      if (!createdId) throw new Error('ZO_Agent lead confirmation did not resolve a lead record.')
+      links.related_lead_id = createdId
+      href = leadDetailHref(createdId)
     } else if (intent === 'create_deal') {
       const estimatedValue = typeof draft.estimated_value === 'number'
         ? draft.estimated_value

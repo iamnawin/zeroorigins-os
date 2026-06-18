@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Bot, Check, Mic, MicOff, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -65,6 +66,7 @@ export function AiAssistPanel({
   embedded?: boolean
   showHeader?: boolean
 }) {
+  const router = useRouter()
   const [inputText, setInputText] = useState('')
   const [intent, setIntent] = useState<AiAssistIntent | undefined>()
   const [draft, setDraft] = useState<DraftState | null>(null)
@@ -100,6 +102,11 @@ export function AiAssistPanel({
       setResults(undefined)
       setInputText('')
       setIntent(undefined)
+      if (result.data?.href) {
+        router.push(result.data.href)
+      } else {
+        router.refresh()
+      }
     })
   }
 

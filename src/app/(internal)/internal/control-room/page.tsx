@@ -84,6 +84,33 @@ function radarSignalScore(item: RadarItem) {
   return Math.max(Number(item.relevance_score ?? 0), Number(item.content_potential_score ?? 0))
 }
 
+function humanizeRepoTitle(value: string) {
+  const repoName = value.split('/').pop() || value
+  return repoName
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, letter => letter.toUpperCase())
+}
+
+function firstSentence(value?: string | null) {
+  const text = value?.trim()
+  if (!text) return ''
+  const sentence = text.match(/^[^.!?]+[.!?]/)?.[0] ?? text
+  return truncate(sentence.replace(/\s+/g, ' '), 92)
+}
+
+function readableRadarHeadline(item: RadarItem) {
+  const rawTitle = item.title.trim()
+  const isRepoTitle = /^[\w.-]+\/[\w.-]+$/.test(rawTitle)
+  const signalText = firstSentence(item.why_it_matters || item.ai_summary || item.summary)
+
+  if (isRepoTitle && signalText) {
+    return `${humanizeRepoTitle(rawTitle)}: ${signalText}`
+  }
+
+  if (isRepoTitle) return humanizeRepoTitle(rawTitle)
+  return truncate(rawTitle, 92)
+}
+
 function buildSuggestedMoves(opts: {
   leads: Lead[]
   tasks: Task[]
@@ -667,7 +694,8 @@ function AccordionPanel({
 function HotRadarSignalCard({ item }: { item: RadarItem }) {
   const score = radarSignalScore(item)
   const scoreTone = score >= 8 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-zo-purple/30 bg-zo-purple/10 text-zo-purple-2'
-  const sourceName = item.source?.name || item.source_name || 'Radar source'
+  const sourceName = item.source_name || item.source?.name || 'Radar source'
+  const headline = readableRadarHeadline(item)
 
   return (
     <Link
@@ -676,7 +704,7 @@ function HotRadarSignalCard({ item }: { item: RadarItem }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">{item.title}</p>
+          <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">{headline}</p>
           <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
             {item.why_it_matters || item.ai_summary || item.summary || 'Review this signal and decide whether to save, action, or turn it into content.'}
           </p>
