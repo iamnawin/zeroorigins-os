@@ -19,6 +19,7 @@ import {
   DEAL_STAGES,
   FINANCE_CATEGORIES,
   FINANCE_TRANSACTION_STATUSES,
+  LEAD_STATUSES,
   type AiAssistIntent,
   type AiAssistInputMode,
   type RecurrenceInterval,
@@ -507,6 +508,42 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       if (createError) throw createError
       createdId = data.id
       href = `/internal/finance`
+    } else if (intent === 'create_lead') {
+      const name = requiredInputText(asString(draft.lead_name) || asString(draft.name) || output.title || request.input_text)
+      const email = asString(draft.email) || `missing-email+${Date.now()}@zeroorigins.local`
+      const notes = [
+        asString(draft.title) ? `Title: ${asString(draft.title)}` : '',
+        asString(draft.lead_type) ? `Lead type: ${asString(draft.lead_type)}` : '',
+        asString(draft.priority) ? `Priority: ${asString(draft.priority)}` : '',
+        asString(draft.potential_deal_type) ? `Potential deal type: ${asString(draft.potential_deal_type)}` : '',
+        asString(draft.next_action) ? `Next action: ${asString(draft.next_action)}` : '',
+        asString(draft.notes),
+        !asString(draft.email) ? 'Email missing from ZO_Agent input; placeholder email used for CRM required field.' : '',
+      ].filter(Boolean).join('\n')
+
+      const { data, error: createError } = await supabase
+        .from('leads')
+        .insert({
+          name,
+          email,
+          company: asString(draft.company) || null,
+          source: asString(draft.source) || 'ZO_Agent',
+          service_interest: asString(draft.service_area) || asString(draft.service_interest) || null,
+          budget_range: asString(draft.budget_range) || null,
+          notes: notes || request.input_text,
+          status: pickNormalizedAllowed(draft.status, LEAD_STATUSES, 'new'),
+          owner_id: user.id,
+          created_by: user.id,
+          ai_summary: output.summary || null,
+          qualification_notes: asString(draft.next_action) || null,
+        })
+        .select('id')
+        .single()
+
+      if (createError) throw createError
+      createdId = data.id
+      links.related_lead_id = data.id
+      href = `/internal/leads/${data.id}`
     } else if (intent === 'create_deal') {
       const estimatedValue = typeof draft.estimated_value === 'number'
         ? draft.estimated_value
@@ -730,6 +767,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
     revalidatePath('/internal/applications')
     revalidatePath('/internal/finance')
     revalidatePath('/internal/deals')
+    revalidatePath('/internal/leads')
     if (!createdId) throw new Error('ZO_Agent confirmation did not create a record.')
     return { data: { id: createdId, intent, href } }
   } catch (error) {

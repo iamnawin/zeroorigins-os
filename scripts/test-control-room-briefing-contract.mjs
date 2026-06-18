@@ -13,26 +13,17 @@ test('control room is an AI-first business briefing, not a raw admin dashboard',
   const source = read('src/app/(internal)/internal/control-room/page.tsx')
 
   for (const section of [
-    'AI Business Briefing',
+    'Here is what matters today.',
     'Business Pulse',
-    'Today&apos;s Priorities',
+    "Today's Priorities",
     'Revenue Motion',
     'Team Rhythm',
-    'Ask ZeroOrigins Agent',
-    'Business Memory',
+    'ZO_Agent Command Bar',
+    'Headlines to Catch',
+    'Agent Activity',
     'Quick Actions',
   ]) {
     assert.ok(source.includes(section), `Control Room missing ${section}`)
-  }
-
-  for (const prompt of [
-    'What needs my attention today?',
-    'Which leads need follow-up?',
-    'What tasks are blocked?',
-    'Summarize partner activity.',
-    'What should we do next?',
-  ]) {
-    assert.ok(source.includes(prompt), `Agent prompt missing: ${prompt}`)
   }
 
   for (const table of ['leads', 'deals', 'proposals', 'meetings', 'tasks', 'finance_transactions', 'ai_assist_requests']) {
@@ -40,7 +31,7 @@ test('control room is an AI-first business briefing, not a raw admin dashboard',
   }
 
   assert.ok(source.includes('AiAssistPanel embedded'), 'Control Room must keep the existing embedded agent panel')
-  assert.ok(source.includes('Projects without recent activity'), 'Control Room must include project freshness guidance')
-  assert.ok(source.includes('No active leads yet'), 'Control Room must show useful empty states')
+  assert.ok(source.includes('Stale projects'), 'Control Room must include project freshness guidance')
+  assert.ok(source.includes('No pipeline yet'), 'Control Room must show useful empty states')
   assert.doesNotMatch(source, /<table/i, 'Home must avoid raw tables')
 })

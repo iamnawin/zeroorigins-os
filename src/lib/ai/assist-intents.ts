@@ -7,6 +7,7 @@ export const ZO_AGENT_QUICK_ACTIONS: { intent: AiAssistIntent; label: string }[]
   { intent: 'create_task', label: 'Create task' },
   { intent: 'schedule_meeting', label: 'Schedule meeting' },
   { intent: 'create_spending', label: 'Add spending' },
+  { intent: 'create_lead', label: 'Create lead' },
   { intent: 'draft_reply', label: 'Draft reply' },
   { intent: 'summarize_email', label: 'Summarize email' },
   { intent: 'create_proposal', label: 'Create proposal' },
@@ -22,6 +23,7 @@ export const ZO_AGENT_BUTTON_LABELS: Record<AiAssistIntent, string> = {
   create_task: 'Generate Task Draft',
   schedule_meeting: 'Generate Meeting Draft',
   create_spending: 'Generate Spending Draft',
+  create_lead: 'Generate Lead Draft',
   draft_reply: 'Generate Reply Draft',
   summarize_email: 'Summarize Email',
   create_followup: 'Generate Follow-up Draft',
@@ -52,6 +54,7 @@ export const ZO_AGENT_INTENT_MODES: Record<AiAssistIntent, ZoAgentMode> = {
   create_task: 'draft',
   schedule_meeting: 'draft',
   create_spending: 'draft',
+  create_lead: 'draft',
   draft_reply: 'draft',
   summarize_email: 'summary',
   create_followup: 'draft',
@@ -76,7 +79,7 @@ export const ZO_AGENT_INTENT_MODES: Record<AiAssistIntent, ZoAgentMode> = {
 
 // Draft intents that can create a record after explicit user confirmation.
 export const ZO_AGENT_CONFIRMABLE_INTENTS: AiAssistIntent[] = [
-  'create_task', 'schedule_meeting', 'create_spending', 'create_followup', 'create_project', 'create_proposal',
+  'create_task', 'schedule_meeting', 'create_spending', 'create_followup', 'create_lead', 'create_project', 'create_proposal',
   'create_idea', 'create_deal', 'promote_idea_to_application', 'create_application', 'update_application_source',
 ]
 
@@ -84,6 +87,7 @@ const INTENT_SCHEMAS: Partial<Record<AiAssistIntent, string>> = {
   create_task: '{"intent":"create_task","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"task_title":"","description":"","priority":"low | normal | high | urgent","due_date":"YYYY-MM-DD","assigned_to":"","related_vertical":"","related_project":"","related_application":""},"next_actions":[],"warnings":[]}',
   schedule_meeting: '{"intent":"schedule_meeting","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"meeting_title":"","date":"YYYY-MM-DD","start_time":"HH:MM","end_time":"HH:MM","attendees":[],"agenda":[],"related_vertical":"","related_application":"","notes":""},"next_actions":[],"warnings":[]}',
   create_spending: '{"intent":"create_spending","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"description":"","amount":0,"currency":"INR","category":"software | infrastructure | ai_api | marketing | contractor | payroll | travel | office | tax | hosting | domain | operations | project_cost | other","type":"expense","vendor_name":"","paid_by":"","status":"paid | due | overdue | planned","date":"YYYY-MM-DD","notes":""},"next_actions":[],"warnings":[]}',
+  create_lead: '{"intent":"create_lead","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"lead_name":"","email":"","company":"","title":"","source":"LinkedIn | website | referral | manual | other","lead_type":"","service_area":"","status":"new | contacted | discovery_scheduled | discovery_done | proposal_needed | proposal_sent | negotiation | won | lost | on_hold","priority":"low | medium | high | critical","potential_deal_type":"","next_action":"","notes":""},"next_actions":["Review lead details","Confirm to create lead record"],"warnings":[]}',
   draft_reply: '{"intent":"draft_reply","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"recipient":"","subject":"","message":"","tone":"professional"},"next_actions":[],"warnings":[]}',
   summarize_email: '{"intent":"summarize_email","mode":"summary","title":"","summary":"","confidence":0,"requires_confirmation":false,"draft":{"sender":"","action_items":[],"urgency":"normal"},"next_actions":[],"warnings":[]}',
   create_followup: '{"intent":"create_followup","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"channel":"email","recipient":"","subject":"","message":"","related_lead":"","related_vertical":""},"next_actions":[],"warnings":[]}',
@@ -113,6 +117,8 @@ const BEHAVIOR_EXAMPLES = `Examples of correct intent resolution:
 - "schedule meeting with Srikar this weekend about AIWithNoBrain Labs" -> intent schedule_meeting
 - "add spending 10000 INR on company registration paid by naveen" -> intent create_spending, draft.amount 10000, draft.currency "INR", draft.description "company registration", draft.paid_by "naveen"
 - "gmail spend 5000 inr paid by srikar" -> intent create_spending, draft.amount 5000, draft.currency "INR", draft.description "gmail", draft.category "software", draft.paid_by "srikar"
+- "Lead Name: Himanshu A Company: OptimumValue Title: Sales Head Source: LinkedIn Service Area: Salesforce Data Cloud Status: Contacted" -> intent create_lead, draft.lead_name "Himanshu A", draft.company "OptimumValue", draft.title "Sales Head", draft.source "LinkedIn", draft.service_area "Salesforce Data Cloud", draft.status "contacted"
+- "create lead for Himanshu at OptimumValue asking for Salesforce Data Cloud contract resource" -> intent create_lead, draft.lead_name "Himanshu", draft.company "OptimumValue", draft.service_area "Salesforce Data Cloud"
 - "capture an idea for EpicsToYou AI video generator" -> intent create_idea, draft.vertical "EpicsToYou"
 - "create a deal for Acme website rebuild worth 80000 INR next step send proposal" -> intent create_deal, draft.deal_name "Acme website rebuild", draft.client_or_company "Acme", draft.estimated_value 80000, draft.currency "INR", draft.next_step "send proposal"
 - "new deal with Priya for Shopify automation 120000 INR stage proposal" -> intent create_deal, draft.deal_name "Shopify automation", draft.client_or_company "Priya", draft.estimated_value 120000, draft.currency "INR", draft.stage "proposal"

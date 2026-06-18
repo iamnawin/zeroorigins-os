@@ -431,8 +431,8 @@ export default async function ControlRoomPage() {
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-zo-purple" />
             <div>
-              <h2 className="text-sm font-semibold">Hot Radar Signals</h2>
-              <p className="text-xs text-muted-foreground">What to catch from news, AI updates, funding, tools, and events by score.</p>
+              <h2 className="text-base font-semibold text-white">Headlines to Catch</h2>
+              <p className="text-xs text-muted-foreground">Ranked by Radar score across news, AI updates, funding, tools, and events.</p>
             </div>
           </div>
           <Link href="/internal/radar" className="inline-flex items-center gap-1 text-xs font-medium text-zo-purple hover:text-zo-purple-2">
