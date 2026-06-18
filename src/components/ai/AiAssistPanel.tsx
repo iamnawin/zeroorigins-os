@@ -134,7 +134,7 @@ export function AiAssistPanel({
           }
         }}
         rows={embedded ? 4 : 5}
-        placeholder="Ask ZO_Agent to create a task, schedule a meeting, draft a proposal, promote an idea, or search apps and sources…"
+        placeholder="Ask ZO_Agent to create a task, schedule a meeting, draft a proposal, promote an idea, or search apps and sources..."
         className="resize-none text-sm"
       />
 
@@ -146,7 +146,7 @@ export function AiAssistPanel({
           className="flex-1"
         >
           <Sparkles className="mr-2 h-4 w-4" />
-          {isPending ? 'Processing…' : buttonLabel}
+          {isPending ? 'Processing...' : buttonLabel}
         </Button>
         {embedded && <VoiceButton />}
       </div>
@@ -186,20 +186,18 @@ export function AiAssistPanel({
           {draft.output.requires_confirmation && (
             <>
               <AiDraftReviewCard output={draft.output} />
+              {draft.output.warnings && draft.output.warnings.length > 0 && (
+                <div className="mt-2 space-y-1 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
+                  {draft.output.warnings.map((w, i) => (
+                    <p key={i} className="text-xs text-amber-300">{w}</p>
+                  ))}
+                </div>
+              )}
               <Button type="button" onClick={confirmDraft} disabled={isPending} className="mt-3 w-full" variant="outline">
                 <Check className="mr-2 h-4 w-4" />
                 Confirm &amp; Create Record
               </Button>
             </>
-          )}
-
-          {/* Warnings */}
-          {draft.output.warnings && draft.output.warnings.length > 0 && (
-            <div className="mt-2 space-y-1">
-              {draft.output.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-400">{w}</p>
-              ))}
-            </div>
           )}
         </div>
       )}
@@ -230,7 +228,7 @@ export function AiAssistPanel({
         <Bot className="h-4 w-4" />
         ZO_Agent
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md">
+      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
         <SheetHeader>
           <SheetTitle>ZO_Agent</SheetTitle>
           <SheetDescription>Draft tasks, meetings, replies, proposals, ideas, and follow-ups. Records are created only after confirmation.</SheetDescription>

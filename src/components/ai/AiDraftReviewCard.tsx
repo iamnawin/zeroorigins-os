@@ -9,6 +9,7 @@ const FIELD_LABELS: Record<string, string> = {
   deal_name: 'Deal',
   description: 'Description',
   expected_close_date: 'Close date',
+  estimated_value: 'Estimated value',
   idea_title: 'Idea',
   meeting_title: 'Meeting',
   next_action: 'Next action',
@@ -47,12 +48,20 @@ export function AiDraftReviewCard({ output }: { output: ZoAgentOutput }) {
   const rows = preferredFields
     .map(key => ({ key, value: formatValue(draft[key]) }))
     .filter(row => row.value)
+  const confidence = typeof output.confidence === 'number' ? Math.round(output.confidence * 100) : null
 
   return (
     <div className="space-y-3 rounded-md bg-background p-3 text-xs">
-      <div>
-        <p className="font-semibold text-foreground">{output.title || 'Review draft'}</p>
-        <p className="mt-1 text-muted-foreground">Confirm these fields before ZO_Agent creates the record.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-semibold text-foreground">{output.title || 'Review draft'}</p>
+          <p className="mt-1 text-muted-foreground">Confirm these fields before ZO_Agent creates the record.</p>
+        </div>
+        {confidence !== null && (
+          <span className="shrink-0 rounded-full border border-border px-2 py-1 font-medium text-muted-foreground">
+            {confidence}%
+          </span>
+        )}
       </div>
       {rows.length > 0 ? (
         <dl className="grid gap-2">
@@ -66,6 +75,12 @@ export function AiDraftReviewCard({ output }: { output: ZoAgentOutput }) {
       ) : (
         <p className="text-muted-foreground">No structured fields were returned. Review the prompt and regenerate the draft.</p>
       )}
+      <details className="rounded-md border border-border bg-muted/30">
+        <summary className="cursor-pointer px-3 py-2 font-medium text-muted-foreground">Structured payload</summary>
+        <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words border-t border-border p-3 text-[11px] leading-relaxed text-muted-foreground">
+          {JSON.stringify(draft, null, 2)}
+        </pre>
+      </details>
     </div>
   )
 }
