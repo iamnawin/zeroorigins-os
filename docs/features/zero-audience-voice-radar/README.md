@@ -34,7 +34,7 @@ Added to `primary` group in `INTERNAL_NAV_GROUPS` with `icon: 'Radar'`.
 
 ## RSS Ingest (Phase 2)
 
-Hourly Vercel cron at `GET /api/radar/ingest`. Deduplicates by normalized `canonical_url` (tracking params stripped). Per-item and per-source failures are isolated — one bad feed or item does not stop the run.
+Daily Vercel cron at `GET /api/radar/ingest` using a Hobby-compatible schedule. Deduplicates by normalized `canonical_url` (tracking params stripped). Per-item and per-source failures are isolated — one bad feed or item does not stop the run.
 
 ### Required env vars
 

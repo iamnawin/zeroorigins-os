@@ -239,7 +239,7 @@ The AI Workspace page (`/internal/ai-workspace`) reads from the `ai_workspace_ap
 - `/internal/radar/sources` + `/sources/new` + `/sources/[id]/edit` — source registry (admin-write)
 - `/internal/radar/events` — events view
 - `/internal/radar/content-ideas` — draft review queue
-- `GET /api/radar/ingest` — Vercel cron endpoint (hourly); also callable via "Sync RSS" button on sources page
+- `GET /api/radar/ingest` — Vercel cron endpoint (daily on Hobby-compatible schedule); also callable via "Sync RSS" button on sources page
 
 **Key lib files:** `src/lib/radar/` (scoring.ts, prompts.ts, ai.ts, queries.ts, actions.ts, rss-ingest.ts)  
 **Key components:** `src/components/radar/` (RadarItemCard, AddSignalDialog, RadarItemActions, ContentIdeaCard, RadarScoreBadge, RssSyncButton)  
@@ -251,7 +251,7 @@ The AI Workspace page (`/internal/ai-workspace`) reads from the `ai_workspace_ap
 - Max 10 new items per source per run; each item is AI-classified on ingest
 - `ingestAllRssSources()` iterates all active sources with a non-null `rss_url`
 - `triggerRssIngest` server action (admin only) — wired to "Sync RSS" button on sources page
-- Cron schedule in `vercel.json`: `0 * * * *` (hourly); secured with `CRON_SECRET` env var
+- Cron schedule in `vercel.json`: `0 0 * * *` (daily, Hobby-compatible); secured with `CRON_SECRET` env var
 - `SUPABASE_SERVICE_ROLE_KEY` is required at runtime (not just for sync script anymore)
 
 **Rules:**
