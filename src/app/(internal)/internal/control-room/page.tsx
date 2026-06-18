@@ -5,6 +5,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   CheckSquare,
+  ChevronDown,
   CirclePlus,
   Clock3,
   DollarSign,
@@ -38,6 +39,7 @@ import type {
   Partner,
   Project,
   Proposal,
+  RadarItem,
   Task,
 } from '@/types'
 
@@ -76,6 +78,10 @@ type SuggestedMove = {
   subtext: string
   href: string
   tone: 'urgent' | 'revenue' | 'attention' | 'create' | 'steady'
+}
+
+function radarSignalScore(item: RadarItem) {
+  return Math.max(Number(item.relevance_score ?? 0), Number(item.content_potential_score ?? 0))
 }
 
 function buildSuggestedMoves(opts: {
@@ -198,6 +204,7 @@ export default async function ControlRoomPage() {
     financeRes,
     aiRes,
     knowledgeRes,
+    radarRes,
   ] = await Promise.all([
     supabase.from('leads').select('*').not('status', 'in', '("lost","archived")').order('created_at', { ascending: false }).limit(20),
     supabase.from('deals').select('*').not('stage', 'in', '("lost")').order('created_at', { ascending: false }).limit(20),
@@ -210,6 +217,11 @@ export default async function ControlRoomPage() {
     supabase.from('finance_transactions').select('*').eq('type', 'expense').order('date', { ascending: false }).limit(50),
     supabase.from('ai_assist_requests').select('*').order('created_at', { ascending: false }).limit(5),
     supabase.from('knowledge_articles').select('id', { count: 'exact', head: true }),
+    supabase.from('radar_items')
+      .select('*, source:radar_sources(id, name, source_type, trust_level)')
+      .not('status', 'in', '(ignored,archived)')
+      .order('captured_at', { ascending: false })
+      .limit(24),
   ])
 
   const leads = (leadsRes.data ?? []) as Lead[]
@@ -222,6 +234,7 @@ export default async function ControlRoomPage() {
   const customers = (customersRes.data ?? []) as Customer[]
   const financeRows = (financeRes.data ?? []) as FinanceTransaction[]
   const aiRequests = (aiRes.data ?? []) as AiAssistRequest[]
+  const radarItems = (radarRes.data ?? []) as unknown as RadarItem[]
 
   const now = new Date()
   const today = now.toISOString().slice(0, 10)
@@ -247,6 +260,10 @@ export default async function ControlRoomPage() {
     .reduce((sum, row) => sum + Number(row.amount ?? 0), 0)
   const upcomingRenewals = financeRows.filter(row => row.next_due_date && row.next_due_date >= today).slice(0, 3)
   const pendingPayments = financeRows.filter(row => ['planned', 'due', 'overdue'].includes(row.status)).length
+  const hotRadarSignals = [...radarItems]
+    .sort((a, b) => radarSignalScore(b) - radarSignalScore(a))
+    .slice(0, 4)
+  const urgentRadarCount = hotRadarSignals.filter(item => radarSignalScore(item) >= 8).length
 
   const hour = now.getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -259,6 +276,7 @@ export default async function ControlRoomPage() {
   if (blockedTasks.length) briefingLines.push(`${blockedTasks.length} blocked`)
   if (leadsNeedingAction.length) briefingLines.push(`${leadsNeedingAction.length} lead follow-up${leadsNeedingAction.length > 1 ? 's' : ''}`)
   if (todayMeetings.length) briefingLines.push(`${todayMeetings.length} meeting${todayMeetings.length > 1 ? 's' : ''} today`)
+  if (urgentRadarCount) briefingLines.push(`${urgentRadarCount} hot Radar signal${urgentRadarCount > 1 ? 's' : ''}`)
 
   const briefingSummary = briefingLines.length > 0
     ? `Active signals: ${briefingLines.join(' · ')}.`
@@ -408,9 +426,40 @@ export default async function ControlRoomPage() {
         <AiAssistPanel embedded showHeader={false} />
       </section>
 
+      <section className="rounded-2xl border border-zo-purple/25 bg-card p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-zo-purple" />
+            <div>
+              <h2 className="text-sm font-semibold">Hot Radar Signals</h2>
+              <p className="text-xs text-muted-foreground">What to catch from news, AI updates, funding, tools, and events by score.</p>
+            </div>
+          </div>
+          <Link href="/internal/radar" className="inline-flex items-center gap-1 text-xs font-medium text-zo-purple hover:text-zo-purple-2">
+            Open Radar <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+
+        {hotRadarSignals.length > 0 ? (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {hotRadarSignals.map(item => (
+              <HotRadarSignalCard key={item.id} item={item} />
+            ))}
+          </div>
+        ) : (
+          <EmptySection
+            icon={Zap}
+            title="No Radar news yet"
+            description="Run RSS sync or add sources to start catching hot market signals here."
+            href="/internal/radar"
+            action="Open Radar"
+          />
+        )}
+      </section>
+
       {/* ── 3. BUSINESS PULSE ───────────────────────────────────── */}
-      <section className="space-y-3">
-        <div className="flex items-center gap-2">
+      <AccordionPanel title="Business Pulse" icon={TrendingUp} summary="Live business signals" defaultOpen>
+        <div className="hidden">
           <Zap className="h-4 w-4 text-zo-purple" />
           <h2 className="text-sm font-semibold">Business Pulse</h2>
           <span className="text-xs text-muted-foreground">· live signals</span>
@@ -423,7 +472,7 @@ export default async function ControlRoomPage() {
           <PulseCard icon={Clock3} label="Follow-ups due" value={leadsNeedingAction.length + overdueTasks.length} href="/internal/tasks" urgent={(leadsNeedingAction.length + overdueTasks.length) > 0} />
           <PulseCard icon={DollarSign} label="Pipeline value" value={formatCurrency(openDealValue + openProposalValue)} href="/internal/deals" />
         </div>
-      </section>
+      </AccordionPanel>
 
       {/* ── 4. MAIN GRID ────────────────────────────────────────── */}
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
@@ -431,7 +480,7 @@ export default async function ControlRoomPage() {
 
           <div className="grid gap-5 lg:grid-cols-2">
             {/* Today's Priorities */}
-            <Panel title="Today's Priorities" icon={Target} actionHref="/internal/tasks" actionLabel="Open work">
+            <AccordionPanel title="Today's Priorities" icon={Target} actionHref="/internal/tasks" actionLabel="Open work" summary={plural(dueTodayTasks.length + overdueTasks.length, 'task')} defaultOpen>
               <PriorityRow icon={CheckSquare} label="Due tasks" value={plural(dueTodayTasks.length + overdueTasks.length, 'task')} href="/internal/tasks" urgent={overdueTasks.length > 0} />
               <PriorityRow icon={Clock3} label="Stuck tasks" value={plural(blockedTasks.length, 'blocked item')} href="/internal/tasks" urgent={blockedTasks.length > 0} />
               <PriorityRow icon={MailCheck} label="Follow-ups due" value={plural(leadsNeedingAction.length, 'lead')} href="/internal/leads" urgent={leadsNeedingAction.length > 0} />
@@ -444,10 +493,10 @@ export default async function ControlRoomPage() {
                   href="/internal/tasks/new"
                 />
               )}
-            </Panel>
+            </AccordionPanel>
 
             {/* Revenue Motion */}
-            <Panel title="Revenue Motion" icon={TrendingUp} actionHref="/internal/deals" actionLabel="Open pipeline">
+            <AccordionPanel title="Revenue Motion" icon={TrendingUp} actionHref="/internal/deals" actionLabel="Open pipeline" summary={formatCurrency(openDealValue + openProposalValue)} defaultOpen>
               <MetricRow label="New leads" value={String(newLeads.length)} />
               <MetricRow label="Qualified leads" value={String(qualifiedLeads.length)} />
               <MetricRow label="Open deals" value={`${deals.length} / ${formatCurrency(openDealValue)}`} />
@@ -469,11 +518,11 @@ export default async function ControlRoomPage() {
                   </p>
                 </div>
               )}
-            </Panel>
+            </AccordionPanel>
           </div>
 
           {/* Team Rhythm */}
-          <Panel title="Team Rhythm" icon={MessageSquareText} actionHref="/internal/meetings" actionLabel="Open meetings">
+          <AccordionPanel title="Team Rhythm" icon={MessageSquareText} actionHref="/internal/meetings" actionLabel="Open meetings" summary={blockedTasks.length > 0 ? plural(blockedTasks.length, 'blocker') : plural(todayMeetings.length, 'meeting')}>
             <div className="grid gap-3 sm:grid-cols-2">
               <RhythmRow label="Blockers" value={plural(blockedTasks.length, 'item')} detail={blockedTasks[0]?.title || 'No blocked tasks reported.'} urgent={blockedTasks.length > 0} />
               <RhythmRow label="Owned tasks" value={plural(tasks.filter(row => row.owner_id).length, 'task')} detail="Open task ownership visible from Tasks." />
@@ -484,10 +533,10 @@ export default async function ControlRoomPage() {
                 detail={projects[0] ? `Updated ${formatDate(projects[0].updated_at)}` : 'Create a project to track delivery.'}
               />
             </div>
-          </Panel>
+          </AccordionPanel>
 
           {/* Quick Actions */}
-          <Panel title="Quick Actions" icon={CirclePlus}>
+          <AccordionPanel title="Quick Actions" icon={CirclePlus} summary="Create common records">
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <QuickAction href="/internal/leads/new" icon={Users} label="Create lead" />
               <QuickAction href="/internal/tasks/new" icon={CheckSquare} label="Add task" />
@@ -498,14 +547,14 @@ export default async function ControlRoomPage() {
               <QuickAction href="/request-build" icon={ReceiptText} label="Request build" />
               <QuickAction href="/partner-with-us" icon={Handshake} label="Partner form" />
             </div>
-          </Panel>
+          </AccordionPanel>
         </main>
 
         {/* ── Right aside ─── */}
         <aside className="space-y-5">
 
           {/* Business Memory */}
-          <Panel title="Agent Activity" icon={Bot} actionHref="/internal/automation" actionLabel="Open automation">
+          <AccordionPanel title="Agent Activity" icon={Bot} actionHref="/internal/automation" actionLabel="Open automation" summary={aiRequests.length > 0 ? plural(aiRequests.length, 'draft') : 'No drafts'}>
             {aiRequests.length > 0 ? (
               aiRequests.map(row => (
                 <Link
@@ -530,15 +579,15 @@ export default async function ControlRoomPage() {
                 agentPrompt="What should I do first?"
               />
             )}
-          </Panel>
+          </AccordionPanel>
 
           {/* Operating Costs */}
-          <Panel title="Operating Costs" icon={WalletCards} actionHref="/internal/finance" actionLabel="Open finance">
+          <AccordionPanel title="Operating Costs" icon={WalletCards} actionHref="/internal/finance" actionLabel="Open finance" summary={monthSpend > 0 ? formatCurrency(monthSpend) : 'No spend'}>
             <MetricRow label="This month spend" value={monthSpend > 0 ? formatCurrency(monthSpend) : '—'} />
             <MetricRow label="Upcoming renewals" value={String(upcomingRenewals.length)} />
             <MetricRow label="Pending payments" value={String(pendingPayments)} />
             <MetricRow label="Active customers" value={String(customers.length)} />
-          </Panel>
+          </AccordionPanel>
         </aside>
       </div>
     </div>
@@ -586,26 +635,59 @@ function PulseCard({
   )
 }
 
-function Panel({
-  title, icon: Icon, actionHref, actionLabel, children,
+function AccordionPanel({
+  title, icon: Icon, actionHref, actionLabel, summary, defaultOpen = false, children,
 }: {
-  title: string; icon: LucideIcon; actionHref?: string; actionLabel?: string; children: React.ReactNode;
+  title: string; icon: LucideIcon; actionHref?: string; actionLabel?: string; summary?: string; defaultOpen?: boolean; children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-4">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Icon className="h-3.5 w-3.5 text-zo-purple" />
-          <h2 className="text-sm font-semibold">{title}</h2>
+    <details open={defaultOpen} className="group rounded-2xl border border-border bg-card">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 marker:hidden">
+        <div className="flex min-w-0 items-center gap-2">
+          <Icon className="h-3.5 w-3.5 shrink-0 text-zo-purple" />
+          <div className="min-w-0">
+            <h2 className="truncate text-sm font-semibold">{title}</h2>
+            {summary && <p className="mt-0.5 truncate text-xs text-muted-foreground">{summary}</p>}
+          </div>
         </div>
-        {actionHref && actionLabel && (
-          <Link href={actionHref} className="shrink-0 text-xs font-medium text-zo-purple hover:text-zo-purple-2">
-            {actionLabel}
-          </Link>
-        )}
+        <div className="flex shrink-0 items-center gap-3">
+          {actionHref && actionLabel && (
+            <Link href={actionHref} className="hidden text-xs font-medium text-zo-purple hover:text-zo-purple-2 sm:inline">
+              {actionLabel}
+            </Link>
+          )}
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
+        </div>
+      </summary>
+      <div className="space-y-2.5 border-t border-border px-4 pb-4 pt-3">{children}</div>
+    </details>
+  )
+}
+
+function HotRadarSignalCard({ item }: { item: RadarItem }) {
+  const score = radarSignalScore(item)
+  const scoreTone = score >= 8 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-zo-purple/30 bg-zo-purple/10 text-zo-purple-2'
+  const sourceName = item.source?.name || item.source_name || 'Radar source'
+
+  return (
+    <Link
+      href={`/internal/radar/${item.id}`}
+      className="group rounded-xl border border-border bg-background/60 p-3.5 transition hover:border-zo-purple/40 hover:bg-zo-purple/[0.04]"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">{item.title}</p>
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+            {item.why_it_matters || item.ai_summary || item.summary || 'Review this signal and decide whether to save, action, or turn it into content.'}
+          </p>
+        </div>
+        <span className={`shrink-0 rounded-full border px-2 py-1 text-xs font-semibold ${scoreTone}`}>{score}/10</span>
       </div>
-      <div className="space-y-2.5">{children}</div>
-    </section>
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+        <span className="min-w-0 truncate text-[11px] text-muted-foreground">{sourceName}</span>
+        <span className="shrink-0 text-[11px] text-muted-foreground">{formatDate(item.published_at || item.captured_at)}</span>
+      </div>
+    </Link>
   )
 }
 
