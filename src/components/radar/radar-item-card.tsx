@@ -34,9 +34,9 @@ export function RadarItemCard({ item }: RadarItemCardProps) {
   const capturedDate = new Date(item.captured_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 
   return (
-    <Link href={`/internal/radar/${item.id}`} className="group block rounded-lg border border-border bg-card p-4 transition-colors hover:border-zo-purple/40 hover:bg-card/80">
+    <Link href={`/internal/radar/${item.id}`} className="group block min-h-[184px] rounded-lg border border-border bg-card p-4 transition-colors hover:border-zo-purple/40 hover:bg-card/80">
       <div className="mb-2 flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-zo-purple-2">{item.title}</p>
+        <p className="min-w-0 text-sm font-semibold text-foreground line-clamp-2 group-hover:text-zo-purple-2">{item.title}</p>
         <ResourceStatusBadge status={item.status} className="shrink-0" />
       </div>
 
@@ -44,22 +44,26 @@ export function RadarItemCard({ item }: RadarItemCardProps) {
         <p className="mb-3 text-xs text-muted-foreground line-clamp-2">{item.ai_summary || item.summary}</p>
       )}
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        {item.category && (
-          <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${categoryColor}`}>
-            {item.category.replace(/_/g, ' ')}
-          </span>
-        )}
-        {item.relevance_score > 0 && (
-          <RadarScoreBadge score={item.relevance_score} label="R" />
-        )}
-        {item.content_potential_score > 0 && (
-          <RadarScoreBadge score={item.content_potential_score} label="C" />
-        )}
-        {item.source_name && (
-          <Badge variant="outline" className="text-[10px] opacity-60">{item.source_name}</Badge>
-        )}
-        <span className="ml-auto text-[10px] text-muted-foreground">{capturedDate}</span>
+      <div className="flex items-end justify-between gap-2">
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {item.category && (
+              <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${categoryColor}`}>
+                {item.category.replace(/_/g, ' ')}
+              </span>
+            )}
+            {item.relevance_score > 0 && (
+              <RadarScoreBadge score={item.relevance_score} label="R" />
+            )}
+            {item.content_potential_score > 0 && (
+              <RadarScoreBadge score={item.content_potential_score} label="C" />
+            )}
+          </div>
+          {item.source_name && (
+            <Badge variant="outline" className="max-w-full truncate text-[10px] opacity-60">{item.source_name}</Badge>
+          )}
+        </div>
+        <span className="shrink-0 text-[10px] text-muted-foreground">{capturedDate}</span>
       </div>
 
       {item.why_it_matters && (

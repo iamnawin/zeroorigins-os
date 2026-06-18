@@ -15,10 +15,12 @@ import {
   APPLICATION_TYPES,
   BUSINESS_IDEA_PRIORITIES,
   BUSINESS_IDEA_STATUSES,
+  CURRENCIES,
+  DEAL_STAGES,
+  FINANCE_CATEGORIES,
+  FINANCE_TRANSACTION_STATUSES,
   type AiAssistIntent,
   type AiAssistInputMode,
-  type FinanceCategory,
-  type FinanceTransactionStatus,
   type RecurrenceInterval,
   type ZoAgentOutput,
   type ZoAgentQueryResult,
@@ -35,8 +37,8 @@ type MeetingAiPayload = {
 }
 
 type FinanceAiPayload = {
-  category?: FinanceCategory
-  status?: FinanceTransactionStatus
+  category?: typeof FINANCE_CATEGORIES[number]
+  status?: typeof FINANCE_TRANSACTION_STATUSES[number]
   recurrence_interval?: RecurrenceInterval
   notes?: string
 }
@@ -84,6 +86,16 @@ function asRecord(value: unknown): Record<string, unknown> {
 function pickAllowed<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
   const candidate = asString(value) as T
   return allowed.includes(candidate) ? candidate : fallback
+}
+
+function pickNormalizedAllowed<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  fallback: T,
+  aliases: Record<string, T> = {},
+): T {
+  const candidate = asString(value).toLowerCase().replace(/[\s-]+/g, '_')
+  return aliases[candidate] ?? (allowed.includes(candidate as T) ? candidate as T : fallback)
 }
 
 function slugify(value: string) {
@@ -464,16 +476,25 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
     } else if (intent === 'create_spending') {
       const amount = typeof draft.amount === 'number' ? draft.amount : parseFloat(asString(draft.amount)) || 0
       if (!amount) throw new Error('ZO_Agent draft is missing the spending amount.')
+      const category = pickNormalizedAllowed(draft.category, FINANCE_CATEGORIES, 'other', {
+        infrastructure: 'hosting',
+        office: 'operations',
+        payroll: 'operations',
+        travel: 'operations',
+      })
+      const status = pickNormalizedAllowed(draft.status, FINANCE_TRANSACTION_STATUSES, 'paid')
+      const type = pickNormalizedAllowed(draft.type, ['income', 'expense'] as const, 'expense')
+      const currency = pickNormalizedAllowed(draft.currency, CURRENCIES, 'INR')
 
       const { data, error: createError } = await supabase
         .from('finance_transactions')
         .insert({
-          type: asString(draft.type) || 'expense',
+          type,
           amount,
-          currency: asString(draft.currency) || 'INR',
+          currency,
           description: requiredInputText(asString(draft.description) || output.title || 'ZO_Agent spending'),
-          category: asString(draft.category) || 'other',
-          status: asString(draft.status) || 'paid',
+          category,
+          status,
           date: asString(draft.date) || new Date().toISOString().slice(0, 10),
           notes: [asString(draft.notes), asString(draft.paid_by) ? `Paid by: ${asString(draft.paid_by)}` : ''].filter(Boolean).join('. '),
           related_vertical_id: relatedVerticalId,
@@ -485,7 +506,37 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
 
       if (createError) throw createError
       createdId = data.id
-      href = `/internal/finance/${data.id}`
+      href = `/internal/finance`
+    } else if (intent === 'create_deal') {
+      const estimatedValue = typeof draft.estimated_value === 'number'
+        ? draft.estimated_value
+        : parseFloat(asString(draft.estimated_value)) || null
+      const company = asString(draft.client_or_company) || asString(draft.lead_name)
+      const notes = [
+        company ? `Client/company: ${company}` : '',
+        asString(draft.currency) ? `Currency: ${asString(draft.currency)}` : '',
+        asString(draft.notes),
+      ].filter(Boolean).join('\n')
+
+      const { data, error: createError } = await supabase
+        .from('deals')
+        .insert({
+          name: requiredInputText(asString(draft.deal_name) || output.title || request.input_text),
+          lead_id: null,
+          stage: pickNormalizedAllowed(draft.stage, DEAL_STAGES, 'qualifying'),
+          estimated_value: estimatedValue,
+          expected_close_date: asString(draft.expected_close_date) || null,
+          next_step: asString(draft.next_step) || null,
+          notes: notes || null,
+          owner_id: user.id,
+          created_by: user.id,
+        })
+        .select('id')
+        .single()
+
+      if (createError) throw createError
+      createdId = data.id
+      href = `/internal/deals/${data.id}`
     } else if (intent === 'create_proposal') {
       const content = [
         asString(draft.problem_statement) && `Problem\n${asString(draft.problem_statement)}`,
@@ -678,6 +729,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
     revalidatePath('/internal/ideas')
     revalidatePath('/internal/applications')
     revalidatePath('/internal/finance')
+    revalidatePath('/internal/deals')
     if (!createdId) throw new Error('ZO_Agent confirmation did not create a record.')
     return { data: { id: createdId, intent, href } }
   } catch (error) {

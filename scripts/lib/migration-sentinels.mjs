@@ -49,4 +49,5 @@ export const SENTINELS = [
   { migration: '020_radar_intelligence', table: 'radar_items', column: 'status' },
   { migration: '020_radar_intelligence', table: 'radar_content_ideas', column: 'platform' },
   { migration: '020_radar_intelligence', table: 'radar_actions', column: 'action_type' },
+  { migration: '022_zo_agent_deal_intent', table: 'ai_assist_requests', column: 'intent' },
 ]

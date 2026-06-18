@@ -262,3 +262,18 @@ The AI Workspace page (`/internal/ai-workspace`) reads from the `ai_workspace_ap
 - AI calls use Together AI (`TOGETHER_API_KEY`) via existing `callTogetherChat` — if key is missing, classification returns placeholder
 
 **Docs:** `docs/features/zero-audience-voice-radar/` (README, ARCHITECTURE, DATABASE, AI_PROMPTS, OPEN_ITEMS, CHANGELOG, PHASE_PLAN)
+
+### Planned next work — Radar mobile UX + ZO_Agent action layer
+
+Plan artifact: `docs/superpowers/plans/2026-06-18-radar-mobile-zo-agent-layer.md`. Local OMX state copy: `.omx/plans/2026-06-18-radar-mobile-zo-agent-layer.md`.
+
+**Radar priority:** make `/internal/radar` mobile-first before adding more signal features. Current dashboard is responsive but still desktop-biased: stats are six cards, filters are a large wrapping chip wall, and source/sync health is not visible from the main Radar screen. Next implementation should make phone layout the baseline, keep desktop density, add a dashboard-level RSS sync/status surface, and verify no horizontal overflow at 390px width.
+
+**ZO_Agent priority:** keep the draft-confirm-create model, but replace raw JSON previews with typed confirmation cards. Existing confirmed actions already create spending records in `finance_transactions` and ideas in `business_ideas`; the next gap is `create_deal`, plus better normalization and route targets for finance/deal results.
+
+**Acceptance examples for the agent layer:**
+- "add spending 5000 INR for Gmail paid by Srikar" -> spending draft -> confirm creates a `finance_transactions` row.
+- "capture idea for AI invoice parser" -> idea draft -> confirm creates a `business_ideas` row.
+- "create a deal for Acme website rebuild worth 80000 INR next step send proposal" -> deal draft -> confirm creates a `deals` row.
+
+**Verification expectation:** add contract scripts for Radar mobile layout and ZO_Agent action wiring, then run `pnpm lint` and `pnpm build` before claiming the work is done.

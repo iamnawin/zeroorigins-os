@@ -15,6 +15,12 @@ export type RadarDashboardCounts = {
   migrationMissing: boolean
 }
 
+export type RadarSourceHealth = {
+  activeRssSources: number
+  lastCheckedAt: string | null
+  migrationMissing: boolean
+}
+
 export type RadarItemFilters = {
   status?: RadarItemStatus
   category?: RadarItemCategory
@@ -51,6 +57,37 @@ export async function getRadarDashboardCounts(supabase: Supabase): Promise<Radar
     content_ideas: contentIdeas.count ?? 0,
     events_upcoming: events.count ?? 0,
     high_relevance: highRelevance.count ?? 0,
+    migrationMissing: false,
+  }
+}
+
+export async function getRadarSourceHealth(supabase: Supabase): Promise<RadarSourceHealth> {
+  const activeRssSources = await supabase
+    .from('radar_sources')
+    .select('id', { count: 'exact', head: true })
+    .eq('is_active', true)
+    .not('rss_url', 'is', null)
+
+  if (activeRssSources.error?.code === '42P01' || activeRssSources.error?.message?.includes('does not exist')) {
+    return { activeRssSources: 0, lastCheckedAt: null, migrationMissing: true }
+  }
+  if (activeRssSources.error) throw activeRssSources.error
+
+  const { data, error } = await supabase
+    .from('radar_sources')
+    .select('last_checked_at')
+    .eq('is_active', true)
+    .not('rss_url', 'is', null)
+    .not('last_checked_at', 'is', null)
+    .order('last_checked_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error && error.code !== 'PGRST116') throw error
+
+  return {
+    activeRssSources: activeRssSources.count ?? 0,
+    lastCheckedAt: data?.last_checked_at ?? null,
     migrationMissing: false,
   }
 }

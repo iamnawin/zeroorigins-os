@@ -11,6 +11,7 @@ export const ZO_AGENT_QUICK_ACTIONS: { intent: AiAssistIntent; label: string }[]
   { intent: 'summarize_email', label: 'Summarize email' },
   { intent: 'create_proposal', label: 'Create proposal' },
   { intent: 'create_idea', label: 'Capture idea' },
+  { intent: 'create_deal', label: 'Create deal' },
   { intent: 'promote_idea_to_application', label: 'Promote idea to app' },
   { intent: 'query_emails', label: 'Show emails' },
   { intent: 'query_applications', label: 'Show applications' },
@@ -27,6 +28,7 @@ export const ZO_AGENT_BUTTON_LABELS: Record<AiAssistIntent, string> = {
   create_project: 'Generate Project Draft',
   create_proposal: 'Generate Proposal Outline',
   create_idea: 'Capture Idea',
+  create_deal: 'Generate Deal Draft',
   promote_idea_to_application: 'Generate Application Draft',
   create_application: 'Generate Application Draft',
   query_emails: 'Search Emails',
@@ -56,6 +58,7 @@ export const ZO_AGENT_INTENT_MODES: Record<AiAssistIntent, ZoAgentMode> = {
   create_project: 'draft',
   create_proposal: 'draft',
   create_idea: 'draft',
+  create_deal: 'draft',
   promote_idea_to_application: 'draft',
   create_application: 'draft',
   query_emails: 'query',
@@ -74,7 +77,7 @@ export const ZO_AGENT_INTENT_MODES: Record<AiAssistIntent, ZoAgentMode> = {
 // Draft intents that can create a record after explicit user confirmation.
 export const ZO_AGENT_CONFIRMABLE_INTENTS: AiAssistIntent[] = [
   'create_task', 'schedule_meeting', 'create_spending', 'create_followup', 'create_project', 'create_proposal',
-  'create_idea', 'promote_idea_to_application', 'create_application', 'update_application_source',
+  'create_idea', 'create_deal', 'promote_idea_to_application', 'create_application', 'update_application_source',
 ]
 
 const INTENT_SCHEMAS: Partial<Record<AiAssistIntent, string>> = {
@@ -87,6 +90,7 @@ const INTENT_SCHEMAS: Partial<Record<AiAssistIntent, string>> = {
   create_project: '{"intent":"create_project","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"project_title":"","description":"","priority":"normal","related_vertical":"","start_date":"","target_date":""},"next_actions":[],"warnings":[]}',
   create_proposal: '{"intent":"create_proposal","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"proposal_title":"","client_or_vertical":"","related_application":"","problem_statement":"","proposed_solution":"","scope":[],"deliverables":[],"timeline":"","commercials":"","next_step":""},"next_actions":[],"warnings":[]}',
   create_idea: '{"intent":"create_idea","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"idea_title":"","description":"","vertical":"","source":"ZO_Agent","status":"raw","priority":"normal","local_folder_path":"","next_action":""},"next_actions":[],"warnings":[]}',
+  create_deal: '{"intent":"create_deal","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"deal_name":"","client_or_company":"","lead_name":"","stage":"qualifying | proposal | negotiation | won | lost | on_hold","estimated_value":0,"currency":"INR","expected_close_date":"YYYY-MM-DD","next_step":"","notes":""},"next_actions":["Review deal details","Confirm to create deals record"],"warnings":[]}',
   promote_idea_to_application: '{"intent":"promote_idea_to_application","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"source_idea":"","application_name":"","vertical":"","description":"","stage":"prototype","status":"active","repo_url":"","local_folder_path":"","docs_url":"","docs_folder_path":"","website_url":"","deployment_url":"","notes":""},"next_actions":["Create application record","Link source idea","Update idea status to promoted_to_application"],"warnings":[]}',
   create_application: '{"intent":"create_application","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"application_name":"","vertical":"","description":"","stage":"concept","status":"active","type":"application","repo_url":"","local_folder_path":"","docs_url":"","docs_folder_path":"","website_url":"","deployment_url":"","database_url":"","n8n_workflow_url":"","figma_url":"","tech_stack":[],"notes":""},"next_actions":[],"warnings":[]}',
   query_emails: '{"intent":"query_emails","mode":"query","title":"","summary":"","confidence":0,"requires_confirmation":false,"query":{"date_range":"today | this_week | custom","category":"","priority":"","related_vertical":"","status":""},"next_actions":[],"warnings":[]}',
@@ -110,6 +114,8 @@ const BEHAVIOR_EXAMPLES = `Examples of correct intent resolution:
 - "add spending 10000 INR on company registration paid by naveen" -> intent create_spending, draft.amount 10000, draft.currency "INR", draft.description "company registration", draft.paid_by "naveen"
 - "gmail spend 5000 inr paid by srikar" -> intent create_spending, draft.amount 5000, draft.currency "INR", draft.description "gmail", draft.category "software", draft.paid_by "srikar"
 - "capture an idea for EpicsToYou AI video generator" -> intent create_idea, draft.vertical "EpicsToYou"
+- "create a deal for Acme website rebuild worth 80000 INR next step send proposal" -> intent create_deal, draft.deal_name "Acme website rebuild", draft.client_or_company "Acme", draft.estimated_value 80000, draft.currency "INR", draft.next_step "send proposal"
+- "new deal with Priya for Shopify automation 120000 INR stage proposal" -> intent create_deal, draft.deal_name "Shopify automation", draft.client_or_company "Priya", draft.estimated_value 120000, draft.currency "INR", draft.stage "proposal"
 - "promote the tested EpicsToYou video generator idea to application" -> intent promote_idea_to_application
 - "create project proposal for IgnAIte launch" -> intent create_proposal
 - "show applications" or "show production-ready apps" -> intent query_applications (query.stage "production_ready" when asked)

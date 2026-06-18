@@ -15,6 +15,7 @@ import {
 import { ZO_AGENT_QUICK_ACTIONS, zoAgentButtonLabel } from '@/lib/ai/assist-intents'
 import { confirmAiAssistDraft, createAiAssistDraft } from '@/lib/actions/ai-assist'
 import { cn } from '@/lib/utils'
+import { AiDraftReviewCard } from './AiDraftReviewCard'
 import type { AiAssistIntent, ZoAgentOutput } from '@/types'
 
 type DraftState = {
@@ -181,12 +182,10 @@ export function AiAssistPanel({
             </div>
           )}
 
-          {/* Draft JSON for confirmable actions */}
+          {/* Typed draft preview for confirmable actions */}
           {draft.output.requires_confirmation && (
             <>
-              <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md bg-background p-3 text-xs text-muted-foreground">
-                {JSON.stringify(draft.output.draft, null, 2)}
-              </pre>
+              <AiDraftReviewCard output={draft.output} />
               <Button type="button" onClick={confirmDraft} disabled={isPending} className="mt-3 w-full" variant="outline">
                 <Check className="mr-2 h-4 w-4" />
                 Confirm &amp; Create Record
