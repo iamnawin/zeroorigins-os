@@ -3,17 +3,82 @@
 create extension if not exists "uuid-ossp";
 
 -- Enum types
-create type app_role as enum ('SUPER_ADMIN', 'FOUNDER', 'DIRECTOR', 'STAFF', 'CONTRACTOR', 'CUSTOMER', 'PARTNER', 'REFERRAL_PARTNER');
-create type idea_status as enum ('draft', 'submitted', 'under_review', 'approved', 'rejected', 'on_hold', 'converted_to_project', 'archived');
-create type project_status as enum ('draft', 'planned', 'active', 'blocked', 'in_review', 'delivered', 'paused', 'cancelled', 'archived');
-create type task_status as enum ('todo', 'in_progress', 'waiting', 'blocked', 'review', 'done', 'cancelled');
-create type lead_status as enum ('new', 'contacted', 'discovery_scheduled', 'discovery_done', 'proposal_needed', 'proposal_sent', 'negotiation', 'won', 'lost', 'on_hold', 'archived');
-create type partner_status as enum ('new_application', 'under_review', 'call_scheduled', 'approved', 'rejected', 'active', 'paused', 'archived');
-create type proposal_status as enum ('draft', 'internal_review', 'sent', 'viewed', 'accepted', 'rejected', 'revision_requested', 'expired');
-create type customer_request_status as enum ('submitted', 'under_review', 'discovery_call', 'proposal_shared', 'approved', 'in_progress', 'review', 'delivered', 'support', 'closed');
-create type visibility_type as enum ('internal', 'customer_visible', 'partner_visible');
-create type asset_visibility as enum ('internal', 'customer_visible', 'partner_visible', 'public');
-create type org_type as enum ('internal', 'customer', 'partner', 'vendor');
+do $$
+begin
+  create type app_role as enum ('SUPER_ADMIN', 'FOUNDER', 'DIRECTOR', 'STAFF', 'CONTRACTOR', 'CUSTOMER', 'PARTNER', 'REFERRAL_PARTNER');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type idea_status as enum ('draft', 'submitted', 'under_review', 'approved', 'rejected', 'on_hold', 'converted_to_project', 'archived');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type project_status as enum ('draft', 'planned', 'active', 'blocked', 'in_review', 'delivered', 'paused', 'cancelled', 'archived');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type task_status as enum ('todo', 'in_progress', 'waiting', 'blocked', 'review', 'done', 'cancelled');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type lead_status as enum ('new', 'contacted', 'discovery_scheduled', 'discovery_done', 'proposal_needed', 'proposal_sent', 'negotiation', 'won', 'lost', 'on_hold', 'archived');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type partner_status as enum ('new_application', 'under_review', 'call_scheduled', 'approved', 'rejected', 'active', 'paused', 'archived');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type proposal_status as enum ('draft', 'internal_review', 'sent', 'viewed', 'accepted', 'rejected', 'revision_requested', 'expired');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type customer_request_status as enum ('submitted', 'under_review', 'discovery_call', 'proposal_shared', 'approved', 'in_progress', 'review', 'delivered', 'support', 'closed');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type visibility_type as enum ('internal', 'customer_visible', 'partner_visible');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type asset_visibility as enum ('internal', 'customer_visible', 'partner_visible', 'public');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type org_type as enum ('internal', 'customer', 'partner', 'vendor');
+exception
+  when duplicate_object then null;
+end $$;
 
 -- Tables
 create table organizations (
