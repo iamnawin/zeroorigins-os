@@ -10,7 +10,11 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Public routes — skip Supabase entirely
-  if (pathname.startsWith('/request-build') || pathname.startsWith('/partner-with-us')) {
+  if (
+    pathname.startsWith('/request-build') ||
+    pathname.startsWith('/partner-with-us') ||
+    pathname === '/api/radar/ingest'
+  ) {
     return NextResponse.next()
   }
 
