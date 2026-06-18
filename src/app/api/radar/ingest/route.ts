@@ -15,6 +15,21 @@ function isAuthorized(request: Request): boolean {
   return hasValidSecret || isVercelCron
 }
 
+function formatError(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === 'object') {
+    const typed = error as { message?: string; details?: string; hint?: string; code?: string }
+    const parts = [typed.message, typed.details, typed.hint, typed.code].filter(Boolean)
+    if (parts.length) return parts.join(' ')
+    try {
+      return JSON.stringify(error)
+    } catch {
+      return Object.prototype.toString.call(error)
+    }
+  }
+  return String(error)
+}
+
 async function runIngest(request: Request): Promise<NextResponse> {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -23,7 +38,8 @@ async function runIngest(request: Request): Promise<NextResponse> {
     const result = await ingestAllRssSources()
     return NextResponse.json({ ok: true, ...result })
   } catch (error) {
-    return NextResponse.json({ ok: false, error: String(error) }, { status: 500 })
+    console.error('Radar RSS ingest failed', error)
+    return NextResponse.json({ ok: false, error: formatError(error) }, { status: 500 })
   }
 }
 
