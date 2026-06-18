@@ -8,6 +8,7 @@ import {
   buildZoAgentSystemPrompt,
 } from '@/lib/ai/assist-intents'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { requireInternalUser } from './internal-resources'
 import {
   AI_ASSIST_INTENTS,
@@ -64,10 +65,23 @@ export type FinanceAiInput = {
   notes?: string
 }
 
-type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
+type SupabaseErrorLike = {
+  code?: string
+  message?: string
+  details?: string
+  hint?: string
+}
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createServiceClient>
 
 function toResult<T>(error: unknown): AiActionResult<T> {
-  const msg = error instanceof Error ? error.message : 'AI assist failed.'
+  let msg = 'AI assist failed.'
+  if (error instanceof Error) {
+    msg = error.message
+  } else if (error && typeof error === 'object' && 'message' in error) {
+    const typed = error as SupabaseErrorLike
+    msg = [typed.message, typed.details, typed.hint].filter(Boolean).join(' ')
+  }
   console.error('[ZO_Agent]', msg)
   return { error: msg }
 }
@@ -412,6 +426,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
   try {
     const supabase = await createClient()
     const user = await requireInternalUser(supabase)
+    const mutationSupabase = createServiceClient()
     const { data: request, error } = await supabase
       .from('ai_assist_requests')
       .select('*')
@@ -429,10 +444,10 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
     let createdId: string | null = null
     let href: string | undefined
     const relatedVerticalId = request.related_vertical_id
-      ?? await findVerticalId(supabase, asString(draft.related_vertical) || asString(draft.vertical))
+      ?? await findVerticalId(mutationSupabase, asString(draft.related_vertical) || asString(draft.vertical))
 
     if (intent === 'create_task' || intent === 'create_followup') {
-      const { data, error: createError } = await supabase
+      const { data, error: createError } = await mutationSupabase
         .from('tasks')
         .insert({
           title: requiredInputText(asString(draft.task_title) || asString(draft.subject) || output.title || 'ZO_Agent task'),
@@ -451,7 +466,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       links.related_task_id = data.id
       href = `/internal/tasks/${data.id}`
     } else if (intent === 'schedule_meeting') {
-      const { data, error: createError } = await supabase
+      const { data, error: createError } = await mutationSupabase
         .from('meetings')
         .insert({
           title: requiredInputText(asString(draft.meeting_title) || output.title || 'ZO_Agent meeting'),
@@ -487,7 +502,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       const type = pickNormalizedAllowed(draft.type, ['income', 'expense'] as const, 'expense')
       const currency = pickNormalizedAllowed(draft.currency, CURRENCIES, 'INR')
 
-      const { data, error: createError } = await supabase
+      const { data, error: createError } = await mutationSupabase
         .from('finance_transactions')
         .insert({
           type,
@@ -521,7 +536,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
         !asString(draft.email) ? 'Email missing from ZO_Agent input; placeholder email used for CRM required field.' : '',
       ].filter(Boolean).join('\n')
 
-      const { data, error: createError } = await supabase
+      const { data, error: createError } = await mutationSupabase
         .from('leads')
         .insert({
           name,
@@ -555,7 +570,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
         asString(draft.notes),
       ].filter(Boolean).join('\n')
 
-      const { data, error: createError } = await supabase
+      const { data, error: createError } = await mutationSupabase
         .from('deals')
         .insert({
           name: requiredInputText(asString(draft.deal_name) || output.title || request.input_text),
@@ -583,7 +598,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
         asString(draft.next_step) && `Next step\n${asString(draft.next_step)}`,
       ].filter(Boolean).join('\n\n')
 
-      const { data, error: createError } = await supabase
+      const { data, error: createError } = await mutationSupabase
         .from('proposals')
         .insert({
           title: requiredInputText(asString(draft.proposal_title) || output.title || 'ZO_Agent proposal outline'),
@@ -602,7 +617,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       createdId = data.id
       href = `/internal/proposals/${data.id}`
     } else if (intent === 'create_project') {
-      const { data, error: createError } = await supabase
+      const { data, error: createError } = await mutationSupabase
         .from('projects')
         .insert({
           title: requiredInputText(asString(draft.project_title) || output.title || 'ZO_Agent project'),
@@ -621,7 +636,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       createdId = data.id
       href = `/internal/projects/${data.id}`
     } else if (intent === 'create_idea') {
-      const { data, error: createError } = await supabase
+      const { data, error: createError } = await mutationSupabase
         .from('business_ideas')
         .insert({
           title: requiredInputText(asString(draft.idea_title) || output.title || 'ZO_Agent idea'),
@@ -646,7 +661,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       if (intent === 'promote_idea_to_application') {
         const ideaName = asString(draft.source_idea) || asString(draft.application_name) || output.title
         if (ideaName) {
-          const { data: idea } = await supabase
+          const { data: idea } = await mutationSupabase
             .from('business_ideas')
             .select('id, title')
             .ilike('title', `%${ideaName}%`)
@@ -659,7 +674,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       }
 
       const name = requiredInputText(asString(draft.application_name) || output.title || sourceIdea?.title || 'ZO_Agent application')
-      const { data, error: createError } = await supabase
+      const { data, error: createError } = await mutationSupabase
         .from('applications')
         .insert({
           name,
@@ -692,7 +707,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       href = `/internal/applications/${data.id}`
 
       if (sourceIdea) {
-        const { error: promoteError } = await supabase
+        const { error: promoteError } = await mutationSupabase
           .from('business_ideas')
           .update({ status: 'promoted_to_application', promoted_application_id: data.id })
           .eq('id', sourceIdea.id)
@@ -702,7 +717,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
     } else if (intent === 'update_application_source') {
       const appName = asString(draft.application_name)
       if (!appName) throw new Error('ZO_Agent draft is missing the application name.')
-      const { data: app } = await supabase
+      const { data: app } = await mutationSupabase
         .from('applications')
         .select('id, name')
         .ilike('name', `%${appName}%`)
@@ -725,14 +740,14 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       }
       const mapped = SOURCE_COLUMN_MAP[sourceType]
       if (mapped?.value) {
-        const { error: updateAppError } = await supabase
+        const { error: updateAppError } = await mutationSupabase
           .from('applications')
           .update({ [mapped.column]: mapped.value })
           .eq('id', app.id)
         if (updateAppError) throw updateAppError
       }
 
-      const { error: sourceError } = await supabase
+      const { error: sourceError } = await mutationSupabase
         .from('source_registry')
         .upsert({
           name: `${app.name} — ${sourceType}`,
@@ -752,7 +767,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       throw new Error('This ZO_Agent output is review-only and cannot create a record.')
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await mutationSupabase
       .from('ai_assist_requests')
       .update({ status: 'created', ai_output_json: output, related_vertical_id: relatedVerticalId, ...links })
       .eq('id', requestId)

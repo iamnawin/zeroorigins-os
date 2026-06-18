@@ -26,6 +26,12 @@ assert.match(actions, /\.from\('leads'\)/, 'create_lead confirmation must insert
 assert.match(actions, /\/internal\/leads\/\$\{data\.id\}/, 'create_lead should return the lead detail route.')
 assert.match(actions, /revalidatePath\('\/internal\/leads'\)/, 'create_lead must revalidate the leads list.')
 assert.match(actions, /missing-email\+/, 'create_lead must tolerate LinkedIn leads without email by using a visible placeholder.')
+assert.match(actions, /createServiceClient/, 'ZO_Agent confirmation must use the service client for server-side record creation after auth.')
+assert.ok(
+  actions.indexOf('await requireInternalUser(supabase)') < actions.indexOf('createServiceClient()'),
+  'ZO_Agent confirmation must authenticate the internal user before creating a service-role client.'
+)
+assert.match(actions, /typed\.message/, 'ZO_Agent errors must expose Supabase object error messages instead of a generic failure.')
 assert.match(actions, /\.from\('deals'\)/, 'create_deal confirmation must insert into deals.')
 assert.match(actions, /DEAL_STAGES/, 'create_deal confirmation must normalize stages against DEAL_STAGES.')
 assert.match(actions, /\/internal\/deals\/\$\{data\.id\}/, 'create_deal should return the deal detail route.')
