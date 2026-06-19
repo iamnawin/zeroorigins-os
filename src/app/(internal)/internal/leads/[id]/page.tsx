@@ -18,35 +18,65 @@ function Field({ label, value }: { label: string; value?: string | number | null
   )
 }
 
+function LeadStateCard({
+  title,
+  message,
+}: {
+  title: string
+  message: string
+}) {
+  return (
+    <div className="max-w-3xl space-y-4">
+      <Link href="/internal/leads">
+        <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
+      </Link>
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-zo-chrome">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">{message}</p>
+          <Link href="/internal/leads">
+            <Button size="sm">Open Leads</Button>
+          </Link>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
   await requireInternalUser(supabase)
-  const serviceSupabase = createServiceClient()
-  const { data } = await serviceSupabase.from('leads').select('*').eq('id', id).maybeSingle()
-  if (!data) {
+  let data: Lead | null = null
+  let loadError: unknown = null
+  try {
+    const serviceSupabase = createServiceClient()
+    const result = await serviceSupabase.from('leads').select('*').eq('id', id).maybeSingle()
+    if (result.error) throw result.error
+    data = (result.data as Lead | null) ?? null
+  } catch (error) {
+    loadError = error
+    console.error('Lead detail load failed', error)
+  }
+  if (loadError) {
     return (
-      <div className="max-w-3xl space-y-4">
-        <Link href="/internal/leads">
-          <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
-        </Link>
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-zo-chrome">Lead not available</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              This lead link is stale or the record was deleted. Open the leads list to continue with the current pipeline.
-            </p>
-            <Link href="/internal/leads">
-              <Button size="sm">Open Leads</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+      <LeadStateCard
+        title="Lead could not load"
+        message="The lead was created, but the detail view could not read it right now. Open the leads list to continue, or reload after the latest deployment finishes."
+      />
     )
   }
-  const lead = data as Lead
+  if (!data) {
+    return (
+      <LeadStateCard
+        title="Lead not available"
+        message="This lead link is stale or the record was deleted. Open the leads list to continue with the current pipeline."
+      />
+    )
+  }
+  const lead = data
 
   return (
     <div className="max-w-3xl space-y-4">

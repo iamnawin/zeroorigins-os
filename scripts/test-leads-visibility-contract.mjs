@@ -20,4 +20,6 @@ test('lead pages verify internal access before using service-role reads', () => 
 
   assert.doesNotMatch(detailPage, /notFound\(\)/, 'Lead detail should not render the global 404 for an invisible or stale lead link.')
   assert.match(detailPage, /Lead not available/, 'Lead detail should render a recoverable missing-lead state.')
+  assert.match(detailPage, /try\s*{[\s\S]*createServiceClient/, 'Lead detail should catch service-role or Supabase read failures.')
+  assert.match(detailPage, /Lead could not load/, 'Lead detail should render a recoverable error state instead of the generic Next error page.')
 })
