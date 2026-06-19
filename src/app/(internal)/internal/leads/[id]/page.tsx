@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { createServiceClient } from '@/lib/supabase/service'
+import { requireInternalUser } from '@/lib/actions/internal-resources'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -20,8 +21,31 @@ function Field({ label, value }: { label: string; value?: string | number | null
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('leads').select('*').eq('id', id).single()
-  if (!data) notFound()
+  await requireInternalUser(supabase)
+  const serviceSupabase = createServiceClient()
+  const { data } = await serviceSupabase.from('leads').select('*').eq('id', id).maybeSingle()
+  if (!data) {
+    return (
+      <div className="max-w-3xl space-y-4">
+        <Link href="/internal/leads">
+          <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
+        </Link>
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-zo-chrome">Lead not available</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              This lead link is stale or the record was deleted. Open the leads list to continue with the current pipeline.
+            </p>
+            <Link href="/internal/leads">
+              <Button size="sm">Open Leads</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
   const lead = data as Lead
 
   return (

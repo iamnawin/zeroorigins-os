@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
+import { requireInternalUser } from '@/lib/actions/internal-resources'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -15,7 +17,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const showAll = view === 'all'
 
   const supabase = await createClient()
-  let query = supabase.from('leads').select('*').order('created_at', { ascending: false })
+  await requireInternalUser(supabase)
+  const serviceSupabase = createServiceClient()
+  let query = serviceSupabase.from('leads').select('*').order('created_at', { ascending: false })
   if (!showAll) query = query.not('status', 'in', terminalStatusFilter('leads'))
   const { data: leads } = await query
 
