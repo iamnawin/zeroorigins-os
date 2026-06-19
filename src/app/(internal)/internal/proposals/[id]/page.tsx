@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
 import { CrmActionButton } from '@/components/internal/crm-action-button'
+import { DeleteResourceButton } from '@/components/internal/delete-resource-button'
 import type { Proposal } from '@/types'
 
 function Field({ label, value }: { label: string; value?: string | null }) {
@@ -49,6 +50,7 @@ export default async function ProposalDetailPage({ params }: { params: Promise<{
           <Link href={`/internal/proposals/${id}/edit`}>
             <Button size="sm" variant="outline">Edit</Button>
           </Link>
+          <DeleteResourceButton id={id} kind="proposal" />
         </div>
       </div>
       <Card className="bg-card border-border">

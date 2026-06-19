@@ -174,6 +174,7 @@ export type FinanceTransactionFormInput = {
   ai_workspace_app_id?: string | null
   related_vertical_id?: string | null
   date?: string | null
+  paid_by?: string
   due_date?: string | null
   paid_at?: string | null
   invoice_url?: string
@@ -809,6 +810,47 @@ export async function deleteMeeting(id: string): Promise<ActionResult> {
   }
 }
 
+async function deleteInternalRecord(table: string, id: string, paths: string[]): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+    await requireInternalUser(supabase)
+    const { error } = await supabase.from(table).delete().eq('id', id)
+    if (error) throw error
+    revalidateResource(paths)
+    return { id }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
+export async function deleteLead(id: string): Promise<ActionResult> {
+  return deleteInternalRecord('leads', id, ['/internal/leads'])
+}
+
+export async function deleteTask(id: string): Promise<ActionResult> {
+  return deleteInternalRecord('tasks', id, ['/internal/tasks'])
+}
+
+export async function deleteDeal(id: string): Promise<ActionResult> {
+  return deleteInternalRecord('deals', id, ['/internal/deals'])
+}
+
+export async function deleteProposal(id: string): Promise<ActionResult> {
+  return deleteInternalRecord('proposals', id, ['/internal/proposals'])
+}
+
+export async function deleteProject(id: string): Promise<ActionResult> {
+  return deleteInternalRecord('projects', id, ['/internal/projects'])
+}
+
+export async function deleteBusinessIdea(id: string): Promise<ActionResult> {
+  return deleteInternalRecord('business_ideas', id, ['/internal/ideas'])
+}
+
+export async function deleteFinanceTransaction(id: string): Promise<ActionResult> {
+  return deleteInternalRecord('finance_transactions', id, ['/internal/finance'])
+}
+
 export async function updateTeamProfile(profileId: string, input: TeamProfileFormInput): Promise<ActionResult> {
   try {
     const supabase = await createClient()
@@ -993,18 +1035,31 @@ export async function createFinanceTransaction(input: FinanceTransactionFormInpu
   try {
     const supabase = await createClient()
     const user = await requireInternalUser(supabase)
+    const payload = {
+      ...financeTransactionPayload(input),
+      type: 'expense',
+      owner_id: user.id,
+      created_by: user.id,
+    }
     const { data, error } = await supabase
       .from('finance_transactions')
-      .insert({
-        ...financeTransactionPayload(input),
-        type: 'expense',
-        owner_id: user.id,
-        created_by: user.id,
-      })
+      .insert(payload)
       .select('id')
       .single()
 
-    if (error) throw error
+    if (error) {
+      if (!isMissingFinancePaidByColumnError(error)) throw error
+      const legacyPayload: Partial<typeof payload> = { ...payload }
+      delete legacyPayload.paid_by
+      const { data: legacyData, error: legacyError } = await supabase
+        .from('finance_transactions')
+        .insert(legacyPayload)
+        .select('id')
+        .single()
+      if (legacyError) throw legacyError
+      revalidateResource(['/internal/finance'])
+      return { id: legacyData.id }
+    }
     revalidateResource(['/internal/finance'])
     return { id: data.id }
   } catch (error) {
@@ -1016,12 +1071,24 @@ export async function updateFinanceTransaction(id: string, input: FinanceTransac
   try {
     const supabase = await createClient()
     await requireInternalUser(supabase)
+    const payload = financeTransactionPayload(input)
     const { error } = await supabase
       .from('finance_transactions')
-      .update(financeTransactionPayload(input))
+      .update(payload)
       .eq('id', id)
 
-    if (error) throw error
+    if (error) {
+      if (!isMissingFinancePaidByColumnError(error)) throw error
+      const legacyPayload: Partial<typeof payload> = { ...payload }
+      delete legacyPayload.paid_by
+      const { error: legacyError } = await supabase
+        .from('finance_transactions')
+        .update(legacyPayload)
+        .eq('id', id)
+      if (legacyError) throw legacyError
+      revalidateResource(['/internal/finance'])
+      return { id }
+    }
     revalidateResource(['/internal/finance'])
     return { id }
   } catch (error) {
@@ -1402,6 +1469,13 @@ function isMissingMeetingSyncColumnError(error: unknown) {
   )
 }
 
+function isMissingFinancePaidByColumnError(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const typed = error as SupabaseErrorLike
+  const message = `${typed.code ?? ''} ${typed.message ?? ''} ${typed.details ?? ''} ${typed.hint ?? ''}`.toLowerCase()
+  return message.includes('finance_transactions.paid_by') || message.includes("column 'paid_by'") || message.includes('schema cache')
+}
+
 function knowledgeArticlePayload(input: KnowledgeArticleFormInput) {
   return {
     title: requiredText(input.title, 'Title'),
@@ -1424,6 +1498,7 @@ function financeTransactionPayload(input: FinanceTransactionFormInput) {
     ai_workspace_app_id: optionalText(input.ai_workspace_app_id),
     related_vertical_id: optionalText(input.related_vertical_id),
     date: optionalText(input.date),
+    paid_by: optionalText(input.paid_by),
     due_date: optionalText(input.due_date),
     paid_at: optionalText(input.paid_at),
     invoice_url: optionalText(input.invoice_url),

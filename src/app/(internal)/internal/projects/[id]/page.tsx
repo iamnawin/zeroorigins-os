@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
+import { DeleteResourceButton } from '@/components/internal/delete-resource-button'
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -20,9 +21,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         <Link href="/internal/projects">
           <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button>
         </Link>
-        <Link href={`/internal/projects/${id}/edit`}>
-          <Button size="sm" variant="outline">Edit</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href={`/internal/projects/${id}/edit`}>
+            <Button size="sm" variant="outline">Edit</Button>
+          </Link>
+          <DeleteResourceButton id={id} kind="project" />
+        </div>
       </div>
       <Card className="bg-card border-border">
         <CardHeader>

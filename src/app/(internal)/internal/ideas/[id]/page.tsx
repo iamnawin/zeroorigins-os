@@ -7,6 +7,7 @@ import { AiAssistPanel } from '@/components/ai/AiAssistPanel'
 import Link from 'next/link'
 import { ArrowLeft, Bot, File, Folder, Lightbulb } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DeleteResourceButton } from '@/components/internal/delete-resource-button'
 import type { BusinessIdea, SourceRegistryEntry } from '@/types'
 
 const TABS = ['overview', 'explorer', 'agent'] as const
@@ -32,13 +33,16 @@ export default async function IdeaDetailPage({ params, searchParams }: { params:
     ? await supabase.from('business_verticals').select('id, name').eq('id', idea.vertical_id).single()
     : { data: null }
 
-  const tabLabels: Record<Tab, string> = { overview: 'Overview', explorer: 'Source Explorer', agent: 'ZO_Agent' }
+  const tabLabels: Record<Tab, string> = { overview: 'Overview', explorer: 'Source Explorer', agent: 'Command Center' }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Link href="/internal/ideas"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button></Link>
-        <Link href={`/internal/ideas/${id}/edit`}><Button size="sm" variant="outline">Edit</Button></Link>
+        <div className="flex gap-2">
+          <Link href={`/internal/ideas/${id}/edit`}><Button size="sm" variant="outline">Edit</Button></Link>
+          <DeleteResourceButton id={id} kind="idea" />
+        </div>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5">
@@ -96,7 +100,7 @@ export default async function IdeaDetailPage({ params, searchParams }: { params:
 
       {tab === 'agent' && (
         <Card className="border-border bg-card">
-          <CardHeader><CardTitle className="flex items-center gap-2 text-sm"><Bot className="h-4 w-4 text-zo-purple" />ZO_Agent</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-sm"><Bot className="h-4 w-4 text-zo-purple" />Command Center</CardTitle></CardHeader>
           <CardContent><AiAssistPanel embedded /></CardContent>
         </Card>
       )}

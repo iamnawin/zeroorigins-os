@@ -5,6 +5,7 @@ import { ArrowLeft, CalendarPlus, FileText, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
+import { DeleteResourceButton } from '@/components/internal/delete-resource-button'
 import type { Deal, Meeting, Proposal } from '@/types'
 
 function Field({ label, value }: { label: string; value?: string | number | null }) {
@@ -40,6 +41,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
           <Link href={`/internal/meetings/new?deal_id=${id}`}><Button size="sm" variant="outline"><CalendarPlus className="w-4 h-4 mr-1" />Meeting</Button></Link>
           <Link href={`/internal/proposals/new?deal_id=${id}`}><Button size="sm" variant="outline"><FileText className="w-4 h-4 mr-1" />Proposal</Button></Link>
           <Link href={`/internal/deals/${id}/edit`}><Button size="sm"><Pencil className="w-4 h-4 mr-1" />Edit</Button></Link>
+          <DeleteResourceButton id={id} kind="deal" />
         </div>
       </div>
       <Card className="bg-card border-border">

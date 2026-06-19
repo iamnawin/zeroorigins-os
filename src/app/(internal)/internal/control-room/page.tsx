@@ -197,7 +197,7 @@ function buildSuggestedMoves(opts: {
     moves.push({ label: 'Start first project', subtext: 'Create a delivery workspace', href: '/internal/projects/new', tone: 'create' })
   }
   if (moves.length < 3) {
-    moves.push({ label: 'Ask agent to plan the week', subtext: 'Use ZO_Agent for a planning session', href: '/internal/automation', tone: 'steady' })
+    moves.push({ label: 'Ask agent to plan the week', subtext: 'Use Command Center for a planning session', href: '/internal/automation', tone: 'steady' })
   }
   if (moves.length < 4) {
     moves.push({ label: 'Add a partner', subtext: 'Grow your partner network', href: '/internal/partners/new', tone: 'create' })
@@ -330,7 +330,7 @@ export default async function ControlRoomPage() {
             <div className="flex flex-wrap items-center gap-2.5">
               <Badge variant="outline" className="gap-1.5 border-zo-purple/35 bg-zo-purple/10 text-zo-purple-2">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                ZO_Agent · Live
+                Command Center · Live
               </Badge>
               <span className="text-xs text-muted-foreground">{formatDateTime(now.toISOString())}</span>
             </div>
@@ -444,7 +444,7 @@ export default async function ControlRoomPage() {
               <Sparkles className="h-3.5 w-3.5 text-zo-purple" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">ZO_Agent Command Bar</h2>
+              <h2 className="text-sm font-semibold text-white">Command Center</h2>
               <p className="text-xs text-muted-foreground">Type or speak your next move — draft, create, or search</p>
             </div>
           </div>

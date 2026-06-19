@@ -1,6 +1,6 @@
 import type { AiAssistIntent, ZoAgentMode } from '@/types'
 
-export const ZO_AGENT_NAME = 'ZO_Agent'
+export const ZO_AGENT_NAME = 'Command Center'
 export const ZO_AGENT_PROVIDER = 'Together AI'
 
 export const ZO_AGENT_QUICK_ACTIONS: { intent: AiAssistIntent; label: string }[] = [
@@ -20,19 +20,19 @@ export const ZO_AGENT_QUICK_ACTIONS: { intent: AiAssistIntent; label: string }[]
 ]
 
 export const ZO_AGENT_BUTTON_LABELS: Record<AiAssistIntent, string> = {
-  create_task: 'Generate Task Draft',
-  schedule_meeting: 'Generate Meeting Draft',
-  create_spending: 'Generate Spending Draft',
-  create_lead: 'Generate Lead Draft',
+  create_task: 'Create Task',
+  schedule_meeting: 'Schedule Meeting',
+  create_spending: 'Add Spending',
+  create_lead: 'Create Lead',
   draft_reply: 'Generate Reply Draft',
   summarize_email: 'Summarize Email',
-  create_followup: 'Generate Follow-up Draft',
-  create_project: 'Generate Project Draft',
-  create_proposal: 'Generate Proposal Outline',
+  create_followup: 'Create Follow-up',
+  create_project: 'Create Project',
+  create_proposal: 'Create Proposal',
   create_idea: 'Capture Idea',
-  create_deal: 'Generate Deal Draft',
-  promote_idea_to_application: 'Generate Application Draft',
-  create_application: 'Generate Application Draft',
+  create_deal: 'Create Deal',
+  promote_idea_to_application: 'Create Application',
+  create_application: 'Create Application',
   query_emails: 'Search Emails',
   query_tasks: 'Search Tasks',
   query_projects: 'Search Projects',
@@ -40,14 +40,14 @@ export const ZO_AGENT_BUTTON_LABELS: Record<AiAssistIntent, string> = {
   query_applications: 'Search Applications',
   query_verticals: 'Search Verticals',
   find_missing_sources: 'Find Source Gaps',
-  update_application_source: 'Generate Source Update Draft',
+  update_application_source: 'Update Source',
   sync_repo_details: 'Prepare Source Sync',
   summarize_today: 'Summarize Today',
-  unknown: 'Ask ZO_Agent',
+  unknown: 'Run Command',
 }
 
 export function zoAgentButtonLabel(intent?: AiAssistIntent) {
-  return intent ? ZO_AGENT_BUTTON_LABELS[intent] : 'Ask ZO_Agent'
+  return intent ? ZO_AGENT_BUTTON_LABELS[intent] : 'Run Command'
 }
 
 export const ZO_AGENT_INTENT_MODES: Record<AiAssistIntent, ZoAgentMode> = {
@@ -77,7 +77,7 @@ export const ZO_AGENT_INTENT_MODES: Record<AiAssistIntent, ZoAgentMode> = {
   unknown: 'summary',
 }
 
-// Draft intents that can create a record after explicit user confirmation.
+// Draft intents are server-confirmed by the Command Center one-click run path.
 export const ZO_AGENT_CONFIRMABLE_INTENTS: AiAssistIntent[] = [
   'create_task', 'schedule_meeting', 'create_spending', 'create_followup', 'create_lead', 'create_project', 'create_proposal',
   'create_idea', 'create_deal', 'promote_idea_to_application', 'create_application', 'update_application_source',
@@ -93,7 +93,7 @@ const INTENT_SCHEMAS: Partial<Record<AiAssistIntent, string>> = {
   create_followup: '{"intent":"create_followup","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"channel":"email","recipient":"","subject":"","message":"","related_lead":"","related_vertical":""},"next_actions":[],"warnings":[]}',
   create_project: '{"intent":"create_project","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"project_title":"","description":"","priority":"normal","related_vertical":"","start_date":"","target_date":""},"next_actions":[],"warnings":[]}',
   create_proposal: '{"intent":"create_proposal","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"proposal_title":"","client_or_vertical":"","related_application":"","problem_statement":"","proposed_solution":"","scope":[],"deliverables":[],"timeline":"","commercials":"","next_step":""},"next_actions":[],"warnings":[]}',
-  create_idea: '{"intent":"create_idea","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"idea_title":"","description":"","vertical":"","source":"ZO_Agent","status":"raw","priority":"normal","local_folder_path":"","next_action":""},"next_actions":[],"warnings":[]}',
+  create_idea: '{"intent":"create_idea","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"idea_title":"","description":"","vertical":"","source":"Command Center","status":"raw","priority":"normal","local_folder_path":"","next_action":""},"next_actions":[],"warnings":[]}',
   create_deal: '{"intent":"create_deal","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"deal_name":"","client_or_company":"","lead_name":"","stage":"qualifying | proposal | negotiation | won | lost | on_hold","estimated_value":0,"currency":"INR","expected_close_date":"YYYY-MM-DD","next_step":"","notes":""},"next_actions":["Review deal details","Confirm to create deals record"],"warnings":[]}',
   promote_idea_to_application: '{"intent":"promote_idea_to_application","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"source_idea":"","application_name":"","vertical":"","description":"","stage":"prototype","status":"active","repo_url":"","local_folder_path":"","docs_url":"","docs_folder_path":"","website_url":"","deployment_url":"","notes":""},"next_actions":["Create application record","Link source idea","Update idea status to promoted_to_application"],"warnings":[]}',
   create_application: '{"intent":"create_application","mode":"draft","title":"","summary":"","confidence":0,"requires_confirmation":true,"draft":{"application_name":"","vertical":"","description":"","stage":"concept","status":"active","type":"application","repo_url":"","local_folder_path":"","docs_url":"","docs_folder_path":"","website_url":"","deployment_url":"","database_url":"","n8n_workflow_url":"","figma_url":"","tech_stack":[],"notes":""},"next_actions":[],"warnings":[]}',
@@ -148,7 +148,7 @@ export function buildZoAgentSystemPrompt(options: {
     'You are not a chatbot. You convert short operator requests into one structured JSON object.',
     'Return ONE JSON object only. No prose, no markdown, no code fences. NEVER return multiple JSON objects.',
     'If the user mentions multiple items (e.g. two spendings), handle only the FIRST one and list the rest in the "warnings" array as reminders to add separately.',
-    'Never claim that any record was created. Records are only created after the user confirms a draft.',
+    'Never claim that any record was created. The app creates records only after the server action confirms the structured output.',
     'For create/update intents set requires_confirmation to true and mode "draft".',
     'For query intents set requires_confirmation to false and mode "query". For summaries use mode "summary".',
     'confidence is a number between 0 and 1.',

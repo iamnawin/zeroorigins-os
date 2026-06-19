@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceStatusBadge } from '@/components/resource-kit/resource-status-badge'
+import { DeleteResourceButton } from '@/components/internal/delete-resource-button'
 import type { FinanceTransaction, Vendor } from '@/types'
 
 const defaultCurrency = 'INR'
@@ -14,6 +15,14 @@ function money(value: number, currency = defaultCurrency) {
 
 function formatDate(value?: string | null) {
   return value ? new Date(`${value}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'
+}
+
+function financeMeta(row: FinanceTransaction & { vendors?: Vendor }, dateLabel: string) {
+  return [
+    row.vendors?.name || row.category || 'No vendor',
+    row.paid_by ? `paid by ${row.paid_by}` : '',
+    dateLabel,
+  ].filter(Boolean).join(' - ')
 }
 
 function monthBounds() {
@@ -140,14 +149,15 @@ export default async function FinancePage() {
           <CardHeader><CardTitle className="text-sm">Spending Ledger</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             {rows.map(row => (
-              <div key={row.id} className="grid gap-3 rounded-md border border-border bg-background/60 p-3 md:grid-cols-[1fr_9rem_7rem_6rem] md:items-center">
+              <div key={row.id} className="grid gap-3 rounded-md border border-border bg-background/60 p-3 md:grid-cols-[1fr_9rem_7rem_6rem_auto] md:items-center">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">{row.description}</p>
-                  <p className="text-xs text-muted-foreground">{row.vendors?.name || row.category || 'No vendor'} · {formatDate(row.date)}</p>
+                  <p className="text-xs text-muted-foreground">{financeMeta(row, formatDate(row.date))}</p>
                 </div>
                 <p className="text-sm font-semibold text-foreground">{money(Number(row.amount ?? 0), row.currency || 'USD')}</p>
                 <ResourceStatusBadge status={row.status} />
                 <p className="text-xs text-muted-foreground">{row.due_date ? formatDate(row.due_date) : row.recurrence_interval}</p>
+                <DeleteResourceButton id={row.id} kind="finance_transaction" label="Delete" stay />
               </div>
             ))}
             {rows.length === 0 && (
@@ -187,7 +197,7 @@ function MiniRow({ row }: { row: FinanceTransaction & { vendors?: Vendor } }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{row.description}</p>
-          <p className="text-xs text-muted-foreground">{row.vendors?.name || row.category || 'No vendor'} · due {formatDate(row.due_date)}</p>
+          <p className="text-xs text-muted-foreground">{financeMeta(row, `due ${formatDate(row.due_date)}`)}</p>
         </div>
         <p className="text-xs font-semibold">{money(Number(row.amount ?? 0), row.currency || 'USD')}</p>
       </div>

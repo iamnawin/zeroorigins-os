@@ -52,6 +52,21 @@ export type ZoAgentResponse = {
   model: string
 }
 
+export type ZoAgentCreatedRecord = {
+  id: string
+  intent: AiAssistIntent
+  href?: string
+  title: string
+}
+
+export type ZoAgentCommandResponse = {
+  records: ZoAgentCreatedRecord[]
+  outputs: ZoAgentOutput[]
+  results?: ZoAgentQueryResult[]
+  warnings: string[]
+  model?: string
+}
+
 export type AiAssistDraftInput = {
   inputText: string
   intent?: AiAssistIntent
@@ -74,6 +89,16 @@ type SupabaseErrorLike = {
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createServiceClient>
 
+const ACTION_INTENT_KEYWORDS: Array<{ intent: AiAssistIntent; patterns: RegExp[] }> = [
+  { intent: 'schedule_meeting', patterns: [/\b(meeting|meet|call|calendar|schedule|appointment)\b/i] },
+  { intent: 'create_task', patterns: [/\b(task|todo|to-do|reminder|remind)\b/i] },
+  { intent: 'create_spending', patterns: [/\b(spend|spending|expense|paid|payment|bill|cost|subscription)\b/i] },
+  { intent: 'create_lead', patterns: [/\b(lead|prospect|inbound|sales head|linkedin)\b/i] },
+  { intent: 'create_deal', patterns: [/\b(deal|opportunity|pipeline|contract worth|proposal value)\b/i] },
+  { intent: 'create_proposal', patterns: [/\b(proposal|quote|scope of work|sow)\b/i] },
+  { intent: 'create_idea', patterns: [/\b(idea|capture idea|new concept)\b/i] },
+]
+
 function toResult<T>(error: unknown): AiActionResult<T> {
   let msg = 'AI assist failed.'
   if (error instanceof Error) {
@@ -82,7 +107,7 @@ function toResult<T>(error: unknown): AiActionResult<T> {
     const typed = error as SupabaseErrorLike
     msg = [typed.message, typed.details, typed.hint].filter(Boolean).join(' ')
   }
-  console.error('[ZO_Agent]', msg)
+  console.error('[Command Center]', msg)
   return { error: msg }
 }
 
@@ -136,6 +161,55 @@ async function findVerticalId(supabase: SupabaseServerClient, name?: string) {
     .maybeSingle()
 
   return data?.id ?? null
+}
+
+function detectCommandIntents(inputText: string, selectedIntent?: AiAssistIntent): Array<AiAssistIntent | undefined> {
+  const detected = ACTION_INTENT_KEYWORDS
+    .filter(({ patterns }) => patterns.some(pattern => pattern.test(inputText)))
+    .map(({ intent }) => intent)
+  const intents = selectedIntent ? [selectedIntent, ...detected] : detected
+  const unique = Array.from(new Set(intents))
+  return unique.length > 0 ? unique : [selectedIntent]
+}
+
+function legacyMeetingPayload(input: Record<string, unknown>) {
+  return {
+    title: input.title,
+    entity_type: 'internal',
+    scheduled_at: input.scheduled_at,
+    duration_minutes: input.duration_minutes,
+    attendees: input.attendees,
+    agenda: input.agenda,
+    status: input.status,
+    owner_id: input.owner_id,
+    created_by: input.created_by,
+  }
+}
+
+function isMissingMeetingSyncColumnError(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const typed = error as SupabaseErrorLike
+  const message = `${typed.code ?? ''} ${typed.message ?? ''} ${typed.details ?? ''} ${typed.hint ?? ''}`.toLowerCase()
+  return (
+    message.includes('meetings.source') ||
+    message.includes('meetings.calendar_event_id') ||
+    message.includes('meetings.meeting_link') ||
+    message.includes('meetings.notes') ||
+    message.includes('meetings.sync_status') ||
+    message.includes("column 'source'") ||
+    message.includes("column 'calendar_event_id'") ||
+    message.includes("column 'meeting_link'") ||
+    message.includes("column 'notes'") ||
+    message.includes("column 'sync_status'") ||
+    message.includes('schema cache')
+  )
+}
+
+function isMissingFinancePaidByColumnError(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const typed = error as SupabaseErrorLike
+  const message = `${typed.code ?? ''} ${typed.message ?? ''} ${typed.details ?? ''} ${typed.hint ?? ''}`.toLowerCase()
+  return message.includes('finance_transactions.paid_by') || message.includes("column 'paid_by'") || message.includes('schema cache')
 }
 
 async function findExistingZoAgentLead(
@@ -444,6 +518,51 @@ export async function createAiAssistDraft(input: AiAssistDraftInput): Promise<Ai
   }
 }
 
+export async function runAiAssistCommand(input: AiAssistDraftInput): Promise<AiActionResult<ZoAgentCommandResponse>> {
+  try {
+    const inputText = requiredInputText(input.inputText)
+    const intents = detectCommandIntents(inputText, input.intent)
+    const records: ZoAgentCreatedRecord[] = []
+    const outputs: ZoAgentOutput[] = []
+    const results: ZoAgentQueryResult[] = []
+    const warnings: string[] = []
+    let model: string | undefined
+
+    for (const commandIntent of intents) {
+      const draft = await createAiAssistDraft({ inputText, intent: commandIntent, inputMode: input.inputMode })
+      if (draft.error || !draft.data) {
+        warnings.push(draft.error || 'Command Center could not understand that part of the request.')
+        continue
+      }
+
+      model = model ?? draft.data.model
+      outputs.push(draft.data.output)
+      if (draft.data.results?.length) results.push(...draft.data.results)
+      if (draft.data.output.warnings?.length) warnings.push(...draft.data.output.warnings)
+
+      if (!draft.data.id || !draft.data.output.requires_confirmation) continue
+
+      const confirmed = await confirmAiAssistDraft(draft.data.id, draft.data.output)
+      if (confirmed.error || !confirmed.data) {
+        warnings.push(confirmed.error || `Command Center could not create ${draft.data.output.intent}.`)
+        continue
+      }
+
+      records.push({
+        id: confirmed.data.id,
+        intent: confirmed.data.intent,
+        href: confirmed.data.href,
+        title: draft.data.output.title || confirmed.data.intent.replace(/_/g, ' '),
+      })
+    }
+
+    revalidatePath('/internal/control-room')
+    return { data: { records, outputs, results: results.length ? results : undefined, warnings, model } }
+  } catch (error) {
+    return toResult(error)
+  }
+}
+
 export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoAgentOutput): Promise<AiActionResult<{ id: string; intent: AiAssistIntent; href?: string }>> {
   try {
     const supabase = await createClient()
@@ -456,8 +575,8 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       .single()
 
     if (error) throw error
-    if (!request) throw new Error('ZO_Agent draft not found.')
-    if (request.status !== 'draft') throw new Error('Only draft ZO_Agent requests can be confirmed.')
+    if (!request) throw new Error('Command Center draft not found.')
+    if (request.status !== 'draft') throw new Error('Only draft Command Center requests can be confirmed.')
 
     const output = editedOutput ?? request.ai_output_json as ZoAgentOutput
     const intent = request.intent as AiAssistIntent
@@ -472,7 +591,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       const { data, error: createError } = await mutationSupabase
         .from('tasks')
         .insert({
-          title: requiredInputText(asString(draft.task_title) || asString(draft.subject) || output.title || 'ZO_Agent task'),
+          title: requiredInputText(asString(draft.task_title) || asString(draft.subject) || output.title || 'Command Center task'),
           description: asString(draft.description) || asString(draft.message) || request.input_text,
           due_date: asString(draft.due_date) || null,
           status: 'todo',
@@ -488,32 +607,44 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       links.related_task_id = data.id
       href = `/internal/tasks/${data.id}`
     } else if (intent === 'schedule_meeting') {
+      const meetingInsert = {
+        title: requiredInputText(asString(draft.meeting_title) || output.title || 'Command Center meeting'),
+        scheduled_at: firstDateTime(asString(draft.date), asString(draft.start_time)),
+        duration_minutes: 30,
+        attendees: asStringArray(draft.attendees),
+        agenda: asStringArray(draft.agenda).join('\n'),
+        notes: asString(draft.notes),
+        source: 'manual',
+        sync_status: 'not_connected',
+        status: 'scheduled',
+        related_vertical_id: relatedVerticalId,
+        owner_id: user.id,
+        created_by: user.id,
+      }
       const { data, error: createError } = await mutationSupabase
         .from('meetings')
-        .insert({
-          title: requiredInputText(asString(draft.meeting_title) || output.title || 'ZO_Agent meeting'),
-          scheduled_at: firstDateTime(asString(draft.date), asString(draft.start_time)),
-          duration_minutes: 30,
-          attendees: asStringArray(draft.attendees),
-          agenda: asStringArray(draft.agenda).join('\n'),
-          notes: asString(draft.notes),
-          source: 'manual',
-          sync_status: 'not_connected',
-          status: 'scheduled',
-          related_vertical_id: relatedVerticalId,
-          owner_id: user.id,
-          created_by: user.id,
-        })
+        .insert(meetingInsert)
         .select('id')
         .single()
 
-      if (createError) throw createError
-      createdId = data.id
-      links.related_meeting_id = data.id
-      href = `/internal/meetings/${data.id}`
+      if (createError) {
+        if (!isMissingMeetingSyncColumnError(createError)) throw createError
+        const { data: legacyData, error: legacyError } = await mutationSupabase
+          .from('meetings')
+          .insert(legacyMeetingPayload(meetingInsert))
+          .select('id')
+          .single()
+        if (legacyError) throw legacyError
+        createdId = legacyData.id
+      } else {
+        createdId = data.id
+      }
+      if (!createdId) throw new Error('Command Center meeting confirmation did not resolve a meeting record.')
+      links.related_meeting_id = createdId
+      href = `/internal/meetings/${createdId}`
     } else if (intent === 'create_spending') {
       const amount = typeof draft.amount === 'number' ? draft.amount : parseFloat(asString(draft.amount)) || 0
-      if (!amount) throw new Error('ZO_Agent draft is missing the spending amount.')
+      if (!amount) throw new Error('Command Center draft is missing the spending amount.')
       const category = pickNormalizedAllowed(draft.category, FINANCE_CATEGORIES, 'other', {
         infrastructure: 'hosting',
         office: 'operations',
@@ -523,27 +654,41 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       const status = pickNormalizedAllowed(draft.status, FINANCE_TRANSACTION_STATUSES, 'paid')
       const type = pickNormalizedAllowed(draft.type, ['income', 'expense'] as const, 'expense')
       const currency = pickNormalizedAllowed(draft.currency, CURRENCIES, 'INR')
+      const spendingInsert = {
+        type,
+        amount,
+        currency,
+        description: requiredInputText(asString(draft.description) || output.title || 'Command Center spending'),
+        category,
+        status,
+        date: asString(draft.date) || new Date().toISOString().slice(0, 10),
+        paid_by: asString(draft.paid_by),
+        notes: [asString(draft.notes), asString(draft.paid_by) ? `Paid by: ${asString(draft.paid_by)}` : ''].filter(Boolean).join('. '),
+        related_vertical_id: relatedVerticalId,
+        owner_id: user.id,
+        created_by: user.id,
+      }
 
       const { data, error: createError } = await mutationSupabase
         .from('finance_transactions')
-        .insert({
-          type,
-          amount,
-          currency,
-          description: requiredInputText(asString(draft.description) || output.title || 'ZO_Agent spending'),
-          category,
-          status,
-          date: asString(draft.date) || new Date().toISOString().slice(0, 10),
-          notes: [asString(draft.notes), asString(draft.paid_by) ? `Paid by: ${asString(draft.paid_by)}` : ''].filter(Boolean).join('. '),
-          related_vertical_id: relatedVerticalId,
-          owner_id: user.id,
-          created_by: user.id,
-        })
+        .insert(spendingInsert)
         .select('id')
         .single()
 
-      if (createError) throw createError
-      createdId = data.id
+      if (createError) {
+        if (!isMissingFinancePaidByColumnError(createError)) throw createError
+        const legacySpendingInsert: Partial<typeof spendingInsert> = { ...spendingInsert }
+        delete legacySpendingInsert.paid_by
+        const { data: legacyData, error: legacyError } = await mutationSupabase
+          .from('finance_transactions')
+          .insert(legacySpendingInsert)
+          .select('id')
+          .single()
+        if (legacyError) throw legacyError
+        createdId = legacyData.id
+      } else {
+        createdId = data.id
+      }
       href = `/internal/finance`
     } else if (intent === 'create_lead') {
       const name = requiredInputText(asString(draft.lead_name) || asString(draft.name) || output.title || request.input_text)
@@ -557,7 +702,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
         asString(draft.potential_deal_type) ? `Potential deal type: ${asString(draft.potential_deal_type)}` : '',
         asString(draft.next_action) ? `Next action: ${asString(draft.next_action)}` : '',
         asString(draft.notes),
-        !asString(draft.email) ? 'Email missing from ZO_Agent input; placeholder email used for CRM required field.' : '',
+        !asString(draft.email) ? 'Email missing from Command Center input; placeholder email used for CRM required field.' : '',
       ].filter(Boolean).join('\n')
 
       const existingLeadId = await findExistingZoAgentLead(mutationSupabase, { name, company, serviceInterest })
@@ -570,7 +715,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
             name,
             email,
             company,
-            source: asString(draft.source) || 'ZO_Agent',
+            source: asString(draft.source) || 'Command Center',
             service_interest: serviceInterest,
             budget_range: asString(draft.budget_range) || null,
             notes: notes || request.input_text,
@@ -586,7 +731,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
         if (createError) throw createError
         createdId = data.id
       }
-      if (!createdId) throw new Error('ZO_Agent lead confirmation did not resolve a lead record.')
+      if (!createdId) throw new Error('Command Center lead confirmation did not resolve a lead record.')
       links.related_lead_id = createdId
       href = leadDetailHref(createdId)
     } else if (intent === 'create_deal') {
@@ -631,7 +776,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       const { data, error: createError } = await mutationSupabase
         .from('proposals')
         .insert({
-          title: requiredInputText(asString(draft.proposal_title) || output.title || 'ZO_Agent proposal outline'),
+          title: requiredInputText(asString(draft.proposal_title) || output.title || 'Command Center proposal outline'),
           content: content || request.input_text,
           scope: asStringArray(draft.scope).join('\n'),
           timeline: asString(draft.timeline),
@@ -650,7 +795,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       const { data, error: createError } = await mutationSupabase
         .from('projects')
         .insert({
-          title: requiredInputText(asString(draft.project_title) || output.title || 'ZO_Agent project'),
+          title: requiredInputText(asString(draft.project_title) || output.title || 'Command Center project'),
           description: asString(draft.description) || request.input_text,
           status: 'draft',
           start_date: asString(draft.start_date) || null,
@@ -669,12 +814,12 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       const { data, error: createError } = await mutationSupabase
         .from('business_ideas')
         .insert({
-          title: requiredInputText(asString(draft.idea_title) || output.title || 'ZO_Agent idea'),
+          title: requiredInputText(asString(draft.idea_title) || output.title || 'Command Center idea'),
           description: asString(draft.description) || request.input_text,
           vertical_id: relatedVerticalId,
           status: pickAllowed(draft.status, BUSINESS_IDEA_STATUSES, 'raw'),
           priority: pickAllowed(draft.priority, BUSINESS_IDEA_PRIORITIES, 'normal'),
-          source: asString(draft.source) || 'ZO_Agent',
+          source: asString(draft.source) || 'Command Center',
           local_folder_path: asString(draft.local_folder_path) || null,
           next_action: asString(draft.next_action) || null,
           owner_id: user.id,
@@ -703,7 +848,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
         if (!sourceIdea) throw new Error('Could not find a matching idea in the Ideas Vault to promote. Check the idea title and try again.')
       }
 
-      const name = requiredInputText(asString(draft.application_name) || output.title || sourceIdea?.title || 'ZO_Agent application')
+      const name = requiredInputText(asString(draft.application_name) || output.title || sourceIdea?.title || 'Command Center application')
       const { data, error: createError } = await mutationSupabase
         .from('applications')
         .insert({
@@ -746,7 +891,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       }
     } else if (intent === 'update_application_source') {
       const appName = asString(draft.application_name)
-      if (!appName) throw new Error('ZO_Agent draft is missing the application name.')
+      if (!appName) throw new Error('Command Center draft is missing the application name.')
       const { data: app } = await mutationSupabase
         .from('applications')
         .select('id, name')
@@ -794,7 +939,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       links.related_application_id = app.id
       href = `/internal/applications/${app.id}`
     } else {
-      throw new Error('This ZO_Agent output is review-only and cannot create a record.')
+      throw new Error('This Command Center output is review-only and cannot create a record.')
     }
 
     const { error: updateError } = await mutationSupabase
@@ -813,7 +958,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
     revalidatePath('/internal/finance')
     revalidatePath('/internal/deals')
     revalidatePath('/internal/leads')
-    if (!createdId) throw new Error('ZO_Agent confirmation did not create a record.')
+    if (!createdId) throw new Error('Command Center confirmation did not create a record.')
     return { data: { id: createdId, intent, href } }
   } catch (error) {
     return toResult(error)
@@ -822,7 +967,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
 
 function requiredInputText(value: string) {
   const trimmed = value.trim()
-  if (!trimmed) throw new Error('ZO_Agent input is required.')
+  if (!trimmed) throw new Error('Command Center input is required.')
   return trimmed
 }
 

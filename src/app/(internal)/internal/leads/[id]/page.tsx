@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, CalendarPlus, FileText } from 'lucide-react'
 import { CrmActionButton } from '@/components/internal/crm-action-button'
+import { DeleteResourceButton } from '@/components/internal/delete-resource-button'
 import type { Lead } from '@/types'
 
 function Field({ label, value }: { label: string; value?: string | number | null }) {
@@ -45,6 +46,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           <Link href={`/internal/leads/${id}/edit`}>
             <Button size="sm">Edit</Button>
           </Link>
+          <DeleteResourceButton id={id} kind="lead" />
         </div>
       </div>
       <Card className="bg-card border-border">

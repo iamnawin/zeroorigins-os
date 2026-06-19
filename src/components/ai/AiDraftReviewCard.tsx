@@ -61,7 +61,7 @@ export function AiDraftReviewCard({ output }: { output: ZoAgentOutput }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-semibold text-foreground">{output.title || 'Review draft'}</p>
-          <p className="mt-1 text-muted-foreground">Confirm these fields before ZO_Agent creates the record.</p>
+          <p className="mt-1 text-muted-foreground">Fields Command Center used for this action.</p>
         </div>
         {confidence !== null && (
           <span className="shrink-0 rounded-full border border-border px-2 py-1 font-medium text-muted-foreground">

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bot, Check, Mic, MicOff, Sparkles, X } from 'lucide-react'
+import { Bot, Mic, MicOff, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -14,15 +14,10 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { ZO_AGENT_QUICK_ACTIONS, zoAgentButtonLabel } from '@/lib/ai/assist-intents'
-import { confirmAiAssistDraft, createAiAssistDraft } from '@/lib/actions/ai-assist'
+import { runAiAssistCommand, type ZoAgentCommandResponse } from '@/lib/actions/ai-assist'
 import { cn } from '@/lib/utils'
 import { AiDraftReviewCard } from './AiDraftReviewCard'
-import type { AiAssistIntent, ZoAgentOutput } from '@/types'
-
-type DraftState = {
-  id: string
-  output: ZoAgentOutput
-}
+import type { AiAssistIntent } from '@/types'
 
 type VoiceState = 'idle' | 'unavailable'
 
@@ -69,43 +64,26 @@ export function AiAssistPanel({
   const router = useRouter()
   const [inputText, setInputText] = useState('')
   const [intent, setIntent] = useState<AiAssistIntent | undefined>()
-  const [draft, setDraft] = useState<DraftState | null>(null)
-  const [results, setResults] = useState<Array<{ id: string; title: string; subtitle?: string; badge?: string; href?: string }> | undefined>()
+  const [response, setResponse] = useState<ZoAgentCommandResponse | null>(null)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
 
-  function createDraft() {
+  function runCommand() {
     setError('')
     startTransition(async () => {
-      const result = await createAiAssistDraft({ inputText, intent })
+      const result = await runAiAssistCommand({ inputText, intent })
       if (result.error) {
         setError(result.error)
         return
       }
-      if (result.data?.id) {
-        setDraft({ id: result.data.id, output: result.data.output })
-        setResults(result.data.results)
-      }
-    })
-  }
-
-  function confirmDraft() {
-    if (!draft) return
-    setError('')
-    startTransition(async () => {
-      const result = await confirmAiAssistDraft(draft.id, draft.output)
-      if (result.error) {
-        setError(result.error)
-        return
-      }
-      setDraft(null)
-      setResults(undefined)
-      setInputText('')
-      setIntent(undefined)
-      if (result.data?.href) {
-        router.push(result.data.href)
-      } else {
-        router.refresh()
+      if (result.data) {
+        setResponse(result.data)
+        const primaryHref = result.data.records.length === 1 ? result.data.records[0]?.href : undefined
+        if (primaryHref) {
+          router.push(primaryHref)
+        } else {
+          router.refresh()
+        }
       }
     })
   }
@@ -137,18 +115,18 @@ export function AiAssistPanel({
         onChange={event => setInputText(event.target.value)}
         onKeyDown={event => {
           if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && inputText.trim()) {
-            createDraft()
+            runCommand()
           }
         }}
         rows={embedded ? 4 : 5}
-        placeholder="Ask ZO_Agent to create a task, schedule a meeting, draft a proposal, promote an idea, or search apps and sources..."
+        placeholder="Tell Command Center what to create, schedule, log, draft, or search..."
         className="resize-none text-sm"
       />
 
       <div className="flex gap-2">
         <Button
           type="button"
-          onClick={createDraft}
+          onClick={runCommand}
           disabled={isPending || !inputText.trim()}
           className="flex-1"
         >
@@ -159,24 +137,26 @@ export function AiAssistPanel({
       </div>
 
       {/* Agent response */}
-      {draft && (
+      {response && (
         <div className="rounded-lg border border-border bg-muted/30 p-3">
           <div className="mb-2 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold">Agent response</p>
-              {draft.output.summary && (
-                <p className="mt-0.5 text-xs text-muted-foreground">{draft.output.summary}</p>
-              )}
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {response.records.length > 0
+                  ? `${response.records.length} record${response.records.length === 1 ? '' : 's'} created.`
+                  : response.outputs[0]?.summary || 'No record was created from that request.'}
+              </p>
             </div>
-            <button type="button" onClick={() => { setDraft(null); setResults(undefined) }} className="text-muted-foreground hover:text-foreground">
+            <button type="button" onClick={() => setResponse(null)} className="text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {/* Query results */}
-          {results && results.length > 0 && (
+          {response.results && response.results.length > 0 && (
             <div className="mb-3 space-y-1.5">
-              {results.map(row => (
+              {response.results.map(row => (
                 <a
                   key={row.id}
                   href={row.href ?? '#'}
@@ -189,22 +169,34 @@ export function AiAssistPanel({
             </div>
           )}
 
-          {/* Typed draft preview for confirmable actions */}
-          {draft.output.requires_confirmation && (
-            <>
-              <AiDraftReviewCard output={draft.output} />
-              {draft.output.warnings && draft.output.warnings.length > 0 && (
-                <div className="mt-2 space-y-1 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
-                  {draft.output.warnings.map((w, i) => (
-                    <p key={i} className="text-xs text-amber-300">{w}</p>
-                  ))}
-                </div>
-              )}
-              <Button type="button" onClick={confirmDraft} disabled={isPending} className="mt-3 w-full" variant="outline">
-                <Check className="mr-2 h-4 w-4" />
-                Confirm &amp; Create Record
-              </Button>
-            </>
+          {response.outputs.map((output, index) => (
+            <div key={`${output.intent}-${index}`} className="mb-3">
+              <AiDraftReviewCard output={output} />
+            </div>
+          ))}
+
+          {response.warnings.length > 0 && (
+            <div className="mt-2 space-y-1 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
+              {response.warnings.map((w, i) => (
+                <p key={i} className="text-xs text-amber-300">{w}</p>
+              ))}
+            </div>
+          )}
+
+          {response.records.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              <p className="text-xs font-semibold text-muted-foreground">Created records</p>
+              {response.records.map(record => (
+                <a
+                  key={`${record.intent}-${record.id}`}
+                  href={record.href ?? '#'}
+                  className="flex items-center justify-between gap-3 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200 hover:border-emerald-500/40"
+                >
+                  <span className="min-w-0 truncate font-medium">{record.title}</span>
+                  <span className="shrink-0 capitalize text-emerald-300">{record.intent.replace(/_/g, ' ')}</span>
+                </a>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -221,7 +213,7 @@ export function AiAssistPanel({
         {showHeader && (
           <div className="mb-3 flex items-center gap-2">
             <Bot className="h-4 w-4 text-zo-purple" />
-            <p className="text-sm font-semibold">ZO_Agent</p>
+            <p className="text-sm font-semibold">Command Center</p>
           </div>
         )}
         {content}
@@ -233,12 +225,12 @@ export function AiAssistPanel({
     <Sheet>
       <SheetTrigger className="fixed bottom-5 right-5 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg">
         <Bot className="h-4 w-4" />
-        ZO_Agent
+        Command Center
       </SheetTrigger>
       <SheetContent className="w-full overflow-y-auto sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>ZO_Agent</SheetTitle>
-          <SheetDescription>Draft tasks, meetings, replies, proposals, ideas, and follow-ups. Records are created only after confirmation.</SheetDescription>
+          <SheetTitle>Command Center</SheetTitle>
+          <SheetDescription>Create tasks, meetings, leads, spending records, proposals, ideas, and follow-ups from one instruction.</SheetDescription>
         </SheetHeader>
         <div className="px-4 pb-4">{content}</div>
       </SheetContent>

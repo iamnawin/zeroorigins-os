@@ -418,6 +418,7 @@ export interface FinanceTransaction {
   ai_workspace_app_id?: string
   related_vertical_id?: string
   date?: string
+  paid_by?: string
   due_date?: string
   paid_at?: string
   invoice_url?: string

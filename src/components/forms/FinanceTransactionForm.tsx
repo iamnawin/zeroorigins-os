@@ -50,6 +50,7 @@ export default function FinanceTransactionForm({
     customer_id: initialData?.customer_id ?? '',
     ai_workspace_app_id: initialData?.ai_workspace_app_id ?? '',
     date: initialData?.date ?? new Date().toISOString().slice(0, 10),
+    paid_by: initialData?.paid_by ?? '',
     due_date: initialData?.due_date ?? '',
     paid_at: initialData?.paid_at ?? '',
     invoice_url: initialData?.invoice_url ?? '',
@@ -172,6 +173,10 @@ export default function FinanceTransactionForm({
               <div className="space-y-2">
                 <Label>Spend Date</Label>
                 <Input type="date" value={form.date} onChange={set('date')} />
+              </div>
+              <div className="space-y-2">
+                <Label>Paid By</Label>
+                <Input value={form.paid_by} onChange={set('paid_by')} placeholder="Naveen, Srikar, partner..." />
               </div>
               <div className="space-y-2">
                 <Label>Due Date</Label>
