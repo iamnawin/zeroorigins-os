@@ -78,12 +78,7 @@ export function AiAssistPanel({
       }
       if (result.data) {
         setResponse(result.data)
-        const primaryHref = result.data.records.length === 1 ? result.data.records[0]?.href : undefined
-        if (primaryHref) {
-          router.push(primaryHref)
-        } else {
-          router.refresh()
-        }
+        router.refresh()
       }
     })
   }
