@@ -18,6 +18,10 @@ export type GoogleCalendarEventResult = {
   meetingLink: string | null
 }
 
+function isEmailAttendee(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
 async function getGoogleCalendarAccessToken(supabase: SupabaseLike, userId: string) {
   const { data: tokenRow, error } = await supabase
     .from('google_tokens')
@@ -86,7 +90,7 @@ export async function createGoogleCalendarEvent(
         location: input.meeting_link || undefined,
         start: { dateTime: start.toISOString() },
         end: { dateTime: end.toISOString() },
-        attendees: input.attendees.map(email => ({ email })),
+        attendees: input.attendees.filter(isEmailAttendee).map(email => ({ email })),
         conferenceData: input.meeting_link
           ? undefined
           : { createRequest: { requestId: `zeroorigins-${crypto.randomUUID()}` } },

@@ -26,7 +26,7 @@ test('Google Calendar sync writes only columns and values accepted by meetings s
   assert.match(route, /agenda:\s*event\.description/)
   assert.doesNotMatch(route, /\.maybeSingle\(\)/)
   assert.match(route, /\.limit\(1\)/)
-  assert.match(button, /data\.details/)
+  assert.match(button, /data\.error/)
 })
 
 test('Google Calendar OAuth requests event write access and records profile readiness', () => {
@@ -41,14 +41,22 @@ test('Google Calendar OAuth requests event write access and records profile read
 
 test('meeting server action creates a Google event when Google Calendar source is selected', () => {
   const actions = read('src/lib/actions/internal-resources.ts')
+  const aiAssist = read('src/lib/actions/ai-assist.ts')
   assert.ok(exists('src/lib/google/calendar.ts'), 'Google Calendar helper should exist')
 
   const googleCalendar = read('src/lib/google/calendar.ts')
 
   assert.match(actions, /createGoogleCalendarEvent/)
-  assert.match(actions, /payload\.source === 'google_calendar'/)
+  assert.match(actions, /google_tokens/)
   assert.match(actions, /payload\.calendar_event_id = googleEvent\.calendarEventId/)
   assert.match(actions, /payload\.meeting_link = googleEvent\.meetingLink/)
+  assert.match(aiAssist, /createGoogleCalendarEvent/, 'Command Center meeting creation must also push to Google Calendar.')
+  assert.match(aiAssist, /google_tokens/, 'Command Center should check whether the user connected Google Calendar.')
+  assert.match(aiAssist, /meetingInsert\.source = 'google_calendar'/, 'Command Center should mark Google-created meetings as google_calendar.')
+  assert.match(aiAssist, /meetingInsert\.calendar_event_id = googleEvent\.calendarEventId/, 'Command Center should persist the Google event id when schema supports it.')
+  assert.match(aiAssist, /Google Calendar sync failed/, 'Command Center should warn when Google Calendar sync fails after local scheduling.')
+  assert.match(aiAssist, /Google Calendar is not connected/, 'Command Center should warn when a meeting is only saved locally.')
   assert.match(googleCalendar, /conferenceDataVersion/)
   assert.match(googleCalendar, /sendUpdates/)
+  assert.match(googleCalendar, /isEmailAttendee/, 'Google helper should filter non-email attendee names before calling Google.')
 })

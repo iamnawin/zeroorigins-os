@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { callTogetherChat, parseJsonObject } from '@/lib/ai/together-client'
+import { createGoogleCalendarEvent } from '@/lib/google/calendar'
 import {
   ZO_AGENT_CONFIRMABLE_INTENTS,
   ZO_AGENT_INTENT_MODES,
@@ -542,10 +543,14 @@ export async function runAiAssistCommand(input: AiAssistDraftInput): Promise<AiA
 
       if (!draft.data.id || !draft.data.output.requires_confirmation) continue
 
+      const warningCountBeforeConfirm = draft.data.output.warnings?.length ?? 0
       const confirmed = await confirmAiAssistDraft(draft.data.id, draft.data.output)
       if (confirmed.error || !confirmed.data) {
         warnings.push(confirmed.error || `Command Center could not create ${draft.data.output.intent}.`)
         continue
+      }
+      if ((draft.data.output.warnings?.length ?? 0) > warningCountBeforeConfirm) {
+        warnings.push(...(draft.data.output.warnings ?? []).slice(warningCountBeforeConfirm))
       }
 
       records.push({
@@ -607,7 +612,7 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       links.related_task_id = data.id
       href = `/internal/tasks/${data.id}`
     } else if (intent === 'schedule_meeting') {
-      const meetingInsert = {
+      const meetingInsert: Record<string, unknown> = {
         title: requiredInputText(asString(draft.meeting_title) || output.title || 'Command Center meeting'),
         scheduled_at: firstDateTime(asString(draft.date), asString(draft.start_time)),
         duration_minutes: 30,
@@ -621,6 +626,42 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
         owner_id: user.id,
         created_by: user.id,
       }
+
+      const { data: googleToken } = await mutationSupabase
+        .from('google_tokens')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (googleToken) {
+        try {
+          const googleEvent = await createGoogleCalendarEvent(mutationSupabase, user.id, {
+            title: String(meetingInsert.title),
+            scheduled_at: String(meetingInsert.scheduled_at),
+            duration_minutes: Number(meetingInsert.duration_minutes),
+            attendees: asStringArray(meetingInsert.attendees),
+            agenda: asString(meetingInsert.agenda),
+            notes: asString(meetingInsert.notes),
+            meeting_link: null,
+          })
+          meetingInsert.source = 'google_calendar'
+          meetingInsert.calendar_event_id = googleEvent.calendarEventId
+          meetingInsert.meeting_link = googleEvent.meetingLink
+          meetingInsert.sync_status = 'ready'
+        } catch {
+          meetingInsert.sync_status = 'error'
+          output.warnings = [
+            ...(output.warnings ?? []),
+            'Google Calendar sync failed, so Command Center saved this as a local meeting only.',
+          ]
+        }
+      } else {
+        output.warnings = [
+          ...(output.warnings ?? []),
+          'Google Calendar is not connected, so Command Center saved this as a local meeting only.',
+        ]
+      }
+
       const { data, error: createError } = await mutationSupabase
         .from('meetings')
         .insert(meetingInsert)
