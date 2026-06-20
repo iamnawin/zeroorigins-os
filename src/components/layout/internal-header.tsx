@@ -35,6 +35,7 @@ import { Button } from '@/components/ui/button'
 import { signOut } from '@/lib/actions/auth'
 import { cn } from '@/lib/utils'
 import { filterInternalNavGroups } from '@/lib/internal-navigation'
+import { NotificationBell, type NotificationBellItem } from '@/components/notifications/notification-bell'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +58,7 @@ interface InternalHeaderProps {
   email?: string
   fullName?: string | null
   role?: Role
+  notifications?: NotificationBellItem[]
 }
 
 const quickAddLinks = [
@@ -89,7 +91,7 @@ const ICONS: Record<string, LucideIcon> = {
   Workflow,
 }
 
-export function InternalHeader({ email, fullName, role }: InternalHeaderProps) {
+export function InternalHeader({ email, fullName, role, notifications = [] }: InternalHeaderProps) {
   const [query, setQuery] = useState('')
   const pathname = usePathname()
   const displayName = fullName || email?.split('@')[0] || 'Account'
@@ -160,6 +162,8 @@ export function InternalHeader({ email, fullName, role }: InternalHeaderProps) {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <NotificationBell notifications={notifications} />
 
         <Link href="/internal/automation?tab=calendar-sync" className="ml-auto sm:ml-0">
           <Button size="sm" variant="outline" className="shrink-0">

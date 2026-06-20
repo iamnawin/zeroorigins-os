@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import {
   ArrowRight,
+  Bell,
   Bot,
   BriefcaseBusiness,
   CalendarDays,
@@ -232,6 +233,7 @@ export default async function ControlRoomPage() {
     aiRes,
     knowledgeRes,
     radarRes,
+    notificationRes,
   ] = await Promise.all([
     supabase.from('leads').select('*').not('status', 'in', '("lost","archived")').order('created_at', { ascending: false }).limit(20),
     supabase.from('deals').select('*').not('stage', 'in', '("lost")').order('created_at', { ascending: false }).limit(20),
@@ -249,6 +251,15 @@ export default async function ControlRoomPage() {
       .not('status', 'in', '(ignored,archived)')
       .order('captured_at', { ascending: false })
       .limit(24),
+    user
+      ? supabase
+        .from('notification_events')
+        .select('id, title, message, severity, status, action_url, created_at')
+        .eq('user_id', user.id)
+        .eq('status', 'unread')
+        .order('created_at', { ascending: false })
+        .limit(6)
+      : Promise.resolve({ data: [] }),
   ])
 
   const leads = (leadsRes.data ?? []) as Lead[]
@@ -262,6 +273,15 @@ export default async function ControlRoomPage() {
   const financeRows = (financeRes.data ?? []) as FinanceTransaction[]
   const aiRequests = (aiRes.data ?? []) as AiAssistRequest[]
   const radarItems = (radarRes.data ?? []) as unknown as RadarItem[]
+  const notifications = (notificationRes.data ?? []) as {
+    id: string
+    title: string
+    message?: string | null
+    severity: string
+    status: string
+    action_url?: string | null
+    created_at: string
+  }[]
 
   const now = new Date()
   const today = now.toISOString().slice(0, 10)
@@ -291,6 +311,32 @@ export default async function ControlRoomPage() {
     .sort((a, b) => radarSignalScore(b) - radarSignalScore(a))
     .slice(0, 4)
   const urgentRadarCount = hotRadarSignals.filter(item => radarSignalScore(item) >= 8).length
+  const commandQueue = [
+    ...notifications.map(item => ({
+      id: item.id,
+      label: item.title,
+      subtext: item.message || 'Notification needs attention',
+      href: item.action_url || '/internal/tasks',
+      tone: item.severity === 'urgent' ? 'urgent' : item.severity === 'warning' ? 'attention' : 'steady',
+      when: formatDateTime(item.created_at),
+    })),
+    ...overdueTasks.slice(0, 3).map(item => ({
+      id: item.id,
+      label: item.title,
+      subtext: 'Overdue task',
+      href: `/internal/tasks/${item.id}`,
+      tone: 'urgent',
+      when: item.due_at ? formatDateTime(item.due_at) : formatDate(item.due_date),
+    })),
+    ...dueTodayTasks.slice(0, 3).map(item => ({
+      id: item.id,
+      label: item.title,
+      subtext: item.reminder_at ? 'Reminder today' : 'Due today',
+      href: `/internal/tasks/${item.id}`,
+      tone: item.priority === 'urgent' ? 'urgent' : item.priority === 'high' ? 'attention' : 'steady',
+      when: item.reminder_at ? formatDateTime(item.reminder_at) : item.due_at ? formatDateTime(item.due_at) : formatDate(item.due_date),
+    })),
+  ].slice(0, 6)
 
   const hour = now.getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -437,6 +483,42 @@ export default async function ControlRoomPage() {
 
       {/* ── 2. ZO_AGENT COMMAND BAR ─────────────────────────────── */}
       {/* AiAssistPanel embedded — AiAssistPanel embedded */}
+      <section className="rounded-xl border border-zo-purple/20 bg-card p-3 sm:p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Bell className="h-4 w-4 text-zo-purple" />
+            <div>
+              <h2 className="text-base font-semibold text-white">Today&apos;s Command Queue</h2>
+              <p className="text-xs text-muted-foreground">Due work, reminders, and unread operating notifications.</p>
+            </div>
+          </div>
+          <Link href="/internal/tasks" className="inline-flex items-center gap-1 text-xs font-medium text-zo-purple hover:text-zo-purple-2">
+            Open tasks <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+        {commandQueue.length > 0 ? (
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+            {commandQueue.map(item => (
+              <Link key={`${item.href}-${item.id}`} href={item.href} className={`rounded-lg border bg-white/[0.025] p-3 transition ${TONE[item.tone as keyof typeof TONE].card}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 truncate text-sm font-semibold text-white">{item.label}</p>
+                  <span className="shrink-0 text-[11px] text-muted-foreground">{item.when}</span>
+                </div>
+                <p className={`mt-1 line-clamp-2 text-xs ${TONE[item.tone as keyof typeof TONE].sub}`}>{item.subtext}</p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <EmptySection
+            icon={Bell}
+            title="Nothing is due right now"
+            description="Create a task reminder or ask Command Center to plan your next operating move."
+            href="/internal/tasks/new"
+            action="Create reminder"
+          />
+        )}
+      </section>
+
       <section className="rounded-xl border border-zo-purple/25 bg-card p-3 sm:p-4">
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">

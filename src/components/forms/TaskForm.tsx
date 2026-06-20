@@ -21,6 +21,10 @@ export default function TaskForm({ mode, initialData }: Props) {
   const [description, setDescription] = useState(initialData?.description ?? '')
   const [projectId, setProjectId] = useState(initialData?.project_id ?? '')
   const [status, setStatus] = useState<string>(initialData?.status ?? 'todo')
+  const [priority, setPriority] = useState<string>(String(initialData?.priority ?? 'normal'))
+  const [dueAt, setDueAt] = useState(toDatetimeLocal(String(initialData?.due_at ?? initialData?.due_date ?? '')))
+  const [reminderEnabled, setReminderEnabled] = useState(Boolean(initialData?.reminder_enabled))
+  const [reminderAt, setReminderAt] = useState(toDatetimeLocal(String(initialData?.reminder_at ?? '')))
   const [projects, setProjects] = useState<{ id: string; title: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -43,6 +47,10 @@ export default function TaskForm({ mode, initialData }: Props) {
         description,
         project_id: projectId || null,
         status: status as Task['status'],
+        priority: priority as 'low' | 'normal' | 'high' | 'urgent',
+        due_at: fromDatetimeLocal(dueAt),
+        reminder_enabled: reminderEnabled,
+        reminder_at: reminderEnabled ? fromDatetimeLocal(reminderAt || dueAt) : null,
       }
       const result = mode === 'create'
         ? await createTask(payload)
@@ -63,7 +71,7 @@ export default function TaskForm({ mode, initialData }: Props) {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-zo-chrome">{mode === 'create' ? 'New Task' : 'Edit Task'}</CardTitle>
@@ -78,12 +86,21 @@ export default function TaskForm({ mode, initialData }: Props) {
               <Label>Description</Label>
               <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Details..." />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Project (optional)</Label>
                 <select value={projectId} onChange={e => setProjectId(e.target.value)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
                   <option value="">No project</option>
                   {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <select value={priority} onChange={e => setPriority(e.target.value)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="low">Low</option>
                 </select>
               </div>
               {mode === 'edit' && (
@@ -94,6 +111,31 @@ export default function TaskForm({ mode, initialData }: Props) {
                   </select>
                 </div>
               )}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Due date and time</Label>
+                <Input type="datetime-local" value={dueAt} onChange={e => setDueAt(e.target.value)} />
+              </div>
+              <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={reminderEnabled}
+                    onChange={e => setReminderEnabled(e.target.checked)}
+                    className="h-4 w-4 accent-zo-purple"
+                  />
+                  Reminder
+                </label>
+                <Input
+                  type="datetime-local"
+                  value={reminderAt || dueAt}
+                  onChange={e => setReminderAt(e.target.value)}
+                  disabled={!reminderEnabled}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground">In-app notification for now. Browser and Telegram fallback come later.</p>
+              </div>
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
             <div className="flex gap-3">
@@ -107,4 +149,20 @@ export default function TaskForm({ mode, initialData }: Props) {
       </Card>
     </div>
   )
+}
+
+function toDatetimeLocal(value: string) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value.length === 10 ? `${value}T09:00` : ''
+  const offset = date.getTimezoneOffset()
+  const local = new Date(date.getTime() - offset * 60_000)
+  return local.toISOString().slice(0, 16)
+}
+
+function fromDatetimeLocal(value: string) {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toISOString()
 }

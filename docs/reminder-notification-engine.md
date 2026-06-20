@@ -2,7 +2,7 @@
 
 ## Current Status
 
-The reminder and notification engine has not been built yet.
+Phase 1 foundation is implemented in the app code.
 
 What exists today:
 
@@ -10,18 +10,19 @@ What exists today:
 - Meeting creation can send email notifications through `src/lib/email/notifications.ts` when Resend is configured.
 - Leads and partners have automation metadata fields for future n8n workflows.
 - Automation UI mentions Telegram alerts, but that is status copy only.
+- `task_reminders`, `notification_events`, and `notification_preferences` are defined in `supabase/migrations/025_reminder_notification_engine.sql`.
+- Task create/edit supports priority, due date/time, and one in-app reminder.
+- Command Center task creation routes reminders into the same task reminder helper when a due/reminder time is present.
+- A protected `GET /api/reminders/process` route creates in-app notification events for due reminders.
+- The internal header has a notification bell with unread count, read-all, dismiss, and in-app sound while the app is open.
+- Control Room shows `Today's Command Queue` above Radar Headlines.
 
 What is missing:
 
-- Task reminder fields beyond the existing `tasks.due_date`.
-- Reminder scheduling table.
-- Notification event table for the bell/feed.
-- Notification preferences.
 - Browser push subscriptions.
-- Global notification bell and panel.
-- Due/overdue reminder processing cron.
-- In-app sound.
+- Vercel Cron configuration for invoking `/api/reminders/process`.
 - Telegram/WhatsApp fallback integration.
+- Complex recurrence beyond the saved `repeat_rule` field.
 
 ## Product Principle
 

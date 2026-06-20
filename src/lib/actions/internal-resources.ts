@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createGoogleCalendarEvent } from '@/lib/google/calendar'
 import { sendMeetingNotification } from '@/lib/email/notifications'
+import { completeTaskReminders, syncTaskReminder } from '@/lib/notifications/reminders'
 import type {
   AIAppCategory,
   AIAppStatus,
@@ -200,6 +201,11 @@ export type TaskFormInput = {
   project_id?: string | null
   status?: TaskStatus
   related_vertical_id?: string | null
+  priority?: 'low' | 'normal' | 'high' | 'urgent'
+  due_at?: string | null
+  reminder_enabled?: boolean | null
+  reminder_at?: string | null
+  repeat_rule?: string | null
 }
 
 export type BusinessVerticalFormInput = {
@@ -1125,6 +1131,8 @@ export async function createTask(input: TaskFormInput): Promise<ActionResult> {
   try {
     const supabase = await createClient()
     const user = await requireInternalUser(supabase)
+    const dueAt = optionalText(input.due_at)
+    const reminderAt = optionalText(input.reminder_at)
     const { data, error } = await supabase
       .from('tasks')
       .insert({
@@ -1133,6 +1141,12 @@ export async function createTask(input: TaskFormInput): Promise<ActionResult> {
         project_id: optionalText(input.project_id),
         status: 'todo',
         related_vertical_id: optionalText(input.related_vertical_id),
+        priority: input.priority ?? 'normal',
+        due_at: dueAt,
+        due_date: dueAt ? dueAt.slice(0, 10) : null,
+        reminder_enabled: Boolean(input.reminder_enabled && (reminderAt || dueAt)),
+        reminder_at: input.reminder_enabled ? reminderAt || dueAt : null,
+        repeat_rule: optionalText(input.repeat_rule),
         owner_id: user.id,
         created_by: user.id,
       })
@@ -1140,6 +1154,17 @@ export async function createTask(input: TaskFormInput): Promise<ActionResult> {
       .single()
 
     if (error) throw error
+    await syncTaskReminder(supabase, {
+      taskId: data.id,
+      userId: user.id,
+      title: input.title,
+      description: input.description,
+      priority: input.priority,
+      dueAt,
+      reminderEnabled: input.reminder_enabled,
+      reminderAt,
+      repeatRule: input.repeat_rule,
+    })
     revalidateResource(['/internal/tasks'])
     return { id: data.id }
   } catch (error) {
@@ -1150,19 +1175,45 @@ export async function createTask(input: TaskFormInput): Promise<ActionResult> {
 export async function updateTask(id: string, input: TaskFormInput): Promise<ActionResult> {
   try {
     const supabase = await createClient()
-    await requireInternalUser(supabase)
+    const user = await requireInternalUser(supabase)
+    const dueAt = optionalText(input.due_at)
+    const reminderAt = optionalText(input.reminder_at)
+    const status = input.status ?? 'todo'
     const { error } = await supabase
       .from('tasks')
       .update({
         title: requiredText(input.title, 'Title'),
         description: optionalText(input.description),
         project_id: optionalText(input.project_id),
-        status: input.status ?? 'todo',
+        status,
         related_vertical_id: optionalText(input.related_vertical_id),
+        priority: input.priority ?? 'normal',
+        due_at: dueAt,
+        due_date: dueAt ? dueAt.slice(0, 10) : null,
+        reminder_enabled: Boolean(input.reminder_enabled && (reminderAt || dueAt)),
+        reminder_at: input.reminder_enabled ? reminderAt || dueAt : null,
+        repeat_rule: optionalText(input.repeat_rule),
+        completed_at: status === 'done' ? new Date().toISOString() : null,
+        cancelled_at: status === 'cancelled' ? new Date().toISOString() : null,
       })
       .eq('id', id)
 
     if (error) throw error
+    if (status === 'done' || status === 'cancelled') {
+      await completeTaskReminders(supabase, id)
+    } else {
+      await syncTaskReminder(supabase, {
+        taskId: id,
+        userId: user.id,
+        title: input.title,
+        description: input.description,
+        priority: input.priority,
+        dueAt,
+        reminderEnabled: input.reminder_enabled,
+        reminderAt,
+        repeatRule: input.repeat_rule,
+      })
+    }
     revalidateResource(['/internal/tasks', `/internal/tasks/${id}`])
     return { id }
   } catch (error) {

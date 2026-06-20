@@ -10,6 +10,7 @@ import {
 } from '@/lib/ai/assist-intents'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { syncTaskReminder } from '@/lib/notifications/reminders'
 import { requireInternalUser } from './internal-resources'
 import {
   AI_ASSIST_INTENTS,
@@ -137,6 +138,11 @@ function pickNormalizedAllowed<T extends string>(
 ): T {
   const candidate = asString(value).toLowerCase().replace(/[\s-]+/g, '_')
   return aliases[candidate] ?? (allowed.includes(candidate as T) ? candidate as T : fallback)
+}
+
+function normalizeTaskPriority(value: string) {
+  if (value === 'low' || value === 'high' || value === 'urgent') return value
+  return 'normal'
 }
 
 function slugify(value: string) {
@@ -593,12 +599,21 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
       ?? await findVerticalId(mutationSupabase, asString(draft.related_vertical) || asString(draft.vertical))
 
     if (intent === 'create_task' || intent === 'create_followup') {
+      const dateInput = asString(draft.due_date) || asString(draft.date)
+      const timeInput = asString(draft.due_time) || asString(draft.time)
+      const reminderInput = asString(draft.reminder_at)
+      const dueAt = dateInput || timeInput ? firstDateTime(dateInput, timeInput) : null
+      const priority = normalizeTaskPriority(asString(draft.priority))
       const { data, error: createError } = await mutationSupabase
         .from('tasks')
         .insert({
           title: requiredInputText(asString(draft.task_title) || asString(draft.subject) || output.title || 'Command Center task'),
           description: asString(draft.description) || asString(draft.message) || request.input_text,
-          due_date: asString(draft.due_date) || null,
+          due_date: dueAt ? dueAt.slice(0, 10) : asString(draft.due_date) || null,
+          due_at: dueAt,
+          priority,
+          reminder_enabled: Boolean(dueAt || reminderInput),
+          reminder_at: reminderInput || dueAt,
           status: 'todo',
           related_vertical_id: relatedVerticalId,
           owner_id: user.id,
@@ -608,6 +623,16 @@ export async function confirmAiAssistDraft(requestId: string, editedOutput?: ZoA
         .single()
 
       if (createError) throw createError
+      await syncTaskReminder(mutationSupabase, {
+        taskId: data.id,
+        userId: user.id,
+        title: requiredInputText(asString(draft.task_title) || asString(draft.subject) || output.title || 'Command Center task'),
+        description: asString(draft.description) || asString(draft.message) || request.input_text,
+        priority,
+        dueAt,
+        reminderEnabled: Boolean(dueAt || reminderInput),
+        reminderAt: reminderInput || dueAt,
+      })
       createdId = data.id
       links.related_task_id = data.id
       href = `/internal/tasks/${data.id}`

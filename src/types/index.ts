@@ -206,6 +206,15 @@ export interface Task {
   created_by: string
   customer_visible: boolean
   due_date?: string
+  due_at?: string
+  priority?: 'low' | 'normal' | 'high' | 'urgent'
+  reminder_enabled?: boolean
+  reminder_at?: string
+  repeat_rule?: string
+  completed_at?: string
+  cancelled_at?: string
+  related_record_type?: string
+  related_record_id?: string
   created_at: string
   updated_at: string
 }

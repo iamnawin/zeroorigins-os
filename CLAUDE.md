@@ -212,7 +212,7 @@ When adding new email notifications: follow the same fire-and-forget pattern (`.
 
 ### Reminder and notification engine
 
-The full reminder/notification engine is planned, not built. The repo currently has a legacy `notifications` table and meeting email notifications, but it does not yet have task reminder scheduling, notification bell, browser push subscriptions, in-app sound, or Telegram/n8n fallback wiring.
+Phase 1 reminder/notification foundation is implemented. The repo now has task reminder scheduling tables, notification events, task reminder fields, an in-app notification bell with sound, and a protected `/api/reminders/process` route. Browser push subscriptions, Vercel Cron configuration, complex recurrence, and Telegram/n8n fallback wiring are still future work.
 
 ZeroOrigins OS should own business tasks, reminders, and notification history. External channels such as Telegram, WhatsApp, email, browser push, and n8n are fallback/delivery channels, not the source of truth. See `docs/reminder-notification-engine.md` before implementing this area.
 

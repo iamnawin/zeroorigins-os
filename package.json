@@ -19,7 +19,8 @@
     "test:crm-ia-ai": "node scripts/test-ia-ai-visibility-contract.mjs",
     "test:control-room-radar": "node scripts/test-control-room-radar-contract.mjs",
     "test:radar-mobile": "node scripts/test-radar-mobile-contract.mjs",
-    "test:zo-agent-actions": "node scripts/test-zo-agent-actions-contract.mjs"
+    "test:zo-agent-actions": "node scripts/test-zo-agent-actions-contract.mjs",
+    "test:notification-engine": "node scripts/test-notification-engine-contract.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
