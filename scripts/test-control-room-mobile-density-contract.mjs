@@ -11,6 +11,10 @@ assert.match(controlRoom, /rounded-xl border border-zo-purple\/20/, 'Hero should
 assert.match(controlRoom, /text-2xl font-bold tracking-tight text-white sm:text-3xl/, 'Hero headline should not use desktop-scale type on phones.')
 assert.match(controlRoom, /grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-6/, 'Business Pulse should fit two compact metrics per mobile row.')
 assert.match(controlRoom, /Radar Headlines/, 'Radar news section should use a plain readable heading.')
+assert.ok(
+  controlRoom.indexOf('Radar Headlines') < controlRoom.indexOf('Command Center</h2>'),
+  'Radar Headlines should appear above the embedded Command Center.'
+)
 
 assert.match(assistPanel, /overflow-x-auto/, 'Command Center quick actions should scroll horizontally on phones.')
 assert.match(assistPanel, /rows=\{embedded \? 3 : 5\}/, 'Embedded Command Center should use a shorter input on dense dashboards.')

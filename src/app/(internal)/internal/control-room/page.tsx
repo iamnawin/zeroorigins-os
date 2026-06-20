@@ -437,22 +437,6 @@ export default async function ControlRoomPage() {
 
       {/* ── 2. ZO_AGENT COMMAND BAR ─────────────────────────────── */}
       {/* AiAssistPanel embedded — AiAssistPanel embedded */}
-      <section className="rounded-xl border border-zo-purple/25 bg-[linear-gradient(135deg,rgba(139,92,246,0.07),rgba(0,0,0,0)_60%)] p-3 shadow-lg shadow-black/20 sm:p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zo-purple/15">
-              <Sparkles className="h-3.5 w-3.5 text-zo-purple" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-white">Command Center</h2>
-              <p className="text-xs text-muted-foreground">Create, schedule, log, draft, or search from one instruction.</p>
-            </div>
-          </div>
-          <span className="hidden text-[10px] text-muted-foreground/50 sm:block">Powered by Together AI</span>
-        </div>
-        <AiAssistPanel embedded showHeader={false} />
-      </section>
-
       <section className="rounded-xl border border-zo-purple/25 bg-card p-3 sm:p-4">
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
@@ -485,6 +469,22 @@ export default async function ControlRoomPage() {
       </section>
 
       {/* ── 3. BUSINESS PULSE ───────────────────────────────────── */}
+      <section className="rounded-xl border border-zo-purple/25 bg-[linear-gradient(135deg,rgba(139,92,246,0.07),rgba(0,0,0,0)_60%)] p-3 shadow-lg shadow-black/20 sm:p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zo-purple/15">
+              <Sparkles className="h-3.5 w-3.5 text-zo-purple" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-white">Command Center</h2>
+              <p className="text-xs text-muted-foreground">Create, schedule, log, draft, or search from one instruction.</p>
+            </div>
+          </div>
+          <span className="hidden text-[10px] text-muted-foreground/50 sm:block">Powered by Together AI</span>
+        </div>
+        <AiAssistPanel embedded showHeader={false} />
+      </section>
+
       <AccordionPanel title="Business Pulse" icon={TrendingUp} summary="Live business signals" defaultOpen>
         <div className="hidden">
           <Zap className="h-4 w-4 text-zo-purple" />
