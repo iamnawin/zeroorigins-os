@@ -318,19 +318,19 @@ export default async function ControlRoomPage() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-5">
 
       {/* ── 1. AI BRIEFING HERO ─────────────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-zo-purple/20 bg-[radial-gradient(ellipse_90%_55%_at_50%_-15%,rgba(139,92,246,0.14),transparent_70%),linear-gradient(180deg,rgba(14,14,18,1),rgba(8,8,10,1))] p-6 shadow-2xl shadow-black/50 sm:p-8">
-        <div className="grid gap-6 xl:grid-cols-[1fr_17rem]">
+      <section className="overflow-hidden rounded-xl border border-zo-purple/20 bg-[radial-gradient(ellipse_90%_55%_at_50%_-15%,rgba(139,92,246,0.14),transparent_70%),linear-gradient(180deg,rgba(14,14,18,1),rgba(8,8,10,1))] p-4 shadow-xl shadow-black/40 sm:p-5 xl:p-6">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_16rem]">
 
           {/* Left: briefing content */}
-          <div className="space-y-5">
+          <div className="space-y-4">
             {/* Status bar */}
             <div className="flex flex-wrap items-center gap-2.5">
               <Badge variant="outline" className="gap-1.5 border-zo-purple/35 bg-zo-purple/10 text-zo-purple-2">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                Command Center · Live
+                Command Center - Live
               </Badge>
               <span className="text-xs text-muted-foreground">{formatDateTime(now.toISOString())}</span>
             </div>
@@ -338,10 +338,10 @@ export default async function ControlRoomPage() {
             {/* Main heading */}
             <div>
               <p className="text-sm font-medium text-zo-purple-2">{greeting}, {displayName}</p>
-              <h1 className="mt-1.5 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                 {totalAttention > 0 ? 'Here is what matters today.' : 'Your workspace is ready.'}
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">{briefingSummary}</p>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">{briefingSummary}</p>
             </div>
 
             {/* Attention signal chips */}
@@ -375,12 +375,12 @@ export default async function ControlRoomPage() {
             )}
 
             {/* Suggested moves */}
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {moves.slice(0, 3).map(move => (
                 <Link
                   key={move.href}
                   href={move.href}
-                  className={`group rounded-xl border bg-white/[0.025] p-3.5 transition ${TONE[move.tone].card}`}
+                  className={`group rounded-lg border bg-white/[0.025] p-3 transition ${TONE[move.tone].card}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${TONE[move.tone].dot}`} />
@@ -407,19 +407,19 @@ export default async function ControlRoomPage() {
           </div>
 
           {/* Right: Agent readout */}
-          <aside className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-4">
-            <div className="mb-4 flex items-center gap-2">
+          <aside className="rounded-lg border border-white/[0.07] bg-white/[0.025] p-3">
+            <div className="mb-3 flex items-center gap-2">
               <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Agent Readout</p>
             </div>
-            <div className="space-y-3 text-sm">
+            <div className="space-y-2 text-sm">
               <ReadoutLine label="Attention signals" value={totalAttention > 0 ? plural(totalAttention, 'signal') : 'None'} highlight={totalAttention > 0} />
               <ReadoutLine label="Revenue motion" value={openDealValue + openProposalValue > 0 ? formatCurrency(openDealValue + openProposalValue) : '—'} />
               <ReadoutLine label="Business memory" value={knowledgeRes.count ? `${knowledgeRes.count} notes` : '—'} />
               <ReadoutLine label="This month spend" value={monthSpend > 0 ? formatCurrency(monthSpend) : '—'} />
             </div>
 
-            <div className="mt-5 space-y-1.5">
+            <div className="mt-3 space-y-1.5">
               {moves.slice(3).map(move => (
                 <Link
                   key={move.href}
@@ -437,15 +437,15 @@ export default async function ControlRoomPage() {
 
       {/* ── 2. ZO_AGENT COMMAND BAR ─────────────────────────────── */}
       {/* AiAssistPanel embedded — AiAssistPanel embedded */}
-      <section className="rounded-2xl border border-zo-purple/25 bg-[linear-gradient(135deg,rgba(139,92,246,0.07),rgba(0,0,0,0)_60%)] p-5 shadow-xl shadow-black/20">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <section className="rounded-xl border border-zo-purple/25 bg-[linear-gradient(135deg,rgba(139,92,246,0.07),rgba(0,0,0,0)_60%)] p-3 shadow-lg shadow-black/20 sm:p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zo-purple/15">
               <Sparkles className="h-3.5 w-3.5 text-zo-purple" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-white">Command Center</h2>
-              <p className="text-xs text-muted-foreground">Type or speak your next move — draft, create, or search</p>
+              <p className="text-xs text-muted-foreground">Create, schedule, log, draft, or search from one instruction.</p>
             </div>
           </div>
           <span className="hidden text-[10px] text-muted-foreground/50 sm:block">Powered by Together AI</span>
@@ -453,12 +453,12 @@ export default async function ControlRoomPage() {
         <AiAssistPanel embedded showHeader={false} />
       </section>
 
-      <section className="rounded-2xl border border-zo-purple/25 bg-card p-4 sm:p-5">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <section className="rounded-xl border border-zo-purple/25 bg-card p-3 sm:p-4">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-zo-purple" />
             <div>
-              <h2 className="text-base font-semibold text-white">Headlines to Catch</h2>
+              <h2 className="text-base font-semibold text-white">Radar Headlines</h2>
               <p className="text-xs text-muted-foreground">Ranked by Radar score across news, AI updates, funding, tools, and events.</p>
             </div>
           </div>
@@ -468,7 +468,7 @@ export default async function ControlRoomPage() {
         </div>
 
         {hotRadarSignals.length > 0 ? (
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-2 lg:grid-cols-2">
             {hotRadarSignals.map(item => (
               <HotRadarSignalCard key={item.id} item={item} />
             ))}
@@ -491,7 +491,7 @@ export default async function ControlRoomPage() {
           <h2 className="text-sm font-semibold">Business Pulse</h2>
           <span className="text-xs text-muted-foreground">· live signals</span>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-6">
           <PulseCard icon={Users} label="Active leads" value={leads.length} href="/internal/leads" empty={leads.length === 0} emptyAction="Add a lead" />
           <PulseCard icon={CheckSquare} label="Open tasks" value={tasks.length} href="/internal/tasks" urgent={overdueTasks.length > 0} />
           <PulseCard icon={BriefcaseBusiness} label="Active projects" value={projects.length} href="/internal/projects" empty={projects.length === 0} emptyAction="Start project" />
@@ -502,10 +502,10 @@ export default async function ControlRoomPage() {
       </AccordionPanel>
 
       {/* ── 4. MAIN GRID ────────────────────────────────────────── */}
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <main className="space-y-5">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <main className="space-y-4">
 
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             {/* Today's Priorities */}
             <AccordionPanel title="Today's Priorities" icon={Target} actionHref="/internal/tasks" actionLabel="Open work" summary={plural(dueTodayTasks.length + overdueTasks.length, 'task')} defaultOpen>
               <PriorityRow icon={CheckSquare} label="Due tasks" value={plural(dueTodayTasks.length + overdueTasks.length, 'task')} href="/internal/tasks" urgent={overdueTasks.length > 0} />
@@ -578,7 +578,7 @@ export default async function ControlRoomPage() {
         </main>
 
         {/* ── Right aside ─── */}
-        <aside className="space-y-5">
+        <aside className="space-y-4">
 
           {/* Business Memory */}
           <AccordionPanel title="Agent Activity" icon={Bot} actionHref="/internal/automation" actionLabel="Open automation" summary={aiRequests.length > 0 ? plural(aiRequests.length, 'draft') : 'No drafts'}>
@@ -625,7 +625,7 @@ export default async function ControlRoomPage() {
 
 function ReadoutLine({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-2.5 last:border-0 last:pb-0">
+    <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-2 last:border-0 last:pb-0">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className={`text-xs font-semibold ${highlight ? 'text-amber-300' : 'text-white'}`}>{value}</span>
     </div>
@@ -641,7 +641,7 @@ function PulseCard({
   return (
     <Link
       href={href}
-      className={`group rounded-xl border p-3.5 transition sm:p-4 ${
+      className={`group rounded-lg border p-3 transition ${
         urgent
           ? 'border-amber-500/25 bg-amber-500/[0.04] hover:border-amber-500/45'
           : 'border-border bg-card hover:border-zo-purple/40 hover:bg-zo-purple/[0.04]'
@@ -651,7 +651,7 @@ function PulseCard({
         <Icon className={`h-3.5 w-3.5 ${urgent ? 'text-amber-400' : 'text-zo-purple'}`} />
         <ArrowRight className="h-3 w-3 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
       </div>
-      <p className={`mt-3 text-2xl font-bold ${empty ? 'text-muted-foreground' : 'text-foreground'}`}>{value}</p>
+      <p className={`mt-2 text-xl font-bold sm:text-2xl ${empty ? 'text-muted-foreground' : 'text-foreground'}`}>{value}</p>
       <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
       {empty && emptyAction && (
         <p className="mt-1.5 flex items-center gap-1 text-xs text-zo-purple">
@@ -668,8 +668,8 @@ function AccordionPanel({
   title: string; icon: LucideIcon; actionHref?: string; actionLabel?: string; summary?: string; defaultOpen?: boolean; children: React.ReactNode;
 }) {
   return (
-    <details open={defaultOpen} className="group rounded-2xl border border-border bg-card">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 marker:hidden">
+    <details open={defaultOpen} className="group rounded-xl border border-border bg-card">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3 marker:hidden sm:p-4">
         <div className="flex min-w-0 items-center gap-2">
           <Icon className="h-3.5 w-3.5 shrink-0 text-zo-purple" />
           <div className="min-w-0">
@@ -686,7 +686,7 @@ function AccordionPanel({
           <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
         </div>
       </summary>
-      <div className="space-y-2.5 border-t border-border px-4 pb-4 pt-3">{children}</div>
+      <div className="space-y-2.5 border-t border-border px-3 pb-3 pt-3 sm:px-4 sm:pb-4">{children}</div>
     </details>
   )
 }
@@ -700,7 +700,7 @@ function HotRadarSignalCard({ item }: { item: RadarItem }) {
   return (
     <Link
       href={`/internal/radar/${item.id}`}
-      className="group rounded-xl border border-border bg-background/60 p-3.5 transition hover:border-zo-purple/40 hover:bg-zo-purple/[0.04]"
+      className="group rounded-lg border border-border bg-background/60 p-3 transition hover:border-zo-purple/40 hover:bg-zo-purple/[0.04]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -711,7 +711,7 @@ function HotRadarSignalCard({ item }: { item: RadarItem }) {
         </div>
         <span className={`shrink-0 rounded-full border px-2 py-1 text-xs font-semibold ${scoreTone}`}>{score}/10</span>
       </div>
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+      <div className="mt-2.5 flex items-center justify-between gap-3 border-t border-border pt-2.5">
         <span className="min-w-0 truncate text-[11px] text-muted-foreground">{sourceName}</span>
         <span className="shrink-0 text-[11px] text-muted-foreground">{formatDate(item.published_at || item.captured_at)}</span>
       </div>

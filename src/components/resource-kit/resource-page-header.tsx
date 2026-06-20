@@ -13,10 +13,10 @@ interface ResourcePageHeaderProps {
 
 export function ResourcePageHeader({ title, description, newHref, newLabel, showNew = true, action }: ResourcePageHeaderProps) {
   return (
-    <div className="flex flex-col gap-3 selection:bg-zo-purple/20 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 selection:bg-zo-purple/20 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <h1 className="text-xl font-bold text-zo-chrome">{title}</h1>
-        <p className="text-sm text-zo-muted">{description}</p>
+        <h1 className="text-lg font-bold text-zo-chrome sm:text-xl">{title}</h1>
+        <p className="text-xs text-zo-muted sm:text-sm">{description}</p>
       </div>
       {action ?? (showNew && newHref && (
         <Link href={newHref}>

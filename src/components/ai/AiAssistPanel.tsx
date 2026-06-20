@@ -87,14 +87,14 @@ export function AiAssistPanel({
 
   const content = (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-1.5">
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
         {ZO_AGENT_QUICK_ACTIONS.map(action => (
           <button
             key={action.intent}
             type="button"
             onClick={() => setIntent(prev => prev === action.intent ? undefined : action.intent)}
             className={cn(
-              'rounded-full border px-3 py-1 text-xs transition-colors',
+              'shrink-0 rounded-full border px-3 py-1 text-xs transition-colors',
               intent === action.intent
                 ? 'border-zo-purple bg-zo-purple/15 text-zo-purple-2'
                 : 'border-border text-muted-foreground hover:border-zo-purple/30 hover:text-foreground'
@@ -113,9 +113,9 @@ export function AiAssistPanel({
             runCommand()
           }
         }}
-        rows={embedded ? 4 : 5}
+        rows={embedded ? 3 : 5}
         placeholder="Tell Command Center what to create, schedule, log, draft, or search..."
-        className="resize-none text-sm"
+        className="min-h-24 resize-none text-sm leading-5 sm:min-h-28"
       />
 
       <div className="flex gap-2">

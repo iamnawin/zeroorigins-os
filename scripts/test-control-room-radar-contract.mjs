@@ -6,7 +6,7 @@ const source = readFileSync('src/app/(internal)/internal/control-room/page.tsx',
 assert.match(source, /from\('radar_items'\)/, 'Control Room must fetch Radar items for the home briefing.')
 assert.match(source, /hotRadarSignals/, 'Control Room must rank hot Radar signals for the home UI.')
 assert.match(source, /Math\.max\(.*relevance_score.*content_potential_score/s, 'Hot Radar signals must consider both relevance and content potential scores.')
-assert.match(source, /Headlines to Catch/, 'Control Room must show a readable Radar headline section on home.')
+assert.match(source, /Radar Headlines/, 'Control Room must show a readable Radar headline section on home.')
 assert.match(source, /Ranked by Radar score/, 'Radar home UI must explain why these news items are highlighted.')
 assert.match(source, /readableRadarHeadline/, 'Hot Radar cards must derive readable headlines instead of showing raw source titles.')
 assert.match(source, /humanizeRepoTitle/, 'GitHub repository Radar titles must be humanized for home headlines.')

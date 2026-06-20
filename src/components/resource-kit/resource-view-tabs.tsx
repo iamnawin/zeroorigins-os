@@ -14,12 +14,12 @@ export function ResourceViewTabs({ basePath, showAll, layout }: ResourceViewTabs
   return (
     <div className="flex gap-1 selection:bg-zo-purple/20">
       <Link href={activeHref}>
-        <span className={`text-xs px-3 py-1.5 rounded transition-all cursor-pointer font-bold uppercase tracking-widest ${!showAll ? 'text-zo-purple-2 bg-zo-purple/10 border border-zo-purple/20' : 'text-zo-muted hover:text-zo-chrome hover:bg-muted'}`}>
+        <span className={`cursor-pointer rounded px-3 py-1.5 text-xs font-bold uppercase transition-all ${!showAll ? 'border border-zo-purple/20 bg-zo-purple/10 text-zo-purple-2' : 'text-zo-muted hover:bg-muted hover:text-zo-chrome'}`}>
           Active
         </span>
       </Link>
       <Link href={allHref}>
-        <span className={`text-xs px-3 py-1.5 rounded transition-all cursor-pointer font-bold uppercase tracking-widest ${showAll ? 'text-zo-purple-2 bg-zo-purple/10 border border-zo-purple/20' : 'text-zo-muted hover:text-zo-chrome hover:bg-muted'}`}>
+        <span className={`cursor-pointer rounded px-3 py-1.5 text-xs font-bold uppercase transition-all ${showAll ? 'border border-zo-purple/20 bg-zo-purple/10 text-zo-purple-2' : 'text-zo-muted hover:bg-muted hover:text-zo-chrome'}`}>
           All
         </span>
       </Link>

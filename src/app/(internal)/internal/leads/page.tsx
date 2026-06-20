@@ -24,19 +24,19 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const { data: leads } = await query
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <ResourcePageHeader title="Leads" description="Inbound leads and pipeline" newHref={`${BASE}/new`} newLabel="New Lead" />
       <ResourceViewTabs basePath={BASE} showAll={showAll} />
-      <div className="grid gap-3">
+      <div className="grid gap-2">
         {leads?.map(lead => (
           <Link key={lead.id} href={`${BASE}/${lead.id}`}>
-            <Card className="bg-card border-border hover:border-zo-purple/30 transition-colors cursor-pointer">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-foreground">{lead.name}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{lead.company || lead.email} · {lead.service_interest}</p>
+            <Card className="cursor-pointer border-border bg-card transition-colors hover:border-zo-purple/30">
+              <CardContent className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="truncate font-medium leading-5 text-foreground">{lead.name}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{lead.company || lead.email} - {lead.service_interest}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   {lead.source && <Badge variant="outline" className="text-[10px]">{lead.source}</Badge>}
                   <ResourceStatusBadge status={lead.status} />
                 </div>
