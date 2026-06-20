@@ -210,6 +210,12 @@ Email is handled via **Resend** (`resend` package). Utility at `src/lib/email/no
 
 When adding new email notifications: follow the same fire-and-forget pattern (`.catch(() => {})`) so email failures never break business logic.
 
+### Reminder and notification engine
+
+The full reminder/notification engine is planned, not built. The repo currently has a legacy `notifications` table and meeting email notifications, but it does not yet have task reminder scheduling, notification bell, browser push subscriptions, in-app sound, or Telegram/n8n fallback wiring.
+
+ZeroOrigins OS should own business tasks, reminders, and notification history. External channels such as Telegram, WhatsApp, email, browser push, and n8n are fallback/delivery channels, not the source of truth. See `docs/reminder-notification-engine.md` before implementing this area.
+
 ### AI Workspace sync — rules
 
 The AI Workspace page (`/internal/ai-workspace`) reads from the `ai_workspace_apps` table. Rows get there via `scripts/sync-ai-workspace.mjs`, which scans `D:\AI-Workspace` locally and upserts to Supabase. The browser never scans disk.

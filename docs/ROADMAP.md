@@ -67,6 +67,12 @@
 - [ ] Customer portal dashboard (real, scoped)
 - [ ] Partner portal dashboard (real, scoped)
 
+## Priority 4 - Reminder + Notification Engine
+- [ ] Phase 1: task reminders, notification events, preferences, global bell, in-app sound, due/overdue processing
+- [ ] Phase 2: browser/PWA push foundation and push subscriptions
+- [ ] Phase 3: Telegram/n8n fallback after first-party reminders are stable
+- [ ] See `docs/reminder-notification-engine.md`
+
 ## 🧊 Deferred (do NOT build yet)
 - GitHub/Vercel sync for AI Workspace
 - n8n integration / AI automation
