@@ -47,7 +47,7 @@ export default async function RadarEventsPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       {event.event_start_time && (
-                        <span>{new Date(event.event_start_time).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                        <span>{new Date(event.event_start_time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short', hour12: true })}</span>
                       )}
                       {event.event_mode && <Badge variant="outline" className="text-[10px]">{event.event_mode}</Badge>}
                       {event.event_organizer && <span>by {event.event_organizer}</span>}
@@ -74,7 +74,7 @@ export default async function RadarEventsPage() {
                   >
                     <span className="text-sm text-foreground">{event.title}</span>
                     <span className="text-xs text-muted-foreground">
-                      {event.event_start_time && new Date(event.event_start_time).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
+                      {event.event_start_time && new Date(event.event_start_time).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium' })}
                     </span>
                   </Link>
                 ))}

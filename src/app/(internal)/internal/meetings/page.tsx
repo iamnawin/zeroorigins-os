@@ -16,7 +16,7 @@ type CalendarFilter = 'all' | 'team' | 'my'
 type MeetingRow = Meeting & { ownerLabel: string }
 
 function formatDateTime(value: string) {
-  return new Date(value).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(value).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
 function filterLabel(filter: CalendarFilter) {

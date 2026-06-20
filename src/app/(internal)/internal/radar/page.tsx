@@ -46,7 +46,7 @@ export default async function RadarPage({
   const migrationPending = counts.migrationMissing
   const selectedCategory = CATEGORY_FILTERS.find(f => f.key === category)
   const latestSourceCheck = sourceHealth.lastCheckedAt
-    ? new Date(sourceHealth.lastCheckedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+    ? new Date(sourceHealth.lastCheckedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })
     : 'Not checked yet'
 
   return (

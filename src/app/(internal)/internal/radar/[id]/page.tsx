@@ -108,8 +108,8 @@ export default async function RadarItemPage({ params }: { params: Promise<{ id: 
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Event Details</p>
             <p className="text-sm text-foreground">
-              {new Date(item.event_start_time).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-              {item.event_end_time && ` – ${new Date(item.event_end_time).toLocaleTimeString('en-IN', { timeStyle: 'short' })}`}
+              {new Date(item.event_start_time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short', hour12: true })}
+              {item.event_end_time && ` – ${new Date(item.event_end_time).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', timeStyle: 'short', hour12: true })}`}
             </p>
             {item.event_mode && <Badge variant="outline" className="mt-1 text-[10px]">{item.event_mode}</Badge>}
             {item.event_organizer && <p className="mt-1 text-xs text-muted-foreground">By {item.event_organizer}</p>}
@@ -144,7 +144,7 @@ export default async function RadarItemPage({ params }: { params: Promise<{ id: 
         )}
 
         <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-          <span>Captured {new Date(item.captured_at).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</span>
+          <span>Captured {new Date(item.captured_at).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium' })}</span>
           {item.source_name && <span>Source: {item.source_name}</span>}
           {item.business_vertical && <span>Vertical: {item.business_vertical}</span>}
         </div>

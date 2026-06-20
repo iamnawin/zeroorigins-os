@@ -50,18 +50,18 @@ function formatCurrency(value: number, currency = defaultCurrency) {
 }
 
 function formatDate(value?: string | null) {
-  return value ? new Date(value).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : 'No date'
+  return value ? new Date(value).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' }) : 'No date'
 }
 
 function formatDateTime(value?: string | null) {
   return value
-    ? new Date(value).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    ? new Date(value).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })
     : 'No time'
 }
 
 function formatTime(value?: string | null) {
   return value
-    ? new Date(value).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+    ? new Date(value).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true })
     : ''
 }
 

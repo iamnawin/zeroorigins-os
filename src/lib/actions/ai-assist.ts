@@ -438,7 +438,7 @@ async function runZoAgentQuery(
       ...(meetings ?? []).map(row => ({
         id: row.id,
         title: row.title,
-        subtitle: new Date(row.scheduled_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        subtitle: new Date(row.scheduled_at).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true }),
         badge: 'meeting',
         href: `/internal/meetings/${row.id}`,
       })),

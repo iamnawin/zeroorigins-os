@@ -10,12 +10,14 @@ import { DeleteMeetingButton } from '@/components/calendar/delete-meeting-button
 import type { Meeting } from '@/types'
 
 function formatDateTime(value: string) {
-  return new Date(value).toLocaleString('en-US', {
-    month: 'short',
+  return new Date(value).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
     day: 'numeric',
+    month: 'short',
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    hour12: true,
   })
 }
 
