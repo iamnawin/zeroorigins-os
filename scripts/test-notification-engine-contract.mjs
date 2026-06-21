@@ -19,6 +19,7 @@ const header = assertFile('src/components/layout/internal-header.tsx')
 const taskForm = assertFile('src/components/forms/TaskForm.tsx')
 const taskPage = assertFile('src/app/(internal)/internal/tasks/page.tsx')
 const taskDetail = assertFile('src/app/(internal)/internal/tasks/[id]/page.tsx')
+const proxy = assertFile('src/proxy.ts')
 
 for (const column of [
   'due_at timestamptz',
@@ -54,12 +55,23 @@ assert.match(processRoute, /Authorization/)
 assert.match(processRoute, /CRON_SECRET/)
 assert.match(processRoute, /processDueReminders/)
 assert.match(processRoute, /status:\s*401/)
+assert.match(processRoute, /dynamic\s*=\s*['"]force-dynamic['"]/)
+assert.match(processRoute, /Bearer /)
+assert.match(processRoute, /searchParams\.get\(['"]secret['"]\)/)
+assert.match(processRoute, /export async function POST/)
+assert.match(processRoute, /auth\.getUser\(\)/)
+assert.match(processRoute, /INTERNAL_ROLES\.includes/)
+
+assert.match(proxy, /pathname === ['"]\/api\/reminders\/process['"]/, 'proxy should not redirect reminder cron to login')
 
 assert.match(bell, /NotificationBell/)
 assert.match(bell, /markNotificationRead/)
 assert.match(bell, /markAllNotificationsRead/)
 assert.match(bell, /Bell/)
 assert.match(bell, /playInAppNotificationSound/)
+assert.match(bell, /fetch\(['"]\/api\/reminders\/process['"]/)
+assert.match(bell, /setInterval/)
+assert.match(bell, /visibilitychange/)
 assert.match(header, /NotificationBell/)
 
 assert.match(taskForm, /Reminder/)

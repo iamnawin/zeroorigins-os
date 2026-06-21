@@ -13,7 +13,8 @@ export async function proxy(request: NextRequest) {
   if (
     pathname.startsWith('/request-build') ||
     pathname.startsWith('/partner-with-us') ||
-    pathname === '/api/radar/ingest'
+    pathname === '/api/radar/ingest' ||
+    pathname === '/api/reminders/process'
   ) {
     return NextResponse.next()
   }

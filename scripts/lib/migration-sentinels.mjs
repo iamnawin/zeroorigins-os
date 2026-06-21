@@ -51,4 +51,8 @@ export const SENTINELS = [
   { migration: '020_radar_intelligence', table: 'radar_actions', column: 'action_type' },
   { migration: '022_zo_agent_deal_intent', table: 'ai_assist_requests', column: 'intent' },
   { migration: '023_zo_agent_lead_intent', table: 'ai_assist_requests', column: 'intent' },
+  { migration: '025_reminder_notification_engine', table: 'tasks', column: 'reminder_at' },
+  { migration: '025_reminder_notification_engine', table: 'task_reminders', column: 'reminder_at' },
+  { migration: '025_reminder_notification_engine', table: 'notification_events', column: 'event_type' },
+  { migration: '025_reminder_notification_engine', table: 'notification_preferences', column: 'sound_enabled' },
 ]

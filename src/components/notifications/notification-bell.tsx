@@ -35,6 +35,35 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
   const previousUnreadCount = useRef(unreadCount)
 
   useEffect(() => {
+    let cancelled = false
+
+    async function processAndRefresh() {
+      if (document.visibilityState !== 'visible') return
+
+      try {
+        const response = await fetch('/api/reminders/process', { method: 'POST' })
+        if (response.ok && !cancelled) router.refresh()
+      } catch {
+        // The next poll or navigation can recover from a transient network failure.
+      }
+    }
+
+    function processWhenVisible() {
+      if (document.visibilityState === 'visible') void processAndRefresh()
+    }
+
+    void processAndRefresh()
+    const interval = window.setInterval(() => void processAndRefresh(), 30_000)
+    document.addEventListener('visibilitychange', processWhenVisible)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', processWhenVisible)
+    }
+  }, [router])
+
+  useEffect(() => {
     if (unreadCount <= previousUnreadCount.current) {
       previousUnreadCount.current = unreadCount
       return

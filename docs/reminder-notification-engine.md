@@ -14,13 +14,15 @@ What exists today:
 - Task create/edit supports priority, due date/time, and one in-app reminder.
 - Command Center task creation routes reminders into the same task reminder helper when a due/reminder time is present.
 - A protected `GET /api/reminders/process` route creates in-app notification events for due reminders.
+- The login proxy explicitly allows `/api/reminders/process` through so cron authentication can happen inside the route.
+- While the authenticated app is open, the notification bell calls `POST /api/reminders/process` every 30 seconds and refreshes the bell. This is the fallback when no external scheduler is configured.
 - The internal header has a notification bell with unread count, read-all, dismiss, and in-app sound while the app is open.
 - Control Room shows `Today's Command Queue` above Radar Headlines.
 
 What is missing:
 
 - Browser push subscriptions.
-- Vercel Cron configuration for invoking `/api/reminders/process`.
+- Vercel Cron configuration for invoking `/api/reminders/process` on the desired frequency.
 - Telegram/WhatsApp fallback integration.
 - Complex recurrence beyond the saved `repeat_rule` field.
 
@@ -43,6 +45,7 @@ Use this model:
 
 - In-app notification sound: works only while ZeroOrigins OS is open.
 - Browser/PWA push: uses system notification behavior and requires permission.
+- Installing the site as a PWA does not enable push by itself. Closed-app delivery additionally requires a service worker, a persisted `PushSubscription`, VAPID keys, and a server-side push sender.
 - Telegram/WhatsApp/email: future fallback channels for urgent reminders.
 
 ## Phase 1 - Core Reminder System
@@ -225,7 +228,7 @@ Route:
 Security:
 
 - Require `CRON_SECRET`.
-- Prefer `Authorization: Bearer <CRON_SECRET>` for external schedulers.
+- Prefer `Authorization: Bearer <CRON_SECRET>`. Vercel Cron sends this automatically when `CRON_SECRET` is set in the project environment.
 - If using Vercel Cron and custom headers are unavailable, allow a strong query secret only if documented and not exposed.
 - Never leave the route fully public.
 
