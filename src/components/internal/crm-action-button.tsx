@@ -14,7 +14,7 @@ interface Props {
   pendingLabel?: string
   action: 'convertLeadToDeal' | 'markProposalAccepted' | 'createProjectFromCustomer'
   resourceId: string
-  redirectTo?: (id: string) => string
+  redirectPath?: string
   variant?: 'default' | 'outline' | 'ghost'
   size?: 'default' | 'sm'
 }
@@ -24,7 +24,7 @@ export function CrmActionButton({
   pendingLabel = 'Working...',
   action,
   resourceId,
-  redirectTo,
+  redirectPath,
   variant = 'outline',
   size = 'sm',
 }: Props) {
@@ -46,8 +46,8 @@ export function CrmActionButton({
       setPending(false)
       return
     }
-    if (result.id && redirectTo) {
-      router.push(redirectTo(result.id))
+    if (result.id && redirectPath) {
+      router.push(`${redirectPath}/${result.id}`)
     }
     router.refresh()
   }

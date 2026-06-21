@@ -46,7 +46,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             label="Create Project"
             action="createProjectFromCustomer"
             resourceId={id}
-            redirectTo={projectId => `/internal/projects/${projectId}`}
+            redirectPath="/internal/projects"
           />
           <Link href={`/internal/meetings/new?customer_id=${id}`}>
             <Button size="sm" variant="outline"><CalendarPlus className="w-4 h-4 mr-1" />Meeting</Button>

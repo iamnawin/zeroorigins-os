@@ -89,7 +89,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             label="Convert to Deal"
             action="convertLeadToDeal"
             resourceId={id}
-            redirectTo={dealId => `/internal/deals/${dealId}`}
+            redirectPath="/internal/deals"
           />
           <Link href={`/internal/meetings/new?lead_id=${id}`}>
             <Button size="sm" variant="outline"><CalendarPlus className="w-4 h-4 mr-1" />Meeting</Button>

@@ -23,3 +23,17 @@ test('lead pages verify internal access before using service-role reads', () => 
   assert.match(detailPage, /try\s*{[\s\S]*createServiceClient/, 'Lead detail should catch service-role or Supabase read failures.')
   assert.match(detailPage, /Lead could not load/, 'Lead detail should render a recoverable error state instead of the generic Next error page.')
 })
+
+test('lead detail passes only serializable redirect data to client components', () => {
+  const detailPage = read('src/app/(internal)/internal/leads/[id]/page.tsx')
+  const actionButton = read('src/components/internal/crm-action-button.tsx')
+
+  assert.doesNotMatch(
+    detailPage,
+    /redirectTo=\{[^}]*=>/,
+    'Server-rendered lead detail must not pass a function to the client action button.',
+  )
+  assert.match(detailPage, /redirectPath="\/internal\/deals"/)
+  assert.match(actionButton, /redirectPath\?: string/)
+  assert.doesNotMatch(actionButton, /redirectTo\?:\s*\(/)
+})
