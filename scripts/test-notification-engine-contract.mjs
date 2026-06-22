@@ -23,6 +23,7 @@ const proxy = assertFile('src/proxy.ts')
 const pushMigration = assertFile('supabase/migrations/026_web_push_notifications.sql')
 const serviceWorker = assertFile('public/sw.js')
 const pushRoute = assertFile('src/app/api/notifications/push-subscription/route.ts')
+const pushControl = assertFile('src/components/notifications/push-notification-control.tsx')
 
 for (const column of [
   'due_at timestamptz',
@@ -62,6 +63,15 @@ assert.match(pushRoute, /INTERNAL_ROLES\.includes/)
 assert.match(pushRoute, /user_id:\s*user\.id/)
 assert.match(pushRoute, /\.eq\(['"]user_id['"],\s*user\.id\)/)
 assert.doesNotMatch(pushRoute, /user_id:\s*body\./)
+
+assert.match(pushControl, /^['"]use client['"]/)
+assert.match(pushControl, /Notification\.requestPermission\(\)/)
+assert.match(pushControl, /navigator\.serviceWorker\.register\(['"]\/sw\.js['"]\)/)
+assert.match(pushControl, /pushManager\.subscribe/)
+assert.match(pushControl, /applicationServerKey/)
+assert.match(pushControl, /\/api\/notifications\/push-subscription/)
+assert.match(pushControl, /method:\s*['"]DELETE['"]/)
+assert.match(bell, /PushNotificationControl/)
 
 assert.match(reminderService, /export async function syncTaskReminder/)
 assert.match(reminderService, /export async function processDueReminders/)

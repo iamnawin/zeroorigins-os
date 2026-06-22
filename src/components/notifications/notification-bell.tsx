@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { dismissNotification, markAllNotificationsRead, markNotificationRead } from '@/lib/actions/notification-events'
+import { PushNotificationControl } from '@/components/notifications/push-notification-control'
 
 export type NotificationBellItem = {
   id: string
@@ -140,6 +141,8 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
             ))
           )}
         </div>
+        <DropdownMenuSeparator />
+        <PushNotificationControl />
         <DropdownMenuSeparator />
         <Link href="/internal/tasks" className="block px-3 py-2 text-xs font-medium text-zo-purple-2 hover:bg-muted">
           Open tasks
