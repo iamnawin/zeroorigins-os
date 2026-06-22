@@ -244,16 +244,14 @@ Security:
 - The scheduled request sends `Authorization: Bearer <CRON_SECRET>`.
 - Never leave the route fully public.
 
-Apply the scheduler after setting `SUPABASE_DB_URL` and `CRON_SECRET` in the current PowerShell session:
+Apply the scheduler from the Supabase SQL Editor:
 
-```powershell
-psql $env:SUPABASE_DB_URL `
-  --set=reminder_processor_url='https://zeroorigins-os.vercel.app/api/reminders/process' `
-  --set=reminder_processor_secret=$env:CRON_SECRET `
-  --file=supabase/configure-reminder-cron.sql
-```
+1. Open `supabase/configure-reminder-cron.sql`.
+2. Copy it into the SQL Editor.
+3. Replace `REPLACE_WITH_CRON_SECRET` with the exact `CRON_SECRET` configured in Vercel.
+4. Run the query.
 
-The setup file replaces only the job named `process-task-reminders-every-minute`. If the two Vault secret names already exist, update or remove those values in the Supabase Vault before rerunning the setup file.
+The setup updates existing Vault values when present and replaces only the job named `process-task-reminders-every-minute`.
 
 Idempotency:
 
