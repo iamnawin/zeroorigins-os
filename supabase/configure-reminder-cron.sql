@@ -11,7 +11,7 @@ declare
   processor_secret constant text := 'REPLACE_WITH_CRON_SECRET';
   existing_secret_id uuid;
 begin
-  if processor_secret = 'REPLACE_WITH_CRON_SECRET' then
+  if processor_secret = concat('REPLACE_WITH_', 'CRON_SECRET') then
     raise exception 'Replace REPLACE_WITH_CRON_SECRET with the CRON_SECRET value from Vercel before running this SQL';
   end if;
 
