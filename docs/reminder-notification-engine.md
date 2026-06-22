@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Phase 1 foundation is implemented in the app code.
+The reminder engine and Android Chrome Web Push delivery are implemented in the app code.
 
 What exists today:
 
@@ -17,12 +17,15 @@ What exists today:
 - The login proxy explicitly allows `/api/reminders/process` through so cron authentication can happen inside the route.
 - While the authenticated app is open, the notification bell calls `POST /api/reminders/process` every 30 seconds and refreshes the bell. This is the fallback when no external scheduler is configured.
 - The internal header has a notification bell with unread count, read-all, dismiss, and in-app sound while the app is open.
+- Each signed-in device can opt into background Web Push notifications from the bell menu.
+- `push_subscriptions` is defined in `supabase/migrations/026_web_push_notifications.sql` with owner-only RLS.
+- `public/sw.js` displays background notifications and opens the exact task when tapped.
+- The reminder processor sends encrypted Web Push payloads when VAPID credentials are configured.
+- `supabase/configure-reminder-cron.sql` configures Supabase Cron to call the processor every minute on Vercel Hobby.
 - Control Room shows `Today's Command Queue` above Radar Headlines.
 
 What is missing:
 
-- Browser push subscriptions.
-- Vercel Cron configuration for invoking `/api/reminders/process` on the desired frequency.
 - Telegram/WhatsApp fallback integration.
 - Complex recurrence beyond the saved `repeat_rule` field.
 
@@ -69,26 +72,32 @@ Scope:
 
 Do not implement complex recurrence in Phase 1. Support `none` first. Add `daily`/`weekly` only if the implementation stays small and testable.
 
-## Phase 2 - Browser/PWA Push Foundation
+## Phase 2 - Browser/PWA Push Foundation (Implemented)
 
 Goal: prepare browser reminders without making unreliable sound promises.
 
 Scope:
 
-- Add `push_subscriptions`.
-- Add notification permission UI.
-- Add subscribe/unsubscribe API routes.
-- Add `public/sw.js` only if it fits the current Next.js app structure.
-- Add push click handling that opens `action_url`.
-- Add VAPID env var documentation.
-- Keep push sending optional until verified end to end.
+- `push_subscriptions` with strict per-user RLS.
+- Explicit notification permission UI in the bell menu.
+- Authenticated subscribe/unsubscribe Route Handler.
+- `public/sw.js` with push display and click navigation.
+- Optional server-side delivery that leaves in-app processing operational when VAPID is absent.
 
 Required env vars when browser push is implemented:
 
-- `NEXT_PUBLIC_APP_URL`
-- `VAPID_PUBLIC_KEY`
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
 - `VAPID_PRIVATE_KEY`
 - `VAPID_SUBJECT=mailto:support@zeroorigins.in`
+- `CRON_SECRET`
+
+Generate one VAPID pair and reuse it for every deployment:
+
+```powershell
+pnpm exec web-push generate-vapid-keys --json
+```
+
+Set the four values in Vercel Production before building. The public key is intentionally exposed to the browser; the private key and cron secret must remain server-only.
 
 ## Phase 3 - Telegram/n8n Fallback
 
@@ -210,32 +219,53 @@ Add `push_subscriptions` in Phase 2:
 
 1. User creates or edits a task with reminder settings.
 2. Server validates reminder fields and upserts one active `task_reminders` row.
-3. `/api/reminders/process` runs every 5 minutes.
+3. Supabase Cron calls `/api/reminders/process` every minute.
 4. Processor finds scheduled reminders where `reminder_at <= now()`.
 5. Processor creates one idempotent `notification_events` row per due reminder.
-6. Processor marks reminder as `triggered`, or schedules the next reminder for supported repeat rules.
-7. Notification bell reads unread events.
-8. Clicking a notification opens `action_url`.
-9. Marking task done completes active reminders.
-10. Cancelling task cancels active reminders.
+6. Processor sends Web Push to the user's active devices when VAPID is configured.
+7. Processor marks the reminder as `triggered`, or schedules the next reminder for supported repeat rules.
+8. Notification bell reads unread events.
+9. Clicking or tapping a notification opens `action_url`.
+10. Marking a task done completes active reminders.
+11. Cancelling a task cancels active reminders.
 
-## Cron Design
+## Supabase Cron Setup
 
 Route:
 
 - `GET /api/reminders/process`
 
+Vercel Hobby cannot run a job every minute, so Supabase Cron invokes the Vercel Route Handler. This is separate from existing cron jobs such as email sync.
+
 Security:
 
 - Require `CRON_SECRET`.
-- Prefer `Authorization: Bearer <CRON_SECRET>`. Vercel Cron sends this automatically when `CRON_SECRET` is set in the project environment.
-- If using Vercel Cron and custom headers are unavailable, allow a strong query secret only if documented and not exposed.
+- Supabase Vault stores the processor URL and secret.
+- The scheduled request sends `Authorization: Bearer <CRON_SECRET>`.
 - Never leave the route fully public.
+
+Apply the scheduler after setting `SUPABASE_DB_URL` and `CRON_SECRET` in the current PowerShell session:
+
+```powershell
+psql $env:SUPABASE_DB_URL `
+  --set=reminder_processor_url='https://zeroorigins-os.vercel.app/api/reminders/process' `
+  --set=reminder_processor_secret=$env:CRON_SECRET `
+  --file=supabase/configure-reminder-cron.sql
+```
+
+The setup file replaces only the job named `process-task-reminders-every-minute`. If the two Vault secret names already exist, update or remove those values in the Supabase Vault before rerunning the setup file.
 
 Idempotency:
 
 - Before creating a notification, check for an existing event with the same `reminder_id` and `event_type = 'task_reminder'`.
 - Avoid duplicate events if cron runs multiple times.
+
+Delivery timing and platform behavior:
+
+- The one-minute schedule means delivery is usually near the selected minute, not at an exact second.
+- Android Chrome uses Android's system notification sound and vibration settings; the site cannot force a custom background sound.
+- Battery optimization, Do Not Disturb, or denied site permission can delay or silence a notification.
+- iOS/iPadOS Web Push requires installing the site to the Home Screen before enabling notifications.
 
 ## UI Plan
 
@@ -324,6 +354,6 @@ Build:
 ## Open Risks
 
 - Remote Supabase migrations are manually applied, so schema drift must be checked before debugging.
-- Browser push may need a dependency such as `web-push`; do not add it without reviewing package impact.
-- Vercel Cron authentication must be verified before relying on it.
+- Supabase Cron authentication and run history must be verified after production setup.
+- Android system delivery depends on Chrome permission, OS notification settings, and battery policy.
 - Telegram/n8n tokens are high-risk secrets and must stay out of source, screenshots, and chat logs.

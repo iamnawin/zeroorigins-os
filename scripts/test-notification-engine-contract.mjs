@@ -25,6 +25,8 @@ const serviceWorker = assertFile('public/sw.js')
 const pushRoute = assertFile('src/app/api/notifications/push-subscription/route.ts')
 const pushControl = assertFile('src/components/notifications/push-notification-control.tsx')
 const pushSender = assertFile('src/lib/notifications/web-push.ts')
+const cronSetup = assertFile('supabase/configure-reminder-cron.sql')
+const envExample = assertFile('.env.local.example')
 
 for (const column of [
   'due_at timestamptz',
@@ -82,6 +84,14 @@ assert.match(pushSender, /statusCode === 404/)
 assert.match(pushSender, /statusCode === 410/)
 assert.match(reminderService, /sendPushToUser/)
 assert.match(processRoute, /runtime\s*=\s*['"]nodejs['"]/)
+
+assert.match(cronSetup, /cron\.schedule/)
+assert.match(cronSetup, /['"]\* \* \* \* \*['"]/)
+assert.match(cronSetup, /vault\.decrypted_secrets/)
+assert.match(cronSetup, /Authorization/)
+assert.match(envExample, /NEXT_PUBLIC_VAPID_PUBLIC_KEY/)
+assert.match(envExample, /VAPID_PRIVATE_KEY/)
+assert.match(envExample, /VAPID_SUBJECT/)
 
 assert.match(reminderService, /export async function syncTaskReminder/)
 assert.match(reminderService, /export async function processDueReminders/)
