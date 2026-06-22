@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { sendPushToUser } from '@/lib/notifications/web-push'
 
 type SupabaseLike = SupabaseClient
 
@@ -21,6 +22,9 @@ export type TaskReminderInput = {
 export type ProcessDueRemindersResult = {
   processed: number
   notifications: number
+  pushSent: number
+  pushFailed: number
+  pushDeactivated: number
 }
 
 function normalizePriority(priority?: string | null): ReminderPriority {
@@ -112,6 +116,9 @@ export async function processDueReminders(supabase: SupabaseLike, now = new Date
   if (error) throw error
 
   let notifications = 0
+  let pushSent = 0
+  let pushFailed = 0
+  let pushDeactivated = 0
 
   for (const reminder of reminders ?? []) {
     const task = Array.isArray(reminder.tasks) ? reminder.tasks[0] : reminder.tasks
@@ -124,28 +131,45 @@ export async function processDueReminders(supabase: SupabaseLike, now = new Date
     }
 
     const priority = normalizePriority(reminder.priority)
-    const { error: insertError } = await supabase
+    const title = task?.title ? `Reminder: ${task.title}` : 'Task reminder'
+    const message = task?.description || 'A task reminder is due.'
+    const severity = severityForPriority(priority)
+    const actionUrl = `/internal/tasks/${reminder.task_id}`
+    const { data: event, error: insertError } = await supabase
       .from('notification_events')
       .upsert({
         user_id: reminder.user_id,
         organization_id: reminder.organization_id,
         event_type: 'task_reminder',
-        title: task?.title ? `Reminder: ${task.title}` : 'Task reminder',
-        message: task?.description || 'A task reminder is due.',
-        severity: severityForPriority(priority),
+        title,
+        message,
+        severity,
         status: 'unread',
         channel: reminder.channel || 'in_app',
         related_record_type: 'task',
         related_record_id: reminder.task_id,
         task_id: reminder.task_id,
         reminder_id: reminder.id,
-        action_url: `/internal/tasks/${reminder.task_id}`,
+        action_url: actionUrl,
         scheduled_for: reminder.reminder_at,
         sent_at: nowIso,
       }, { onConflict: 'reminder_id,event_type' })
+      .select('id')
+      .single()
 
     if (insertError) throw insertError
     notifications += 1
+
+    const push = await sendPushToUser(supabase, reminder.user_id, {
+      eventId: event.id,
+      title,
+      message,
+      severity,
+      actionUrl,
+    })
+    pushSent += push.sent
+    pushFailed += push.failed
+    pushDeactivated += push.deactivated
 
     const { error: updateError } = await supabase
       .from('task_reminders')
@@ -158,5 +182,8 @@ export async function processDueReminders(supabase: SupabaseLike, now = new Date
   return {
     processed: reminders?.length ?? 0,
     notifications,
+    pushSent,
+    pushFailed,
+    pushDeactivated,
   }
 }

@@ -24,6 +24,7 @@ const pushMigration = assertFile('supabase/migrations/026_web_push_notifications
 const serviceWorker = assertFile('public/sw.js')
 const pushRoute = assertFile('src/app/api/notifications/push-subscription/route.ts')
 const pushControl = assertFile('src/components/notifications/push-notification-control.tsx')
+const pushSender = assertFile('src/lib/notifications/web-push.ts')
 
 for (const column of [
   'due_at timestamptz',
@@ -72,6 +73,15 @@ assert.match(pushControl, /applicationServerKey/)
 assert.match(pushControl, /\/api\/notifications\/push-subscription/)
 assert.match(pushControl, /method:\s*['"]DELETE['"]/)
 assert.match(bell, /PushNotificationControl/)
+
+assert.match(pushSender, /import ['"]server-only['"]/)
+assert.match(pushSender, /setVapidDetails/)
+assert.match(pushSender, /sendNotification/)
+assert.match(pushSender, /push_subscriptions/)
+assert.match(pushSender, /statusCode === 404/)
+assert.match(pushSender, /statusCode === 410/)
+assert.match(reminderService, /sendPushToUser/)
+assert.match(processRoute, /runtime\s*=\s*['"]nodejs['"]/)
 
 assert.match(reminderService, /export async function syncTaskReminder/)
 assert.match(reminderService, /export async function processDueReminders/)

@@ -5,6 +5,7 @@ import { createClient as createAuthenticatedClient } from '@/lib/supabase/server
 import { processDueReminders } from '@/lib/notifications/reminders'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET?.trim()
