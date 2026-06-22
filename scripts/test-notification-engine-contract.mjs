@@ -22,6 +22,7 @@ const taskDetail = assertFile('src/app/(internal)/internal/tasks/[id]/page.tsx')
 const proxy = assertFile('src/proxy.ts')
 const pushMigration = assertFile('supabase/migrations/026_web_push_notifications.sql')
 const serviceWorker = assertFile('public/sw.js')
+const pushRoute = assertFile('src/app/api/notifications/push-subscription/route.ts')
 
 for (const column of [
   'due_at timestamptz',
@@ -53,6 +54,14 @@ assert.match(serviceWorker, /addEventListener\(['"]push['"]/)
 assert.match(serviceWorker, /showNotification/)
 assert.match(serviceWorker, /addEventListener\(['"]notificationclick['"]/)
 assert.match(serviceWorker, /clients\.openWindow/)
+
+assert.match(pushRoute, /export async function POST/)
+assert.match(pushRoute, /export async function DELETE/)
+assert.match(pushRoute, /auth\.getUser\(\)/)
+assert.match(pushRoute, /INTERNAL_ROLES\.includes/)
+assert.match(pushRoute, /user_id:\s*user\.id/)
+assert.match(pushRoute, /\.eq\(['"]user_id['"],\s*user\.id\)/)
+assert.doesNotMatch(pushRoute, /user_id:\s*body\./)
 
 assert.match(reminderService, /export async function syncTaskReminder/)
 assert.match(reminderService, /export async function processDueReminders/)
