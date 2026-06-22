@@ -20,6 +20,8 @@ const taskForm = assertFile('src/components/forms/TaskForm.tsx')
 const taskPage = assertFile('src/app/(internal)/internal/tasks/page.tsx')
 const taskDetail = assertFile('src/app/(internal)/internal/tasks/[id]/page.tsx')
 const proxy = assertFile('src/proxy.ts')
+const pushMigration = assertFile('supabase/migrations/026_web_push_notifications.sql')
+const serviceWorker = assertFile('public/sw.js')
 
 for (const column of [
   'due_at timestamptz',
@@ -38,6 +40,19 @@ assert.match(migration, /create table if not exists notification_preferences/)
 assert.match(migration, /enable row level security/)
 assert.match(migration, /create unique index if not exists idx_notification_events_reminder_once/)
 assert.match(migration, /is_internal_user\(\)/)
+
+assert.match(pushMigration, /create table if not exists push_subscriptions/)
+assert.match(pushMigration, /endpoint text not null unique/)
+assert.match(pushMigration, /p256dh text not null/)
+assert.match(pushMigration, /auth text not null/)
+assert.match(pushMigration, /alter table push_subscriptions enable row level security/)
+assert.match(pushMigration, /user_id = auth\.uid\(\)/)
+assert.match(pushMigration, /service_role/)
+
+assert.match(serviceWorker, /addEventListener\(['"]push['"]/)
+assert.match(serviceWorker, /showNotification/)
+assert.match(serviceWorker, /addEventListener\(['"]notificationclick['"]/)
+assert.match(serviceWorker, /clients\.openWindow/)
 
 assert.match(reminderService, /export async function syncTaskReminder/)
 assert.match(reminderService, /export async function processDueReminders/)

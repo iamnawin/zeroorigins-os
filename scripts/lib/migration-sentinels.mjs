@@ -55,4 +55,5 @@ export const SENTINELS = [
   { migration: '025_reminder_notification_engine', table: 'task_reminders', column: 'reminder_at' },
   { migration: '025_reminder_notification_engine', table: 'notification_events', column: 'event_type' },
   { migration: '025_reminder_notification_engine', table: 'notification_preferences', column: 'sound_enabled' },
+  { migration: '026_web_push_notifications', table: 'push_subscriptions', column: 'endpoint' },
 ]
